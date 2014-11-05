@@ -11,7 +11,6 @@ import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.seq.*;
 import com.spbsu.commons.seq.regexp.SimpleRegExp;
-import com.spbsu.commons.system.RuntimeUtils;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -143,25 +142,32 @@ public class MREnvironmentTest {
         input.deleteOnExit();
         int index = 0;
         String command = "cat " + input.getAbsolutePath();
+        File jarFile = null;
 
         while(index < mrOptions.size()) {
           String opt = mrOptions.get(index++);
           switch (opt) {
-            case "-src":
-              StreamTools.writeChars(tableContents.get(mrOptions.get(index++)), input);
+            case "-src": {
+              final String contents = tableContents.get(mrOptions.get(index++));
+              if (contents != null)
+                StreamTools.writeChars(contents, input);
               break;
+            }
             case "-map":
             case "-reduce":
-              command += " | " + mrOptions.get(index++);
+              command += " | " + CharSeqTools.replace(mrOptions.get(index++).replace(jarFile.getName(), jarFile.getAbsolutePath()), "$", "\\$");
               break;
-            case "-read":
-              StreamTools.writeChars(tableContents.get(mrOptions.get(index++)), input);
+            case "-read": {
+              final String contents = tableContents.get(mrOptions.get(index++));
+              if (contents != null)
+                StreamTools.writeChars(contents, input);
               break;
+            }
             case "-count":
               command += " | head -" + mrOptions.get(index++);
               break;
             case "-file":
-              final File jarFile = new File(mrOptions.get(index++));
+              jarFile = new File(mrOptions.get(index++));
               command = command.replace(jarFile.getName(), jarFile.getAbsolutePath());
               break;
             case "-drop":

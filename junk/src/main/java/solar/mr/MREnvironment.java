@@ -10,11 +10,9 @@ import java.util.List;
 
 import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
-import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.random.FastRandom;
 import com.spbsu.commons.seq.CharSeqComposite;
 import com.spbsu.commons.seq.CharSeqTools;
-import com.spbsu.commons.system.RuntimeUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 
@@ -68,15 +66,16 @@ public abstract class MREnvironment {
   }
 
   public int read(MRTable table, final Processor<CharSequence> linesProcessor) {
+    final int[] recordsCount = new int[]{0};
     final List<String> options = defaultOptions();
     for (int i = 0; i < table.length(); i++) {
       options.add("-read");
       options.add(table.at(i));
     }
-    int[] recordsCount = new int[]{0};
     executeCommand(options, new Processor<CharSequence>() {
       @Override
       public void process(final CharSequence arg) {
+        recordsCount[0]++;
         linesProcessor.process(arg);
       }
     }, errorsProcessor);
@@ -244,7 +243,7 @@ public abstract class MREnvironment {
       }) == 0;
     }
     finally {
-//      delete(errorsTable);
+      delete(errorsTable);
     }
   }
 
