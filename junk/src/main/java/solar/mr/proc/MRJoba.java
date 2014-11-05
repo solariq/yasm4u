@@ -1,7 +1,5 @@
 package solar.mr.proc;
 
-import solar.mr.MREnv;
-
 /**
  * User: solar
  * Date: 12.10.14

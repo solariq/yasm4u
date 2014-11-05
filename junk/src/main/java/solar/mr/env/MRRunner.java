@@ -78,7 +78,6 @@ public class MRRunner implements Runnable {
   public void run() {
     final MROutputImpl out = new MROutputImpl(new OutputStreamWriter(System.out, StreamTools.UTF), tables.get(AccessType.WRITE).size());
     try {
-
       final Constructor<? extends MRRoutine> constructor = routine.getConstructor(String[].class, MROutput.class, MRState.class);
       constructor.setAccessible(true);
       final MRRoutine instance = constructor.newInstance(ArrayTools.toArray(tables.get(AccessType.READ)), out, state);

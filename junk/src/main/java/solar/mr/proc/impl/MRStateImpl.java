@@ -10,7 +10,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
+import com.spbsu.commons.filters.ClassFilter;
+import com.spbsu.commons.func.Action;
+import com.spbsu.commons.func.types.SerializationRepository;
+import com.spbsu.commons.func.types.TypeConverter;
 import solar.mr.proc.MRState;
+import solar.mr.proc.MRWhiteboard;
+import solar.mr.tables.MRTableShard;
 
 /**
  * User: solar
@@ -34,10 +40,10 @@ public class MRStateImpl implements MRState, Serializable {
   @Override
   public <T> T get(final String uri) {
     //noinspection unchecked
-    return (T)state.get(uri);
+    return (T)state.get(resolveVars(uri));
   }
 
-  private final Pattern varPattern = Pattern.compile("\\{([^\\},]+)(,[^\\},]+)*\\}");
+  private final Pattern varPattern = Pattern.compile("\\{([^\\},]+)([^\\}]+)\\}");
   String resolveVars(String resource) {
     final Matcher matcher = varPattern.matcher(resource);
     final StringBuffer format = new StringBuffer();
@@ -46,12 +52,12 @@ public class MRStateImpl implements MRState, Serializable {
       final String name = matcher.group(1);
       final int index = namesMap.containsKey(name) ? namesMap.get(name) : namesMap.size();
       namesMap.put(name, index);
-      matcher.appendReplacement(format, "{" + index + "}");
+      matcher.appendReplacement(format, "{" + index + (matcher.groupCount() > 1 ? matcher.group(2) : "") + "}");
     }
     matcher.appendTail(format);
     final Object[] args = new Object[namesMap.size()];
     for (final Map.Entry<String, Integer> entry : namesMap.entrySet()) {
-      args[entry.getValue()] = resolveVars(entry.getKey());
+      args[entry.getValue()] = get(entry.getKey());
     }
     return MessageFormat.format(format.toString(), args);
   }
@@ -67,7 +73,13 @@ public class MRStateImpl implements MRState, Serializable {
 
   @Override
   public boolean available(final String consumes) {
-    return state.containsKey(consumes);
+    final String key = resolveVars(consumes);
+    if (!state.containsKey(key))
+      return false;
+    final Object resource = state.get(key);
+    if (resource instanceof MRTableShard)
+      return ((MRTableShard) resource).refresh().isAvailable();
+    return true;
   }
 
   @Override
@@ -85,10 +97,14 @@ public class MRStateImpl implements MRState, Serializable {
     for(int i = 0; i < available().length; i++) {
       final String current = available()[i];
       final Object instance = get(current);
-      out.writeUTF(current);
       assert instance != null;
-      out.writeUTF(instance.getClass().getName());
-      out.writeUTF(MRState.SERIALIZATION.write(instance).toString());
+      final SerializationRepository<CharSequence> serialization = MRState.SERIALIZATION;
+      final TypeConverter<?, CharSequence> converter = serialization.base.converter(instance.getClass(), CharSequence.class);
+      if (converter != null && !new ClassFilter<TypeConverter>(Action.class, MRWhiteboard.class).accept(converter)) {
+        out.writeUTF(current);
+        out.writeUTF(instance.getClass().getName());
+        out.writeUTF(serialization.write(instance).toString());
+      }
     }
   }
 

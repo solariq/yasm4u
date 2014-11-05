@@ -24,8 +24,8 @@ import solar.mr.tables.MRTableShard;
 public class ClosureJarBuilder {
   private final String localMRHome;
   private Class<? extends MRRoutine> routine;
-  private final List<MRTable> input = new ArrayList<>();
-  private final List<MRTable> output = new ArrayList<>();
+  private final List<MRTableShard> input = new ArrayList<>();
+  private final List<MRTableShard> output = new ArrayList<>();
   final HashMap<String, byte[]> resourcesMap = new HashMap<>();
 
   public ClosureJarBuilder(String localMRHome) {
@@ -47,23 +47,15 @@ public class ClosureJarBuilder {
         final ByteArrayOutputStream tablesDump = new ByteArrayOutputStream();
         final PrintStream tablesOut = new PrintStream(tablesDump);
         for (int i = 0; i < input.size(); i++) {
-          final MRTable table = input.get(i);
-          final MRTableShard[] targetShards = targetEnv.shards(table);
-          for (int j = 0; j < targetShards.length; j++) {
-            final MRTableShard shard = targetShards[j];
-            tablesOut.println(MRRunner.AccessType.READ.toString() + "\t" + shard.path());
-          }
-          inTables[i] = sampleEnv.shards(table)[0].path().toCharArray();
+          final MRTableShard shard = input.get(i);
+          tablesOut.println(MRRunner.AccessType.READ.toString() + "\t" + shard.path());
+          inTables[i] = sampleEnv.shards(shard.owner())[0].path().toCharArray();
         }
 
         for (int i = 0; i < output.size(); i++) {
-          final MRTable table = output.get(i);
-          final MRTableShard[] targetShards = targetEnv.shards(table);
-          for (int j = 0; j < targetShards.length; j++) {
-            final MRTableShard shard = targetShards[j];
-            tablesOut.println(MRRunner.AccessType.WRITE.toString() + "\t" + shard.path());
-          }
-          outTables[i] = sampleEnv.shards(table)[0].path().toCharArray();
+          final MRTableShard shard = output.get(i);
+          tablesOut.println(MRRunner.AccessType.WRITE.toString() + "\t" + shard.path());
+          outTables[i] = sampleEnv.shards(shard.owner())[0].path().toCharArray();
         }
         addResource(MRRunner.TABLES_RESOURCE_NAME, tablesDump.toByteArray());
       }
@@ -79,10 +71,10 @@ public class ClosureJarBuilder {
             final MRRunner instance = constructor.newInstance(routine.getName().toCharArray());
             final MRTable[] input = new MRTable[ClosureJarBuilder.this.input.size()];
             final MRTable[] output = new MRTable[ClosureJarBuilder.this.output.size()];
-            for(int i = 0; i < input.length; i++) {
+            for (int i = 0; i < input.length; i++) {
               input[i] = sampleEnv.resolve(new String(inTables[i])).owner();
             }
-            for(int i = 0; i < output.length; i++) {
+            for (int i = 0; i < output.length; i++) {
               output[i] = sampleEnv.resolve(new String(outTables[i])).owner();
             }
             sampleEnv.execute(instance.routine(), instance.state(), input, output, null);
@@ -97,11 +89,11 @@ public class ClosureJarBuilder {
     return tempFile;
   }
 
-  public void addOutput(final MRTable mrTable) {
+  public void addOutput(final MRTableShard mrTable) {
     input.add(mrTable);
   }
 
-  public void addInput(final MRTable mrTable) {
+  public void addInput(final MRTableShard mrTable) {
     output.add(mrTable);
   }
 

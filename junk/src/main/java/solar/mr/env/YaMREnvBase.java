@@ -2,10 +2,7 @@ package solar.mr.env;
 
 import java.io.*;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -16,6 +13,7 @@ import com.spbsu.commons.func.Computable;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.random.FastRandom;
+import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.JSONTools;
@@ -24,7 +22,6 @@ import solar.mr.proc.MRState;
 import solar.mr.tables.DailyMRTable;
 import solar.mr.tables.FixedMRTable;
 import solar.mr.tables.MRTableShard;
-import solar.mr.tables.MRTableShardBase;
 
 /**
  * User: solar
@@ -68,7 +65,7 @@ public abstract class YaMREnvBase implements MREnv {
     this.jarBuilder = jarBuilder;
   }
 
-  protected abstract Process runYaMRProcess(List<String> mrOptions);
+  protected abstract Process runYaMRProcess(List<String> mrOptions, final Reader content);
 
   protected List<String> defaultOptions() {
     final List<String> options = new ArrayList<>();
@@ -147,12 +144,11 @@ public abstract class YaMREnvBase implements MREnv {
   }
 
   private void executeCommand(final List<String> options, final Processor<CharSequence> outputProcessor,
-                              final Processor<CharSequence> errorsProcessor, final Reader input) {
+                              final Processor<CharSequence> errorsProcessor, Reader contents) {
     try {
-      final Process exec = runYaMRProcess(options);
+      final Process exec = runYaMRProcess(options, contents);
       if (exec == null)
         return;
-
       final Thread outThread = new Thread(new Runnable() {
         @Override
         public void run() {
@@ -173,8 +169,6 @@ public abstract class YaMREnvBase implements MREnv {
           }
         }
       });
-      if (input != null)
-        StreamTools.transferData(input, new OutputStreamWriter(exec.getOutputStream(), StreamTools.UTF));
       exec.getOutputStream().close();
       outThread.start();
       errThread.start();
@@ -204,10 +198,13 @@ public abstract class YaMREnvBase implements MREnv {
   }
 
 
-  private MRTableShard shard(final String shardName, final MRTable owner) {
+  private MRTableShard shard(String shardName, final MRTable owner) {
     final List<String> options = defaultOptions();
+    if (shardName.startsWith("/"))
+      shardName = shardName.substring(1);
     options.add("-list");
-    options.add("-prefix " + shardName);
+    options.add("-prefix");
+    options.add(shardName);
     options.add("-jsonoutput");
     final CharSeqBuilder builder = new CharSeqBuilder();
     executeCommand(options, new Processor<CharSequence>() {
@@ -217,7 +214,8 @@ public abstract class YaMREnvBase implements MREnv {
       }
     }, defaultErrorsProcessor, null);
     try {
-      JsonParser parser = JSONTools.parseJSON(builder.build());
+      final CharSeq build = builder.build();
+      JsonParser parser = JSONTools.parseJSON(build);
       ObjectMapper mapper = new ObjectMapper();
       assert JsonToken.START_ARRAY.equals(parser.nextToken());
       JsonToken next = parser.nextToken();
@@ -242,81 +240,66 @@ public abstract class YaMREnvBase implements MREnv {
 //            "block_format": "none"
 //        }
         final JsonNode metaJSON = mapper.readTree(parser);
-        final JsonNode nameNode = metaJSON.path("name");
-        if (!nameNode.isMissingNode() && shardName.equals(nameNode.toString())) {
-          final String size = metaJSON.path("full_size").toString();
-          return new MRTableShardBase(shardName, this, owner) {
-            @Override
-            public boolean isAvailable() {
-              return true;
-            }
-
-            @Override
-            public String crc() {
-              return size;
-            }
-          };
+        final JsonNode nameNode = metaJSON.get("name");
+        if (nameNode != null && !nameNode.isMissingNode() && shardName.equals(nameNode.textValue())) {
+          final String size = metaJSON.get("full_size").toString();
+          return new MRTableShard(shardName, this, owner, true, size);
         }
+        next = parser.nextToken();
       }
-      return new MRTableShardBase(shardName, this, owner) {
-        @Override
-        public boolean isAvailable() {
-          return false;
-        }
-
-        @Override
-        public String crc() {
-          throw new IllegalStateException("crc is not available for missing tables");
-        }
-      };
+      return new MRTableShard(shardName, this, owner, false, "");
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
+
+  private static final Computable<String, MRTable> RESOLVER = new Computable<String, MRTable>() {
+    @Override
+    public MRTable compute(final String argument) {
+      if (argument.startsWith("user_sessions/")) {
+        final Date date = parseDate(argument.subSequence(argument.indexOf("/") + 1, argument.length()));
+        return new DailyMRTable("user_sessions", new MessageFormat("user_sessions/{0,date,yyyyMMdd}"), date, date);
+      }
+      return new FixedMRTable(argument);
+    }
+
+    private Date parseDate(final CharSequence sequence) {
+      final int year = Integer.parseInt(sequence.subSequence(0, 4).toString());
+      final int month = Integer.parseInt(sequence.subSequence(4, 6).toString());
+      final int day = Integer.parseInt(sequence.subSequence(6, 8).toString());
+      final Calendar calendar = Calendar.getInstance();
+      //noinspection MagicConstant
+      calendar.set(year, month - 1, day - 1);
+      return calendar.getTime();
+    }
+  };
   @Override
   public MRTableShard resolve(final String path) {
-    Computable<String, MRTable> RESOLVER = new Computable<String, MRTable>() {
-      @Override
-      public MRTable compute(final String argument) {
-        if (argument.startsWith("user_sessions/")) {
-          final Date date = parseDate(argument.subSequence(argument.indexOf("/") + 1, argument.length()));
-          return new DailyMRTable("user_sessions", new MessageFormat("user_sessions/{0,date,yyyyMMdd}"), date, date);
-        }
-        return new FixedMRTable(argument);
-      }
-
-      private Date parseDate(final CharSequence sequence) {
-        final int year = Integer.parseInt(sequence.subSequence(0, 4).toString());
-        final int month = Integer.parseInt(sequence.subSequence(4, 6).toString());
-        final int day = Integer.parseInt(sequence.subSequence(6, 8).toString());
-        final Calendar calendar = Calendar.getInstance();
-        //noinspection MagicConstant
-        calendar.set(year, month - 1, day - 1);
-        return calendar.getTime();
-      }
-    };
-
     return shard(path, RESOLVER.compute(path));
   }
 
-  public boolean execute(final Class<? extends MRRoutine> routineClass, MRState state, final MRTable[] in, final MRTable[] out, final MRErrorsHandler errorsHandler) {
+  @Override
+  public MRTableShard restore(final String path, final long ts, final boolean available, final String crc) {
+    return new MRTableShard(path, this, RESOLVER.compute(path), available, crc);
+  }
+
+  @Override
+  public boolean execute(final Class<? extends MRRoutine> routineClass, final MRState state, final MRTableShard[] in, final MRTableShard[] out,
+                         final MRErrorsHandler errorsHandler)
+  {
     final List<String> options = defaultOptions();
 
     int inputShardsCount = 0;
     int outputShardsCount = 0;
     for(int i = 0; i < in.length; i++) {
-      for (MRTableShard shard : shards(in[i])) {
-        options.add("-src");
-        options.add(shard.path());
-        inputShardsCount++;
-      }
+      options.add("-src");
+      options.add(in[i].path());
+      inputShardsCount++;
     }
     for(int i = 0; i < out.length; i++) {
-      for (MRTableShard shard : shards(out[i])) {
-        options.add("-dst");
-        options.add(shard.path());
-        outputShardsCount++;
-      }
+      options.add("-dst");
+      options.add(out[i].path());
+      outputShardsCount++;
     }
     final String errorsShardName = "tmp/errors-" + Integer.toHexString(new FastRandom().nextInt());
     final MRTableShard errorsShard = shard(errorsShardName, new FixedMRTable(errorsShardName));
@@ -332,8 +315,8 @@ public abstract class YaMREnvBase implements MREnv {
       }
       jarBuilder.setRoutine(routineClass);
       jarBuilder.setState(state);
-      options.add("-file");
       jarFile = jarBuilder.build(this);
+      options.add("-file");
       options.add(jarFile.getAbsolutePath());
     }
 
@@ -380,6 +363,18 @@ public abstract class YaMREnvBase implements MREnv {
     delete(errorsShard);
 
     return errorsCount[0] == 0;
+  }
+
+  public boolean execute(final Class<? extends MRRoutine> routineClass, MRState state, final MRTable[] in, final MRTable[] out, final MRErrorsHandler errorsHandler) {
+    final List<MRTableShard> inputShards = new ArrayList<>();
+    for(int i = 0; i < in.length; i++) {
+      inputShards.addAll(Arrays.asList(shards(in[i])));
+    }
+    final List<MRTableShard> outputShards = new ArrayList<>();
+    for(int i = 0; i < out.length; i++) {
+      inputShards.addAll(Arrays.asList(shards(out[i])));
+    }
+    return execute(MRRoutine.class, state, inputShards.toArray(new MRTableShard[inputShards.size()]), outputShards.toArray(new MRTableShard[outputShards.size()]), errorsHandler);
   }
 
   @Override

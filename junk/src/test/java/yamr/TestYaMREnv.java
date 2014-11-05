@@ -2,6 +2,7 @@ package yamr;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,7 @@ public class TestYaMREnv extends YaMREnvBase {
   }
 
   @Override
-  protected Process runYaMRProcess(final List<String> mrOptions) {
+  protected Process runYaMRProcess(final List<String> mrOptions, final Reader content) {
     try {
       final File input = File.createTempFile("input", ".txt", new File(samplesDir));
       input.deleteOnExit();

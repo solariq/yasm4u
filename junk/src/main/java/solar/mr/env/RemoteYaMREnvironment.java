@@ -1,5 +1,6 @@
 package solar.mr.env;
 
+import javax.annotation.Nullable;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.List;
@@ -24,14 +25,15 @@ public class RemoteYaMREnvironment extends YaMREnvBase {
   }
 
   @Override
-  protected Process runYaMRProcess(final List<String> mrOptions) {
+  protected Process runYaMRProcess(final List<String> mrOptions, @Nullable final Reader content) {
     try {
       final String pid;
       final String remoteOutput;
+      Process process = Runtime.getRuntime().exec("ssh " + proxyHost + " bash -s");
+
       { // Run command
-        final Process sshLink = Runtime.getRuntime().exec("ssh " + proxyHost + " bash -s");
-        final Writer toProxy = new OutputStreamWriter(sshLink.getOutputStream(), Charset.forName("UTF-8"));
-        final LineNumberReader fromProxy = new LineNumberReader(new InputStreamReader(sshLink.getInputStream(), Charset.forName("UTF-8")));
+        final Writer toProxy = new OutputStreamWriter(process.getOutputStream(), Charset.forName("UTF-8"));
+        final LineNumberReader fromProxy = new LineNumberReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF-8")));
 
 //        toProxy.append("export YT_PREFIX=//userdata/;\n");
 //        toProxy.append("export MR_RUNTIME=YT;\n");
@@ -40,7 +42,6 @@ public class RemoteYaMREnvironment extends YaMREnvBase {
 //        System.out.println(fromProxy.readLine());
         File remoteJar = null;
         File jarFile = null;
-
         int index = 0;
         CharSeqBuilder command = new CharSeqBuilder();
         command.append(mrBinaryPath);
@@ -72,36 +73,51 @@ public class RemoteYaMREnvironment extends YaMREnvBase {
               command.append(" ").append(opt);
           }
         }
-        toProxy.append("mktemp --suffix .txt;\n");
-        toProxy.flush();
-        remoteOutput = fromProxy.readLine();
-        StringBuilder finalCommand = new StringBuilder();
-        finalCommand.append("nohup ").append(command).append(" >").append(remoteOutput).append(" 2>&1 & echo $!\n");
-        System.out.println(finalCommand);
-        toProxy.append(finalCommand);
-        toProxy.flush();
-        pid = fromProxy.readLine();
-        toProxy.close();
-        fromProxy.close();
-        System.err.print(StreamTools.readStream(sshLink.getErrorStream()));
-        sshLink.waitFor();
-      }
-      final File tempFile = File.createTempFile("wait", ".sh");
-      //noinspection ResultOfMethodCallIgnored
-      tempFile.delete();
-      tempFile.deleteOnExit();
+        if (content == null) {
+          final StringBuilder finalCommand = new StringBuilder();
+          toProxy.append("mktemp --suffix .txt;\n");
+          toProxy.flush();
+          remoteOutput = fromProxy.readLine();
 
-      final String waitCmd =
-      "result=\"live\";\n"
-    + "while [ \"$?\" != \"0\" -o \"$result\" = \"live\" ]; do\n"
-    + "  sleep 1;\n"
-    + "  result=`ssh "+ proxyHost + " bash -c \"'if kill -0 " + pid + " 2>/dev/null; then echo live; else echo dead; fi'\"`;\n"
-    + "done\n"
-    + "ssh " + proxyHost + " cat " + remoteOutput + ";\n";
-      StreamTools.writeChars(waitCmd, tempFile);
-      final Process exec = Runtime.getRuntime().exec("bash " + tempFile.getAbsolutePath());
-      StreamTools.writeChars(waitCmd, exec.getOutputStream());
-      return exec;
+          finalCommand.append("nohup ").append(command).append(" >").append(remoteOutput).append(" 2>&1 & echo $!\n");
+          System.out.println(finalCommand);
+          toProxy.append(finalCommand);
+          toProxy.flush();
+          pid = fromProxy.readLine();
+          toProxy.close();
+          fromProxy.close();
+          System.err.print(StreamTools.readStream(process.getErrorStream()));
+          process.waitFor();
+          final File tempFile = File.createTempFile("wait", ".sh");
+          //noinspection ResultOfMethodCallIgnored
+          tempFile.delete();
+          tempFile.deleteOnExit();
+
+          final String waitCmd =
+              "result=\"live\";\n"
+              + "while [ \"$?\" != \"0\" -o \"$result\" = \"live\" ]; do\n"
+              + "  sleep 1;\n"
+              + "  result=`ssh " + proxyHost + " bash -c \"'if kill -0 " + pid
+              + " 2>/dev/null; then echo live; else echo dead; fi'\"`;\n"
+              + "done\n"
+              + "ssh " + proxyHost + " cat " + remoteOutput + ";\n";
+          StreamTools.writeChars(waitCmd, tempFile);
+          process = Runtime.getRuntime().exec("bash " + tempFile.getAbsolutePath());
+          StreamTools.writeChars(waitCmd, process.getOutputStream());
+          return process;
+        }
+        else {
+          System.out.println(command);
+          toProxy.append(command).append("\n");
+          toProxy.flush();
+          StreamTools.transferData(content, toProxy);
+          toProxy.close();
+          fromProxy.close();
+          System.err.print(StreamTools.readStream(process.getErrorStream()));
+          process.waitFor();
+          return null;
+        }
+      }
     } catch (IOException | InterruptedException e) {
       throw new RuntimeException(e);
     }

@@ -15,6 +15,7 @@ public interface MRTable {
   boolean available(MREnv env);
   String crc(MREnv env);
   void read(MREnv env, final Processor<CharSequence> sapp);
+  void sample(MREnv env, Processor<CharSequence> proc);
   void sort(MREnv env);
   void delete(MREnv env);
 
@@ -46,6 +47,13 @@ public interface MRTable {
     }
 
     @Override
+    public void sample(final MREnv env, final Processor<CharSequence> proc) {
+      for (MRTableShard shard : env.shards(this)) {
+        env.sample(shard, proc);
+      }
+    }
+
+    @Override
     public void sort(final MREnv env) {
       for (MRTableShard shard : env.shards(this)) {
         env.sort(shard);
@@ -58,5 +66,6 @@ public interface MRTable {
         env.delete(shard);
       }
     }
+
   }
 }

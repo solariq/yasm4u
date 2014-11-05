@@ -15,6 +15,7 @@ import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
 import solar.mr.proc.tags.MRRead;
 import solar.mr.proc.tags.MRReduceMethod;
+import solar.mr.tables.MRTableShard;
 
 /**
 * User: solar
@@ -23,8 +24,8 @@ import solar.mr.proc.tags.MRReduceMethod;
 */
 public class AnnotatedMRProcess extends MRProcessImpl {
   public AnnotatedMRProcess(final Class<?> processDescription, MREnv env) {
-    super(env, processDescription.getName(), processDescription.getAnnotation(MRProcessClass.class).goal());
-    final Method[] methods = getClass().getMethods();
+    super(env, processDescription.getName().replace('$', '.'), processDescription.getAnnotation(MRProcessClass.class).goal());
+    final Method[] methods = processDescription.getMethods();
     for (int i = 0; i < methods.length; i++) {
       final Method current = methods[i];
       final MRMapMethod mapAnn = current.getAnnotation(MRMapMethod.class);
@@ -61,24 +62,30 @@ public class AnnotatedMRProcess extends MRProcessImpl {
 
     @Override
     public boolean run(final MRWhiteboard wb) {
-      final MRTable[] inTables = new MRTable[in.length];
+      final MRTableShard[] inTables = new MRTableShard[in.length];
       for (int i = 0; i < in.length; i++) {
-        String current = in[i];
-        inTables[i] = wb.resolve(current);
+        inTables[i] = wb.resolve(in[i]);
       }
-      final MRTable[] outTables = new MRTable[out.length];
+      final MRTableShard[] outTables = new MRTableShard[out.length];
       for (int i = 0; i < out.length; i++) {
-        String current = out[i];
-        outTables[i] = wb.resolve(current);
+        outTables[i] = wb.resolve(out[i]);
       }
 
       wb.set(MRRunner.ROUTINES_PROPERTY_NAME, Pair.create(method.getDeclaringClass().getName(), method.getName()));
+      try {
+        final MRState state = wb.slice();
+        if (!wb.env().execute(routineClass, state, inTables, outTables, wb.errorsHandler()))
+          return false;
+        for (int i = 0; i < out.length; i++) {
+          wb.refresh(out[i]);
+        }
+      }
+      finally {
+        wb.remove(MRRunner.ROUTINES_PROPERTY_NAME);
+      }
       final MRState state = wb.slice();
-      wb.remove(MRRunner.ROUTINES_PROPERTY_NAME);
-      if (!wb.env().execute(routineClass, state, inTables, outTables, null))
-        return false;
-      for (int i = 0; i < outTables.length; i++) {
-        if (!outTables[i].available(wb.env()))
+      for (int i = 0; i < out.length; i++) {
+        if (state.available(out[i]))
           return false;
       }
       return true;
