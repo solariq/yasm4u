@@ -1,13 +1,13 @@
 package solar.mr;
 
-import com.spbsu.commons.seq.Seq;
+import com.spbsu.commons.func.Processor;
 
 /**
  * User: solar
  * Date: 23.09.14
  * Time: 10:42
  */
-public class FixedMRTable extends Seq.Stub<String> implements MRTable {
+public class FixedMRTable implements MRTable {
   private final String name;
 
   public FixedMRTable(String name) {
@@ -20,24 +20,7 @@ public class FixedMRTable extends Seq.Stub<String> implements MRTable {
   }
 
   @Override
-  public String at(final int i) {
-    if (i >= length())
-      throw new ArrayIndexOutOfBoundsException();
-    return name;
-  }
-
-  @Override
-  public int length() {
-    return 1;
-  }
-
-  @Override
-  public boolean isImmutable() {
-    return true;
-  }
-
-  @Override
-  public Class<String> elementType() {
-    return String.class;
+  public void visitShards(final Processor<String> shardNameProcessor) {
+    shardNameProcessor.process(name);
   }
 }

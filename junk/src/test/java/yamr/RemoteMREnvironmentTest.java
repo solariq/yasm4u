@@ -17,7 +17,7 @@ import static org.junit.Assert.assertTrue;
  * Date: 23.09.14
  * Time: 13:09
  */
-public class RemoteMREnvironmentTest {
+public abstract class RemoteMREnvironmentTest {
   final MREnvironment testEnvironment = new RemoteMREnvironment("dodola", "/Berkanavt/mapreduce/bin/mapreduce-dev");
 
   @Test
@@ -56,7 +56,9 @@ public class RemoteMREnvironmentTest {
     testEnvironment.read(tempTable2, new Processor<CharSequence>() {
       @Override
       public void process(final CharSequence arg) {
-        count[0] = CharSeqTools.parseInt(arg);
+        final CharSequence[] split = CharSeqTools.split(arg, "\t");
+        if (split[0].equals("SAPP"))
+          count[0] = CharSeqTools.parseInt(split[2]);
       }
     });
     testEnvironment.delete(tempTable2);

@@ -4,6 +4,7 @@ import java.util.Calendar;
 import java.util.Date;
 
 
+import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.seq.Seq;
 
 /**
@@ -37,9 +38,11 @@ public class DailyMRTable implements MRTable {
   }
 
   @Override
-  public String at(final int i) {
-    final Calendar instance = dateAt(i);
-    return name() + "/" + instance.get(Calendar.YEAR) + "" + String.format("%02d", instance.get(Calendar.MONTH) + 1) + "" + (instance.get(Calendar.DAY_OF_MONTH) + 1);
+  public void visitShards(final Processor<String> shardNameProcessor) {
+    for (int i = 0; i < length; i++) {
+      final Calendar instance = dateAt(i);
+      shardNameProcessor.process(name() + "/" + instance.get(Calendar.YEAR) + "" + String.format("%02d", instance.get(Calendar.MONTH) + 1) + "" + (instance.get(Calendar.DAY_OF_MONTH) + 1));
+    }
   }
 
   private Calendar dateAt(final int i) {
@@ -49,25 +52,5 @@ public class DailyMRTable implements MRTable {
     if (end.after(instance.getTime()))
       throw new ArrayIndexOutOfBoundsException(i);
     return instance;
-  }
-
-  @Override
-  public Seq<String> sub(final int start, final int end) {
-    return new DailyMRTable(path, dateAt(start).getTime(), dateAt(end).getTime());
-  }
-
-  @Override
-  public int length() {
-    return length;
-  }
-
-  @Override
-  public boolean isImmutable() {
-    return true;
-  }
-
-  @Override
-  public Class<String> elementType() {
-    return String.class;
   }
 }

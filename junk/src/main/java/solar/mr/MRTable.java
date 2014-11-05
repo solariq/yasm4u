@@ -5,6 +5,7 @@ import java.util.Date;
 
 
 import com.spbsu.commons.func.Computable;
+import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.seq.Seq;
 
 /**
@@ -12,8 +13,10 @@ import com.spbsu.commons.seq.Seq;
  * Date: 23.09.14
  * Time: 13:36
  */
-public interface MRTable extends Seq<String> {
+public interface MRTable  {
   String name();
+
+  void visitShards(Processor<String> shardNameProcessor);
 
   Computable<String, MRTable> RESOLVER = new Computable<String, MRTable>() {
     @Override

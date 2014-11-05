@@ -87,10 +87,13 @@ public abstract class MREnvironment {
   public int read(MRTable table, final Processor<CharSequence> linesProcessor) {
     final int[] recordsCount = new int[]{0};
     final List<String> options = defaultOptions();
-    for (int i = 0; i < table.length(); i++) {
-      options.add("-read");
-      options.add(table.at(i));
-    }
+    table.visitShards(new Processor<String>() {
+      @Override
+      public void process(final String arg) {
+        options.add("-read");
+        options.add(arg);
+      }
+    });
     executeCommand(options, new Processor<CharSequence>() {
       @Override
       public void process(final CharSequence arg) {
@@ -101,23 +104,29 @@ public abstract class MREnvironment {
     return recordsCount[0];
   }
 
-  public void delete(final MRTable errorsTable) {
+  public void delete(final MRTable table) {
     final List<String> options = defaultOptions();
 
-    for (int i = 0; i < errorsTable.length(); i++) {
-      options.add("-drop");
-      options.add(errorsTable.at(i));
-      executeCommand(options, outputProcessor, errorsProcessor);
-      options.remove(options.size() - 1);
-    }
+    table.visitShards(new Processor<String>() {
+      @Override
+      public void process(final String arg) {
+        options.add("-drop");
+        options.add(arg);
+        executeCommand(options, outputProcessor, errorsProcessor);
+        options.remove(options.size() - 1);
+      }
+    });
   }
 
   public int head(MRTable table, int count, final Processor<CharSequence> linesProcessor) {
     final List<String> options = defaultOptions();
-    for (int i = 0; i < table.length(); i++) {
-      options.add("-read");
-      options.add(table.at(i));
-    }
+    table.visitShards(new Processor<String>() {
+      @Override
+      public void process(final String arg) {
+        options.add("-read");
+        options.add(arg);
+      }
+    });
     options.add("-count");
     options.add("" + count);
     int[] recordsCount = new int[]{0};
@@ -167,27 +176,40 @@ public abstract class MREnvironment {
     }
 
     final List<String> options = defaultOptions();
-    int inputTablesCount = 0;
     final int outputTablesCount;
+    final int inputTablesCount;
     { // sources/dst
-      int outputTablesCounter = 0;
-      for (int i = 0; i < table.length(); i++) {
-        options.add("-src");
-        options.add(table.at(i));
-        inputTablesCount++;
-      }
+      final int[] inputTablesCounter = new int[]{0};
+      final int[] outputTablesCounter = new int[]{0};
+      table.visitShards(new Processor<String>() {
+        @Override
+        public void process(final String arg) {
+          options.add("-src");
+          options.add(arg);
+          inputTablesCounter[0]++;
+        }
+      });
       for (int i = 0; i < output.length; i++) {
         MRTable mrTable = output[i];
-        for (int j = 0; j < mrTable.length(); j++) {
-          options.add("-dst");
-          options.add(mrTable.at(j));
-          outputTablesCounter++;
-        }
+        mrTable.visitShards(new Processor<String>() {
+          @Override
+          public void process(final String arg) {
+            options.add("-dst");
+            options.add(arg);
+            outputTablesCounter[0]++;
+          }
+        });
       }
-      options.add("-dst");
-      options.add(errorsTable.at(0));
-      outputTablesCounter++;
-      outputTablesCount = outputTablesCounter;
+      errorsTable.visitShards(new Processor<String>() {
+        @Override
+        public void process(final String arg) {
+          options.add("-dst");
+          options.add(arg);
+        }
+      });
+      outputTablesCounter[0]++;
+      outputTablesCount = outputTablesCounter[0];
+      inputTablesCount = inputTablesCounter[0];
     }
 
     final File tempFile;
@@ -290,7 +312,7 @@ public abstract class MREnvironment {
       }) == 0;
     }
     finally {
-//      delete(errorsTable);
+      delete(errorsTable);
     }
   }
 
@@ -351,11 +373,14 @@ public abstract class MREnvironment {
   public void sort(final FixedMRTable table) {
     final List<String> options = defaultOptions();
 
-    for (int i = 0; i < table.length(); i++) {
-      options.add("-sort");
-      options.add(table.at(i));
-      executeCommand(options, outputProcessor, errorsProcessor);
-      options.remove(options.size() - 1);
-    }
+    table.visitShards(new Processor<String>() {
+      @Override
+      public void process(final String arg) {
+        options.add("-sort");
+        options.add(arg);
+        executeCommand(options, outputProcessor, errorsProcessor);
+        options.remove(options.size() - 1);
+      }
+    });
   }
 }
