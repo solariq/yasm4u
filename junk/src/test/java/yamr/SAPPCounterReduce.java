@@ -24,6 +24,6 @@ public class SAPPCounterReduce extends MRReduce {
       reduce.next();
       count++;
     }
-    output.add("SAPP", "", "" + count);
+    output.add("SAPP", "1", "" + count);
   }
 }

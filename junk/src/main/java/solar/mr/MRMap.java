@@ -22,7 +22,7 @@ public abstract class MRMap extends MRRoutine {
     if (split.length < 3)
       output.error("Illegal record", "Contains less then 3 fields", record);
     else
-      map(split[0].toString(), split[1].toString(), new CharSeqComposite(split, 2, split.length));
+      map(split[0].toString(), split[1].toString(), record.subSequence(split[0].length() + split[1].length() + 2));
   }
 
   public abstract void map(String key, String sub, CharSequence value);

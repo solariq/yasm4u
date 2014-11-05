@@ -10,6 +10,7 @@ import java.util.List;
 
 import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
+import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.random.FastRandom;
 import com.spbsu.commons.seq.CharSeqComposite;
 import com.spbsu.commons.seq.CharSeqTools;
@@ -31,11 +32,29 @@ public abstract class MREnvironment {
   private String mrSamplesDir = System.getenv("HOME") + "/.MRSamples";
 
   private Processor<CharSequence> outputProcessor = new Processor<CharSequence>() {
+    String table;
+    String key;
+    String subkey;
+    String value;
     @Override
     public void process(final CharSequence arg) {
+      if (CharSeqTools.startsWith(arg, " table: ")) {
+        table = arg.subSequence(" table: ".length(), arg.length()).toString();
+      }
+      else if (CharSeqTools.startsWith(arg, " key: ")) {
+        key = arg.subSequence(" key: ".length(), arg.length()).toString();
+      }
+      else if (CharSeqTools.startsWith(arg, " subkey: ")) {
+        subkey = arg.subSequence(" subkey: ".length(), arg.length()).toString();
+      }
+      else if (CharSeqTools.startsWith(arg, " value(p): ")) {
+        value = arg.subSequence(" value(p): ".length(), arg.length()).toString();
+        writeSample(table, key, subkey, value);
+      }
       System.out.println(arg);
     }
   };
+
   private Processor<CharSequence> errorsProcessor = new Processor<CharSequence>() {
     @Override
     public void process(final CharSequence arg) {
@@ -116,6 +135,7 @@ public abstract class MREnvironment {
     { // access settings
       options.add("-server");
       options.add(mrServer);
+      options.add("-subkey");
       options.add("-opt");
       options.add("user=" + mrUser);
     }
@@ -124,11 +144,10 @@ public abstract class MREnvironment {
 
   public boolean execute(final Class<? extends MRRoutine> routineClass, final MRTable table, final MRTable... output) {
     final FixedMRTable errorsTable = new FixedMRTable("tmp/errors-" + Integer.toHexString(new FastRandom().nextInt()));
-    final File sampleFileOfType = new File(mrSamplesDir, table.name());
 
+    final File sampleFileOfType = sampleFile(table);
     try {
       if (!sampleFileOfType.exists()) {
-        FileUtils.forceMkdir(sampleFileOfType.getParentFile());
         try (final FileWriter writer = new FileWriter(sampleFileOfType)) {
           head(table, 100, new Processor<CharSequence>() {
             @Override
@@ -174,13 +193,14 @@ public abstract class MREnvironment {
     final File tempFile;
     final PrintStream out = System.out;
     final PrintStream err = System.err;
+    final ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
     try {
       tempFile = File.createTempFile("yamr-routine-", ".jar");
       //noinspection ResultOfMethodCallIgnored
       tempFile.delete();
       tempFile.deleteOnExit();
-      System.setOut(new PrintStream("/dev/null"));
-      System.setErr(new PrintStream("/dev/null"));
+      System.setOut(new PrintStream(outBuffer));
+//      System.setErr(new PrintStream("/dev/null"));
       MRTools.buildClosureJar(MRRunner.class, tempFile.getAbsolutePath(), new Action<Class>() {
         @SuppressWarnings("unchecked")
         @Override
@@ -195,7 +215,6 @@ public abstract class MREnvironment {
           }
         }
       });
-
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -203,6 +222,34 @@ public abstract class MREnvironment {
       System.setOut(out);
       System.setErr(err);
     }
+    try {
+      CharSeqTools.processLines(new InputStreamReader(new ByteArrayInputStream(outBuffer.toByteArray()), Charset.forName("UTF-8")), new Processor<CharSequence>() {
+        boolean isError = false;
+        @Override
+        public void process(final CharSequence arg) {
+          if (CharSeqTools.isNumeric(arg)) {
+            isError = Integer.parseInt(arg.toString()) == outputTablesCount;
+            return;
+          }
+          final CharSequence[] parts = CharSeqTools.split(arg, '\t');
+          if (parts.length < 3) {
+            LOG.error(outBuffer.toString());
+            throw new RuntimeException("Invalid MR output: must contain 3 fields in the row!");
+          }
+          if (isError) {
+            LOG.error(arg.subSequence(parts[0].length() + parts[1].length() + 2, arg.length())); // dump data
+            throw new RuntimeException(
+                parts[0] + "\n" + CharSeqTools.replace(CharSeqTools.replace(parts[1], "\\n", "\n"), "\\t", "\t").toString());
+          } else {
+            System.out.println(arg);
+          }
+        }
+      });
+
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
     try {
       options.add("-file");
       options.add(tempFile.toString());
@@ -212,7 +259,7 @@ public abstract class MREnvironment {
         options.add(inputTablesCount > 1 && inputTablesCount < 10 ? "-reducews" : "-reduce");
       } else
         throw new RuntimeException("Unknown MR routine type");
-      options.add("java -jar " + tempFile.getName() + " " + routineClass.getName() + " " + outputTablesCount);
+      options.add("java -Xmx1G -Xms1G -jar " + tempFile.getName() + " " + routineClass.getName() + " " + outputTablesCount);
       executeCommand(options, outputProcessor, errorsProcessor);
       return read(errorsTable, new Processor<CharSequence>() {
         final FileWriter sampleFileWriter;
@@ -243,8 +290,25 @@ public abstract class MREnvironment {
       }) == 0;
     }
     finally {
-      delete(errorsTable);
+//      delete(errorsTable);
     }
+  }
+
+  private File sampleFile(final MRTable table) {
+    final File sampleFileOfType;
+    try {
+      sampleFileOfType = new File(mrSamplesDir, table.name());
+      if (!sampleFileOfType.getParentFile().exists())
+        FileUtils.forceMkdir(sampleFileOfType.getParentFile());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    return sampleFileOfType;
+  }
+
+  private void writeSample(String tableName, final String key, final String subkey, final String value) {
+    final MRTable table = MRTable.RESOLVER.compute(tableName);
+    StreamTools.appendChars(key + "\t" + subkey + "\t" + value + "\n", sampleFile(table));
   }
 
   private void executeCommand(final List<String> options, final Processor<CharSequence> outputProcessor, final Processor<CharSequence> errorsProcessor) {
@@ -281,6 +345,17 @@ public abstract class MREnvironment {
       errThread.join();
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  public void sort(final FixedMRTable table) {
+    final List<String> options = defaultOptions();
+
+    for (int i = 0; i < table.length(); i++) {
+      options.add("-sort");
+      options.add(table.at(i));
+      executeCommand(options, outputProcessor, errorsProcessor);
+      options.remove(options.size() - 1);
     }
   }
 }

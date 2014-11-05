@@ -74,6 +74,7 @@ public class MRRunner implements Runnable {
     }
     finally {
       out.interrupt();
+      out.join();
     }
   }
 
@@ -82,7 +83,6 @@ public class MRRunner implements Runnable {
         new InputStreamReader(System.in, Charset.forName("UTF-8")),
         new OutputStreamWriter(System.out, Charset.forName("UTF-8")));
     runner.run();
-    runner.out.join();
   }
 
   private static class MyMROutput implements MROutput {
@@ -113,15 +113,31 @@ public class MRRunner implements Runnable {
           }
         }
       }, "MR output thread");
+      outputThread.start();
     }
 
     @Override
     public void add(final String key, final String subkey, final CharSequence value) {
-      push(1, CharSeqTools.concatWithDelimeter("\t", key, subkey, value));
+      add(1, key, subkey, value);
     }
 
     @Override
     public void add(final int tableNo, final String key, final String subkey, final CharSequence value) {
+      if (tableNo > errorTable)
+        throw new IllegalArgumentException("Incorrect table index: " + tableNo);
+      if (tableNo == errorTable)
+        throw new IllegalArgumentException("Errors table #" + tableNo + " must be accessed via error subroutines of outputter");
+      if (key.isEmpty())
+        throw new IllegalArgumentException("Key must be non empty!");
+      if (key.getBytes().length > 4096)
+        throw new IllegalArgumentException("Key must not exceed 4096 byte length!");
+      if (subkey.isEmpty())
+        throw new IllegalArgumentException("Subkey must be non empty");
+      if (subkey.getBytes().length > 4096)
+        throw new IllegalArgumentException("Subkey must not exceed 4096 byte length!");
+      if (CharSeqTools.indexOf(value, "\n") >= 0)
+        throw new IllegalArgumentException("Value can not contain \\n symbols for stream usage");
+
       push(tableNo, CharSeqTools.concatWithDelimeter("\t", key, subkey, value));
     }
 

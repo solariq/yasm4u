@@ -23,8 +23,12 @@ public class SAPPCounterMap extends MRMap {
   public void map(final String key, final String sub, final CharSequence value) {
     final CharSequence[] parts = CharSeqTools.split(value, '\t');
     for (int i = 0; i < parts.length; i++) {
-      if (CharSeqTools.startsWith(parts[i], "reqid=") && CharSeqTools.endsWith(parts[i], "-SAPP"))
-        output.add("SAPP", "", "" + 1);
+      if (CharSeqTools.startsWith(parts[i], "reqid=")) {
+        final CharSequence suffix = parts[i].subSequence(parts[i].toString().lastIndexOf('-') + 1, parts[i].length());
+        if (CharSeqTools.isAlpha(suffix)) {
+          output.add(suffix.toString(), "1", "1");
+        }
+      }
     }
   }
 }

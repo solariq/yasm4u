@@ -3,6 +3,7 @@ package yamr;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -11,14 +12,12 @@ import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.seq.*;
 import com.spbsu.commons.seq.regexp.SimpleRegExp;
+import com.spbsu.commons.util.Pair;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import solar.mr.FixedMRTable;
-import solar.mr.MREnvironment;
-import solar.mr.MRMap;
-import solar.mr.MROutput;
+import solar.mr.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -39,6 +38,7 @@ public class MREnvironmentTest {
     samplesDirTmp.delete();
     FileUtils.forceMkdir(samplesDirTmp);
     testEnvironment.setMRSamplesDir(samplesDirTmp.getAbsolutePath());
+    testEnvironment.setReadEnabled(false);
   }
 
   @After
@@ -56,7 +56,7 @@ public class MREnvironmentTest {
       }
     });
     testEnvironment.execute(MyMap.class, new FixedMRTable("poh/neh"), new FixedMRTable("neh/poh"));
-    final SimpleRegExp regExp = SimpleRegExp.create("java -jar .*yamr-routine-.*jar .*\\$MyMap 2");
+    final SimpleRegExp regExp = SimpleRegExp.create("java -Xmx1G -Xms1G -jar .*yamr-routine-.*jar .*\\$MyMap 2");
 
     final Seq<CharSeq> commands = testEnvironment.commands.build();
     assertTrue(regExp.match(commands.at(commands.length() - 2)));
@@ -104,6 +104,56 @@ public class MREnvironmentTest {
     assertTrue(regExp.match(builder));
   }
 
+  @Test
+  public void testMap() throws Exception {
+    final CharSeqBuilder builder = new CharSeqBuilder();
+    testEnvironment.setOutputProcessor(new Processor<CharSequence>() {
+      @Override
+      public void process(final CharSequence arg) {
+        builder.append(arg).append('\n');
+      }
+    });
+    testEnvironment.execute(MyMapOutput.class, new FixedMRTable("poh/neh"), new FixedMRTable("neh/poh"));
+
+    assertEquals("preved\t1\tmedved\n", builder.toString());
+  }
+
+  @Test
+  public void testReduce1() throws Exception {
+    final CharSeqBuilder builder = new CharSeqBuilder();
+    testEnvironment.setOutputProcessor(new Processor<CharSequence>() {
+      @Override
+      public void process(final CharSequence arg) {
+        builder.append(arg).append('\n');
+      }
+    });
+    testEnvironment.setContent("poh/neh-reduce", "preved\t1\tmedved\n"
+                                                 + "preved\t2\tmedved\n"
+                                                 + "preved\t3\tmedved\n"
+    );
+    testEnvironment.execute(MyReduceCounter.class, new FixedMRTable("poh/neh-reduce"), new FixedMRTable("neh/poh"));
+
+    assertEquals("preved\tcount\t3\n", builder.toString());
+  }
+
+  @Test
+  public void testReduce2() throws Exception {
+    final CharSeqBuilder builder = new CharSeqBuilder();
+    testEnvironment.setOutputProcessor(new Processor<CharSequence>() {
+      @Override
+      public void process(final CharSequence arg) {
+        builder.append(arg).append('\n');
+      }
+    });
+    testEnvironment.setContent("poh/neh-reduce", "preved\t1\tmedved\n"
+                                                 + "preved\t2\tmedved\n"
+                                                 + "preved\t3\tmedved\n"
+                                                 + "nepreved\t1\tmedved\n");
+    testEnvironment.execute(MyReduceCounter.class, new FixedMRTable("poh/neh-reduce"), new FixedMRTable("neh/poh"));
+
+    assertEquals("preved\tcount\t3\nnepreved\tcount\t1\n", builder.toString());
+  }
+
   private static class MyMap extends MRMap {
     public MyMap(final MROutput output) {
       super(output);
@@ -126,6 +176,33 @@ public class MREnvironmentTest {
     }
   }
 
+  private static class MyMapOutput extends MRMap {
+    public MyMapOutput(final MROutput output) {
+      super(output);
+    }
+
+    @Override
+    public void map(final String key, final String sub, final CharSequence value) {
+      output.add("preved", "1", "medved");
+    }
+  }
+
+  private static class MyReduceCounter extends MRReduce {
+    public MyReduceCounter(final MROutput output) {
+      super(output);
+    }
+
+    @Override
+    public void reduce(final String key, final Iterator<Pair<String, CharSequence>> reduce) {
+      int count = 0;
+      while (reduce.hasNext()) {
+        reduce.next();
+        count++;
+      }
+      output.add(key, "count", Integer.toString(count));
+    }
+  }
+
   private static class TestMREnvironment extends MREnvironment {
     private Map<String, String> tableContents = new HashMap<>();
 
@@ -134,6 +211,7 @@ public class MREnvironmentTest {
     }
 
     public SeqBuilder<CharSeq> commands = new ArraySeqBuilder<>(CharSeq.class);
+    private boolean readEnabled;
 
     @Override
     protected Process generateExecCommand(final List<String> mrOptions) {
@@ -158,9 +236,11 @@ public class MREnvironmentTest {
               command += " | " + CharSeqTools.replace(mrOptions.get(index++).replace(jarFile.getName(), jarFile.getAbsolutePath()), "$", "\\$");
               break;
             case "-read": {
-              final String contents = tableContents.get(mrOptions.get(index++));
-              if (contents != null)
-                StreamTools.writeChars(contents, input);
+              if (readEnabled) {
+                final String contents = tableContents.get(mrOptions.get(index++));
+                if (contents != null)
+                  StreamTools.writeChars(contents, input);
+              }
               break;
             }
             case "-count":
@@ -182,6 +262,14 @@ public class MREnvironmentTest {
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
+    }
+
+    public void setContent(final String tableName, final CharSequence content) {
+      tableContents.put(tableName, content.toString());
+    }
+
+    public void setReadEnabled(final boolean readEnabled) {
+      this.readEnabled = readEnabled;
     }
   }
 }

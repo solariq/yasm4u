@@ -47,8 +47,9 @@ public class RemoteMREnvironmentTest {
     final Date end = calendar.getTime();
     final FixedMRTable tempTable1 = new FixedMRTable("tmp/sapp-counter");
     final FixedMRTable tempTable2 = new FixedMRTable("tmp/sapp-counter-result");
-    testEnvironment.setMRServer("kant.yt.yandex.net:80");
+//    testEnvironment.setMRServer("kant.yt.yandex.net:80");
     testEnvironment.execute(SAPPCounterMap.class, new DailyMRTable("user_sessions", start, end), tempTable1);
+    testEnvironment.sort(tempTable1);
     testEnvironment.execute(SAPPCounterReduce.class, tempTable1, tempTable2);
     testEnvironment.delete(tempTable1);
     final int[] count = new int[]{0};

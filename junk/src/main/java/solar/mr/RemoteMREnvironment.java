@@ -85,10 +85,19 @@ public class RemoteMREnvironment extends MREnvironment {
         System.err.print(StreamTools.readStream(sshLink.getErrorStream()));
         sshLink.waitFor();
       }
+      final File tempFile = File.createTempFile("wait", ".sh");
+      tempFile.delete();
+      tempFile.deleteOnExit();
 
       final String waitCmd =
-          "while ssh " + proxyHost + " 'kill -0 " + pid + " 2>/dev/null'; do sleep 1; done; ssh " + proxyHost + " cat " + remoteOutput + ";";
-      final Process exec = Runtime.getRuntime().exec("bash -s");
+      "result=\"live\";\n"
+    + "while [ \"$?\" != \"0\" -o \"$result\" = \"live\" ]; do\n"
+    + "  sleep 1;\n"
+    + "  result=`ssh "+ proxyHost + " bash -c \"'if kill -0 " + pid + " 2>/dev/null; then echo live; else echo dead; fi'\"`;\n"
+    + "done\n"
+    + "ssh " + proxyHost + " cat " + remoteOutput + ";\n";
+      StreamTools.writeChars(waitCmd, tempFile);
+      final Process exec = Runtime.getRuntime().exec("bash " + tempFile.getAbsolutePath());
       StreamTools.writeChars(waitCmd, exec.getOutputStream());
       return exec;
     } catch (IOException | InterruptedException e) {
