@@ -76,12 +76,12 @@ public class MRProcTest {
   }
 
   @MRProcessClass(goal = "var:result")
-  public static class FailAtRandom {
+  public static class FailAtRandomMap {
     private final MRState state;
     private final Random rng = new FastRandom();
     int index = 0;
 
-    public FailAtRandom(MRState state) {
+    public FailAtRandomMap(MRState state) {
       this.state = state;
     }
 
@@ -90,6 +90,33 @@ public class MRProcTest {
       if (index > state.<Integer>get("var:delay"))
         throw new RuntimeException("Preved s clustera");
       index++;
+    }
+
+
+    @MRRead(input = "temp:mr:///dev-null", output = "var:result")
+    public int poh(Iterator<CharSequence> line) {
+      return 0;
+    }
+  }
+
+  @MRProcessClass(goal = "var:result")
+  public static class FailAtRandomReduce {
+    private final MRState state;
+    private final Random rng = new FastRandom();
+    int index = 0;
+
+    public FailAtRandomReduce(MRState state) {
+      this.state = state;
+    }
+
+    @MRReduceMethod(input = {"mr:///user_sessions/{var:date,date,yyyyMMdd}", "var:delay"}, output = "temp:mr:///dev-null")
+    public void reduce(final String key, final Iterator<Pair<String, CharSequence>> reduce, MROutput output) {
+      while (reduce.hasNext()) {
+        reduce.next();
+        if (index > state.<Integer>get("var:delay"))
+          throw new RuntimeException("Preved s clustera");
+        index++;
+      }
     }
 
 
@@ -112,13 +139,25 @@ public class MRProcTest {
   }
 
   @Test
-  public void testException() {
+  public void testExceptionMap() {
     final ProcessRunner runner = new SSHProcessRunner("dodola", "/Berkanavt/mapreduce/bin/mapreduce-dev");
     final MREnv env = new YaMREnv(runner, "mobilesearch", "cedar:8013");
-    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(FailAtRandom.class, env);
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(FailAtRandomReduce.class, env);
     mrProcess.wb().wipe();
     mrProcess.wb().set("var:date", new Date(2014-1900, 8, 1));
     mrProcess.wb().set("var:delay", 10000);
+    int count = mrProcess.<Integer>result();
+    Assert.assertEquals(0, count);
+    mrProcess.wb().wipe();
+  }
+  @Test
+  public void testExceptionReduce() {
+    final ProcessRunner runner = new SSHProcessRunner("dodola", "/Berkanavt/mapreduce/bin/mapreduce-dev");
+    final MREnv env = new YaMREnv(runner, "mobilesearch", "cedar:8013");
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(FailAtRandomReduce.class, env);
+    mrProcess.wb().wipe();
+    mrProcess.wb().set("var:date", new Date(2014-1900, 8, 1));
+    mrProcess.wb().set("var:delay", 1000);
     int count = mrProcess.<Integer>result();
     Assert.assertEquals(0, count);
     mrProcess.wb().wipe();

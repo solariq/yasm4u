@@ -25,7 +25,7 @@ import solar.mr.tables.MRTableShard;
  */
 public class LocalMREnv implements MREnv {
   public static final String DEFAULT_HOME = System.getenv("HOME") + "/.MRSamples";
-  private final String home;
+  private final File home;
 
   public static LocalMREnv createTemp() {
     try {
@@ -39,7 +39,15 @@ public class LocalMREnv implements MREnv {
     }
   }
   public LocalMREnv(final String home) {
-    this.home = home;
+    this.home = new File(home);
+    if (!this.home.isDirectory())
+      this.home.delete();
+    if (!this.home.exists())
+      try {
+        FileUtils.forceMkdir(this.home);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
   }
 
   public LocalMREnv() {
@@ -65,6 +73,7 @@ public class LocalMREnv implements MREnv {
     final List<Writer> outputs = new ArrayList<>();
     final List<String> inputNames = new ArrayList<>(in.length);
     final List<File> inputFiles = new ArrayList<>(in.length);
+    final boolean hasErrors[] = new boolean[]{false};
 
     try {
       final Constructor<? extends MRRoutine> constructor = exec.getConstructor(String[].class, MROutput.class, MRState.class);
@@ -79,11 +88,13 @@ public class LocalMREnv implements MREnv {
       final MRRoutine routine = constructor.newInstance(inputNames.toArray(new String[inputNames.size()]), new MROutputImpl(outputs.toArray(new Writer[outputs.size()]), new MRErrorsHandler() {
         @Override
         public void error(final String type, final String cause, final String table, final CharSequence record) {
+          hasErrors[0] = true;
           throw new RuntimeException(table + "\t" + record + "\n\t" + type + "\t" + cause + "\t");
         }
 
         @Override
         public void error(final Throwable th, final String table, final CharSequence record) {
+          hasErrors[0] = true;
           throw new RuntimeException(table + "\t" + record, th);
         }
       }), state);
@@ -105,7 +116,7 @@ public class LocalMREnv implements MREnv {
         }
       }
     }
-    return true;
+    return !hasErrors[0];
   }
 
   @Override
@@ -162,7 +173,11 @@ public class LocalMREnv implements MREnv {
     final LocalMRTableShard localShard = (LocalMRTableShard) shard;
     try {
       FileUtils.forceMkdir(((LocalMRTableShard) shard).file().getParentFile());
-      StreamTools.transferData(content, new FileWriter(localShard.file(), true));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    try (final Writer out = new FileWriter(localShard.file(), true)) {
+      StreamTools.transferData(content, out);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -217,11 +232,11 @@ public class LocalMREnv implements MREnv {
 
   @Override
   public String name() {
-    return "LocalMR://" + home;
+    return "LocalMR://" + home.getAbsolutePath();
   }
 
   public String home() {
-    return home;
+    return home.getAbsolutePath();
   }
 
   public class LocalMRTableShard extends MRTableShard {

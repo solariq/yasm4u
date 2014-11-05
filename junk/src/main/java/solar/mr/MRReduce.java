@@ -24,6 +24,7 @@ public abstract class MRReduce extends MRRoutine {
     super(inputTables, output, state);
     reduceThread = new Thread(new Runnable() {
       private Record record;
+      private Record lastRetrieved;
       @Override
       public void run() {
         while (true) {
@@ -55,6 +56,7 @@ public abstract class MRReduce extends MRRoutine {
                   throw new NoSuchElementException();
                 final Record current = record;
                 record = null;
+                lastRetrieved = current;
                 return new Pair<>(current.sub, current.value);
               }
 
@@ -66,8 +68,8 @@ public abstract class MRReduce extends MRRoutine {
             try {
               reduce(key, reduceIterator);
             } catch (Exception e) {
-              if (record != null)
-                output.error(e, currentTable(), record.toString());
+              if (lastRetrieved != null)
+                output.error(e, currentTable(), lastRetrieved.toString());
               interrupt();
               break;
             }
