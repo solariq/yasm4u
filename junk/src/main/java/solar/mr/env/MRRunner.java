@@ -19,6 +19,7 @@ import com.spbsu.commons.util.Pair;
 import solar.mr.MROutput;
 import solar.mr.MRRoutine;
 import solar.mr.MRTable;
+import solar.mr.RuntimeInterruptedException;
 import solar.mr.proc.MRState;
 
 /**
@@ -96,7 +97,9 @@ public class MRRunner implements Runnable {
 
       CharSeqTools.processLines(in, instance);
       instance.process(CharSeq.EMPTY);
-    } catch (IOException | InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
+    } catch (RuntimeInterruptedException e) {
+      // skip
+    } catch (InvocationTargetException | NoSuchMethodException | InstantiationException | IOException | IllegalAccessException e) {
       throw new RuntimeException(e);
     } finally {
       out.interrupt();

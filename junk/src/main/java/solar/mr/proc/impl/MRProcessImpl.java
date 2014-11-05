@@ -9,7 +9,7 @@ import com.spbsu.commons.seq.CharSeqReader;
 import solar.mr.MREnv;
 import solar.mr.MRErrorsHandler;
 import solar.mr.env.LocalMREnv;
-import solar.mr.env.YaMREnvBase;
+import solar.mr.env.YaMREnv;
 import solar.mr.proc.MRJoba;
 import solar.mr.proc.MRProcess;
 import solar.mr.proc.MRState;
@@ -25,12 +25,31 @@ public class MRProcessImpl implements MRProcess {
   private final String name;
   private final String goal;
   private final List<MRJoba> jobs = new ArrayList<>();
-  private final MRWhiteboard prod;
+  private final MRWhiteboardImpl prod;
+  private final LocalMREnv cache = new LocalMREnv();
+  private final MRWhiteboard test;
 
   public MRProcessImpl(MREnv env, final String name, final String goal) {
     this.name = name;
     this.goal = goal;
     prod = new MRWhiteboardImpl(env, name, System.getenv("USER"));
+    test = new MRWhiteboardImpl(cache, name() + "/" + prod.env().name(), System.getenv("USER"), null);
+    prod.setErrorsHandler(new MRErrorsHandler() {
+      @Override
+      public void error(final String type, final String cause, final String table, final CharSequence record) {
+        cache.append(cache.resolve(table), new CharSeqReader(record));
+      }
+
+      @Override
+      public void error(final Throwable th, final String table, final CharSequence record) {
+        cache.append(cache.resolve(table), new CharSeqReader(record));
+      }
+    });
+    if (prod.env() instanceof YaMREnv) {
+      ((YaMREnv)prod.env()).getJarBuilder().setLocalEnv(cache);
+    }
+
+    prod.connect(test);
   }
 
   public String name() {
@@ -44,22 +63,6 @@ public class MRProcessImpl implements MRProcess {
 
   @Override
   public MRState execute() {
-    final LocalMREnv cache = new LocalMREnv();
-    final MRWhiteboard test = new MRWhiteboardImpl(cache, name() + "/" + prod.env().name(), System.getenv("USER"), null);
-    prod.setErrorsHandler(new MRErrorsHandler() {
-      @Override
-      public void error(final String type, final String cause, final String table, final CharSequence record) {
-        cache.append(cache.resolve(table), new CharSeqReader(record));
-      }
-
-      @Override
-      public void error(final Throwable th, final String table, final CharSequence record) {
-        cache.append(cache.resolve(table), new CharSeqReader(record));
-      }
-    });
-    if (prod.env() instanceof YaMREnvBase) {
-      ((YaMREnvBase)prod.env()).getJarBuilder().setLocalEnv(cache);
-    }
     {
       final MRState state = prod.snapshot();
       for (final String resourceName : state.available()) {
@@ -77,7 +80,6 @@ public class MRProcessImpl implements MRProcess {
       bannedResources.addAll(Arrays.asList(jobs.get(j).produces()));
       neededResources.addAll(Arrays.asList(jobs.get(j).consumes()));
     }
-    MRState currentTestWB = test.snapshot();
     neededResources.removeAll(bannedResources);
     for (String resourceName : neededResources) {
       if (test.check(resourceName))
@@ -98,6 +100,7 @@ public class MRProcessImpl implements MRProcess {
         test.env().write(table, new CharSeqReader(builder));
       }
     }
+    MRState currentTestWB = test.snapshot();
     while (currentTestWB.get(goal) == null || bannedResources.contains(goal)) {
       MRState next = currentTestWB;
       for (int i = 0; i < jobs.size(); i++) {
@@ -141,6 +144,7 @@ public class MRProcessImpl implements MRProcess {
           }
         }
         if (needToRunProd) {
+          System.out.println("Starting joba " + mrJoba.toString() + " at " + prod.env().name());
           if (!mrJoba.run(prod))
             throw new RuntimeException("MR job failed at production: " + mrJoba.toString());
         }

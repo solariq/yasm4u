@@ -68,6 +68,8 @@ public abstract class MRReduce extends MRRoutine {
             } catch (Exception e) {
               if (record != null)
                 output.error(e, currentTable(), record.toString());
+              interrupt();
+              break;
             }
             while (reduceIterator.hasNext())
               reduceIterator.next();
@@ -89,6 +91,7 @@ public abstract class MRReduce extends MRRoutine {
 
   @Override
   protected final void onEndOfInput() {
+    super.onEndOfInput();
     try {
       recordsQueue.add(EOF);
       reduceThread.interrupt();

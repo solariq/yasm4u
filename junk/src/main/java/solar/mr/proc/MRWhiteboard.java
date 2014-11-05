@@ -19,7 +19,7 @@ public interface MRWhiteboard {
   boolean check(String resource);
   boolean checkAll(String[] productName);
 
-  void clear();
+  void wipe();
   MREnv env();
   SerializationRepository marshaling();
   MRState snapshot();

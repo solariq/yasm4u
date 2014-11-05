@@ -31,7 +31,7 @@ public class MROutputImpl implements MROutput {
     outputThread = new Thread(new Runnable() {
       @Override
       public void run() {
-        int lastActiveTable = 1;
+        int lastActiveTable = 0;
         try {
           try {
             //noinspection InfiniteLoopStatement

@@ -1,6 +1,8 @@
 package solar.mr.proc.impl;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 
 import com.spbsu.commons.util.Pair;
@@ -61,19 +63,24 @@ public class AnnotatedMRProcess extends MRProcessImpl {
 
     @Override
     public boolean run(final MRWhiteboard wb) {
-      final MRTableShard[] inTables = new MRTableShard[in.length];
+      final List<MRTableShard> inTables = new ArrayList<>();
       for (int i = 0; i < in.length; i++) {
-        inTables[i] = wb.resolve(in[i]);
+        final Object resolve = wb.resolve(in[i]);
+        if (resolve instanceof MRTableShard)
+          inTables.add((MRTableShard) resolve);
       }
       final MRTableShard[] outTables = new MRTableShard[out.length];
       for (int i = 0; i < out.length; i++) {
-        outTables[i] = wb.resolve(out[i]);
+        final Object resolve = wb.resolve(out[i]);
+        if (resolve instanceof MRTableShard)
+          outTables[i] = (MRTableShard)resolve;
+        else throw new RuntimeException("MR routine can produce only MR table tresources");
       }
 
       wb.set(MRRunner.ROUTINES_PROPERTY_NAME, Pair.create(method.getDeclaringClass().getName(), method.getName()));
       try {
         final MRState state = wb.snapshot();
-        if (!wb.env().execute(routineClass, state, inTables, outTables, wb.errorsHandler()))
+        if (!wb.env().execute(routineClass, state, inTables.toArray(new MRTableShard[inTables.size()]), outTables, wb.errorsHandler()))
           return false;
         for (int i = 0; i < out.length; i++) {
           wb.refresh(out[i]);

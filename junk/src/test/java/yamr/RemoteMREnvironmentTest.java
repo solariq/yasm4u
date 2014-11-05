@@ -9,7 +9,8 @@ import com.spbsu.commons.seq.*;
 import com.spbsu.commons.seq.regexp.SimpleRegExp;
 import org.junit.Test;
 import solar.mr.*;
-import solar.mr.env.RemoteYaMREnvironment;
+import solar.mr.env.SSHProcessRunner;
+import solar.mr.env.YaMREnv;
 import solar.mr.proc.impl.MRStateImpl;
 import solar.mr.tables.DailyMRTable;
 import solar.mr.tables.FixedMRTable;
@@ -23,7 +24,7 @@ import static org.junit.Assert.assertTrue;
  * Time: 13:09
  */
 public abstract class RemoteMREnvironmentTest {
-  final MREnv testEnvironment = new RemoteYaMREnvironment("dodola", "/Berkanavt/mapreduce/bin/mapreduce-dev", "cedar:8013", "mobilesearch");
+  final MREnv testEnvironment = new YaMREnv(new SSHProcessRunner("dodola", "/Berkanavt/mapreduce/bin/mapreduce-dev"), "cedar:8013", "mobilesearch");
 
   @Test
   public void testUserSessionsHead() throws Exception {

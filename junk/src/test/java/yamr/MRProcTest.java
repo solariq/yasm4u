@@ -1,10 +1,11 @@
 package yamr;
 
-import java.io.File;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.Random;
 
 
+import com.spbsu.commons.random.FastRandom;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.Pair;
 import org.junit.Assert;
@@ -12,8 +13,9 @@ import org.junit.Test;
 import solar.mr.MREnv;
 import solar.mr.MROutput;
 import solar.mr.env.LocalMREnv;
-import solar.mr.MRTable;
-import solar.mr.env.RemoteYaMREnvironment;
+import solar.mr.env.ProcessRunner;
+import solar.mr.env.SSHProcessRunner;
+import solar.mr.env.YaMREnv;
 import solar.mr.proc.MRState;
 import solar.mr.proc.MRWhiteboard;
 import solar.mr.proc.impl.AnnotatedMRProcess;
@@ -73,14 +75,53 @@ public class MRProcTest {
     }
   }
 
+  @MRProcessClass(goal = "var:result")
+  public static class FailAtRandom {
+    private final MRState state;
+    private final Random rng = new FastRandom();
+    int index = 0;
+
+    public FailAtRandom(MRState state) {
+      this.state = state;
+    }
+
+    @MRMapMethod(input = {"mr:///user_sessions/{var:date,date,yyyyMMdd}", "var:delay"}, output = "temp:mr:///dev-null")
+    public void map(final String key, final String sub, final CharSequence value, MROutput output) {
+      if (index > state.<Integer>get("var:delay"))
+        throw new RuntimeException("Preved s clustera");
+      index++;
+    }
+
+
+    @MRRead(input = "temp:mr:///dev-null", output = "var:result")
+    public int poh(Iterator<CharSequence> line) {
+      return 0;
+    }
+  }
+
+
   @Test
   public void testProcCreate() {
-    final MREnv env = new RemoteYaMREnvironment("dodola", "/Berkanavt/mapreduce/bin/mapreduce-dev", "cedar:8013", "mobilesearch");
+    final ProcessRunner runner = new SSHProcessRunner("dodola", "/Berkanavt/mapreduce/bin/mapreduce-dev");
+    final MREnv env = new YaMREnv(runner, "mobilesearch", "cedar:8013");
     final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SAPPCounter.class, env);
     mrProcess.wb().set("var:date", new Date(2014-1900, 8, 1));
     int count = mrProcess.<Integer>result();
     Assert.assertEquals(2611709, count);
-    mrProcess.wb().clear();
+    mrProcess.wb().wipe();
+  }
+
+  @Test
+  public void testException() {
+    final ProcessRunner runner = new SSHProcessRunner("dodola", "/Berkanavt/mapreduce/bin/mapreduce-dev");
+    final MREnv env = new YaMREnv(runner, "mobilesearch", "cedar:8013");
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(FailAtRandom.class, env);
+    mrProcess.wb().wipe();
+    mrProcess.wb().set("var:date", new Date(2014-1900, 8, 1));
+    mrProcess.wb().set("var:delay", 10000);
+    int count = mrProcess.<Integer>result();
+    Assert.assertEquals(0, count);
+    mrProcess.wb().wipe();
   }
 
   @Test

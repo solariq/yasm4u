@@ -34,6 +34,7 @@ public class MRWhiteboardImpl implements MRWhiteboard {
   private final Random rng = new FastRandom();
   private MRErrorsHandler errorsHandler;
   private SerializationRepository<CharSequence> marshaling;
+  private MRWhiteboard connected;
 
   public MRWhiteboardImpl(final MREnv env, final String id, final String user) {
     this(env, id, user, new MRErrorsHandler() {
@@ -193,12 +194,19 @@ public class MRWhiteboardImpl implements MRWhiteboard {
   }
 
   @Override
-  public void clear() {
+  public void wipe() {
     for (String resourceName : state.available()) {
       final Object resource = state.get(resourceName);
       if (resourceName.startsWith("temp:") && resource instanceof MRTableShard) {
         env.delete((MRTableShard)resource);
       }
     }
+    env.delete(myShard);
+    if (connected != null)
+      connected.wipe();
+  }
+
+  public void connect(final MRWhiteboard test) {
+    connected = test;
   }
 }

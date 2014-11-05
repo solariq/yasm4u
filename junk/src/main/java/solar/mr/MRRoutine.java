@@ -16,6 +16,7 @@ public abstract class MRRoutine implements Processor<CharSequence>, Action<MRRou
   private final MRState state;
   private final String[] inputTables;
   private int currentInputIndex = 0;
+  private boolean interrupted = false;
 
   public MRRoutine(String[] inputTables, MROutput output, MRState state) {
     this.inputTables = inputTables;
@@ -25,18 +26,30 @@ public abstract class MRRoutine implements Processor<CharSequence>, Action<MRRou
 
   @Override
   public final void process(final CharSequence record) {
+
     if (record == CharSeq.EMPTY) {
       onEndOfInput();
-      return;
     }
-    final CharSequence[] split = CharSeqTools.split(record, '\t');
-    if (split.length == 1) // switch table record
-      currentInputIndex = CharSeqTools.parseInt(split[0]);
-    else if (split.length < 3)
-      output.error("Illegal record", "Contains less then 3 fields", inputTables[currentInputIndex], record);
-    else
-      invoke(new Record(currentTable(), split[0].toString(), split[1].toString(), record.subSequence(split[0].length() + split[1].length() + 2, record.length())));
+    if (interrupted) // this is trash and ugar but we need to read entire stream before closing it, so that YaMR won't gone mad
+      return;
+    try {
+      final CharSequence[] split = CharSeqTools.split(record, '\t');
+      if (split.length == 1) // switch table record
+        currentInputIndex = CharSeqTools.parseInt(split[0]);
+      else if (split.length < 3)
+        output.error("Illegal record", "Contains less then 3 fields", inputTables[currentInputIndex], record);
+      else
+        invoke(new Record(currentTable(), split[0].toString(), split[1].toString(), record.subSequence(
+            split[0].length() + split[1].length() + 2, record.length())));
+    }
+    catch (Exception e) {
+      output.error(e, currentTable(), record);
+      interrupt();
+    }
+  }
 
+  protected void interrupt() {
+    interrupted = true;
   }
 
   protected void onEndOfInput() {}
