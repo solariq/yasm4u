@@ -32,7 +32,7 @@ public class MRWhiteboardImpl implements MRWhiteboard {
   private final MRStateImpl state = new MRStateImpl();
   private final MRTableShard myShard;
   private final Random rng = new FastRandom();
-  private final MRErrorsHandler errorsHandler;
+  private MRErrorsHandler errorsHandler;
   private SerializationRepository<CharSequence> marshaling;
 
   public MRWhiteboardImpl(final MREnv env, final String id, final String user) {
@@ -140,6 +140,11 @@ public class MRWhiteboardImpl implements MRWhiteboard {
   }
 
   @Override
+  public void setErrorsHandler(final MRErrorsHandler errorsHandler) {
+    this.errorsHandler = errorsHandler;
+  }
+
+  @Override
   public SerializationRepository marshaling() {
     return marshaling;
   }
@@ -163,7 +168,7 @@ public class MRWhiteboardImpl implements MRWhiteboard {
   }
 
   @Override
-  public MRState slice() {
+  public MRState snapshot() {
     return new MRStateImpl(state);
   }
 

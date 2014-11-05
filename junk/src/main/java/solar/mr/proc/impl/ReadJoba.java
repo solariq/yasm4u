@@ -10,7 +10,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.seq.CharSeqTools;
-import solar.mr.MRTable;
 import solar.mr.proc.MRJoba;
 import solar.mr.proc.MRState;
 import solar.mr.proc.MRWhiteboard;
@@ -33,7 +32,7 @@ class ReadJoba implements MRJoba {
 
   @Override
   public boolean run(final MRWhiteboard wb) {
-    final MRState state = wb.slice();
+    final MRState state = wb.snapshot();
     final MRTableShard shard = state.get(readAnn.input());
     final ArrayBlockingQueue<CharSequence> seqs = new ArrayBlockingQueue<>(1000);
     final Thread readTh = new Thread(){

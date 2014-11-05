@@ -107,6 +107,6 @@ public class TestYaMREnv extends YaMREnvBase {
 
   public void execute(final Class<? extends MRRoutine> routineClass, final MRTable input, final MRTable output) {
     final MRWhiteboardImpl wb = new MRWhiteboardImpl(this, "test", "test");
-    execute(routineClass, wb.slice(), new MRTable[]{input}, new MRTable[]{output}, null);
+    execute(routineClass, wb.snapshot(), new MRTable[]{input}, new MRTable[]{output}, null);
   }
 }

@@ -8,9 +8,7 @@ import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqReader;
 import solar.mr.MREnv;
 import solar.mr.MRErrorsHandler;
-import solar.mr.MRTable;
 import solar.mr.env.LocalMREnv;
-import solar.mr.env.RemoteYaMREnvironment;
 import solar.mr.env.YaMREnvBase;
 import solar.mr.proc.MRJoba;
 import solar.mr.proc.MRProcess;
@@ -47,23 +45,29 @@ public class MRProcessImpl implements MRProcess {
   @Override
   public MRState execute() {
     final LocalMREnv cache = new LocalMREnv();
-    final MRWhiteboard test = new MRWhiteboardImpl(cache, name() + "/" + prod.env().name(), System.getenv("USER"), new MRErrorsHandler() {
+    final MRWhiteboard test = new MRWhiteboardImpl(cache, name() + "/" + prod.env().name(), System.getenv("USER"), null);
+    prod.setErrorsHandler(new MRErrorsHandler() {
       @Override
       public void error(final String type, final String cause, final String table, final CharSequence record) {
         cache.append(cache.resolve(table), new CharSeqReader(record));
       }
+
       @Override
       public void error(final Throwable th, final String table, final CharSequence record) {
         cache.append(cache.resolve(table), new CharSeqReader(record));
       }
     });
+    if (prod.env() instanceof YaMREnvBase) {
+      ((YaMREnvBase)prod.env()).getJarBuilder().setLocalEnv(cache);
+    }
     {
-      final MRState state = prod.slice();
+      final MRState state = prod.snapshot();
       for (final String resourceName : state.available()) {
         final Object resource = state.get(resourceName);
         // TODO: this logic is not enough here, we need to avoid setting stuff that could be produced. For this we need analyse dependencies graph
-        if (!(resource instanceof MRTableShard))
+        if (!(resource instanceof MRTableShard)) {
           test.set(resourceName, resource);
+        }
       }
     }
     // at start banning all producible resources
@@ -73,11 +77,8 @@ public class MRProcessImpl implements MRProcess {
       bannedResources.addAll(Arrays.asList(jobs.get(j).produces()));
       neededResources.addAll(Arrays.asList(jobs.get(j).consumes()));
     }
-    MRState current = test.slice();
+    MRState currentTestWB = test.snapshot();
     neededResources.removeAll(bannedResources);
-    if (prod.env() instanceof YaMREnvBase) {
-      ((YaMREnvBase)prod.env()).getJarBuilder().setLocalEnv(cache);
-    }
     for (String resourceName : neededResources) {
       if (test.check(resourceName))
         continue;
@@ -97,11 +98,11 @@ public class MRProcessImpl implements MRProcess {
         test.env().write(table, new CharSeqReader(builder));
       }
     }
-    while (current.get(goal) == null || bannedResources.contains(goal)) {
-      MRState next = current;
+    while (currentTestWB.get(goal) == null || bannedResources.contains(goal)) {
+      MRState next = currentTestWB;
       for (int i = 0; i < jobs.size(); i++) {
         final MRJoba mrJoba = jobs.get(i);
-        boolean consumesAvailable = true;
+        boolean consumesAvailable = currentTestWB.availableAll(mrJoba.consumes());
         for (String resource : mrJoba.consumes()) {
           if (bannedResources.contains(resource))
             consumesAvailable = false;
@@ -110,7 +111,7 @@ public class MRProcessImpl implements MRProcess {
           continue;
         boolean producesAvailable = true;
         for (String resource : mrJoba.produces()) {
-          producesAvailable &= current.available(resource) && !bannedResources.contains(resource);
+          producesAvailable &= currentTestWB.available(resource) && !bannedResources.contains(resource);
         }
 
         if (producesAvailable)
@@ -127,6 +128,8 @@ public class MRProcessImpl implements MRProcess {
         }
         if (!mrJoba.run(test))
           throw new RuntimeException("MR job failed in test environment: " + mrJoba.toString());
+        next = test.snapshot();
+
         // checking what have been produced
         for (final String productName : mrJoba.produces()) {
           if (!next.available(productName))
@@ -144,9 +147,8 @@ public class MRProcessImpl implements MRProcess {
         else {
           System.out.println("Fast forwarding joba: " + mrJoba.toString());
         }
-        next = test.slice();
       }
-      if (current.equals(next)) {
+      if (currentTestWB.equals(next)) {
         final StringBuilder message = new StringBuilder();
         message.append("MRProcess execution has stuck. ");
 
@@ -172,9 +174,9 @@ public class MRProcessImpl implements MRProcess {
 
         throw new RuntimeException(message.toString());
       }
-      current = next;
+      currentTestWB = next;
     }
-    return prod.slice();
+    return prod.snapshot();
   }
 
   public void addJob(MRJoba job) {

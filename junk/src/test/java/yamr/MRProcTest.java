@@ -79,7 +79,7 @@ public class MRProcTest {
     final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SAPPCounter.class, env);
     mrProcess.wb().set("var:date", new Date(2014-1900, 8, 1));
     int count = mrProcess.<Integer>result();
-    Assert.assertEquals(246573, count);
+    Assert.assertEquals(2611709, count);
     mrProcess.wb().clear();
   }
 

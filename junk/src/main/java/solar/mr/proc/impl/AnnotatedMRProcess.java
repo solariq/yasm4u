@@ -6,7 +6,6 @@ import java.lang.reflect.Method;
 import com.spbsu.commons.util.Pair;
 import solar.mr.MREnv;
 import solar.mr.MRRoutine;
-import solar.mr.MRTable;
 import solar.mr.env.MRRunner;
 import solar.mr.proc.MRJoba;
 import solar.mr.proc.MRState;
@@ -73,7 +72,7 @@ public class AnnotatedMRProcess extends MRProcessImpl {
 
       wb.set(MRRunner.ROUTINES_PROPERTY_NAME, Pair.create(method.getDeclaringClass().getName(), method.getName()));
       try {
-        final MRState state = wb.slice();
+        final MRState state = wb.snapshot();
         if (!wb.env().execute(routineClass, state, inTables, outTables, wb.errorsHandler()))
           return false;
         for (int i = 0; i < out.length; i++) {
@@ -83,7 +82,7 @@ public class AnnotatedMRProcess extends MRProcessImpl {
       finally {
         wb.remove(MRRunner.ROUTINES_PROPERTY_NAME);
       }
-      final MRState state = wb.slice();
+      final MRState state = wb.snapshot();
       for (int i = 0; i < out.length; i++) {
         if (!state.available(out[i]))
           return false;

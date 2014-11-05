@@ -21,8 +21,9 @@ public interface MRWhiteboard {
 
   void clear();
   MREnv env();
-  MRErrorsHandler errorsHandler();
   SerializationRepository marshaling();
+  MRState snapshot();
 
-  MRState slice();
+  MRErrorsHandler errorsHandler();
+  void setErrorsHandler(MRErrorsHandler errorsHandler);
 }
