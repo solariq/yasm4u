@@ -1,0 +1,26 @@
+/.idea/*
+!.idea/runConfigurations
+!.idea/inspectionProfiles
+!.idea/codeStyleSettings.xml
+!.idea/projectCodeStyle.xml
+!.idea/vcs.xml
+!.idea/sqldialects.xml
+*.iml
+*.ipr
+*.iws
+
+# binaries
+*.jar
+*.war
+*.ear
+*.class
+
+# temporaries
+.emacs.*
+**~
+
+# os specific
+.DS_store
+
+# minamoto's logs
+.log*
