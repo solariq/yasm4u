@@ -174,7 +174,7 @@ public class MRProcessImpl implements MRProcess {
       }
       current = next;
     }
-    return current;
+    return prod.slice();
   }
 
   public void addJob(MRJoba job) {
