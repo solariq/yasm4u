@@ -11,19 +11,19 @@ import solar.mr.MRErrorsHandler;
  * Time: 10:23
  */
 public interface MRWhiteboard {
-  /** This method assigns real resource to the resource name and resolves variables inside uri*/
+  /** This method assigns real resource to the resource name and resolves variables inside uri */
   <T> T refresh(final String uri);
   <T> T resolve(final String uri);
   <T> void set(String var, T data);
   void remove(String var);
-  boolean check(String resource);
-  boolean checkAll(String[] productName);
+  boolean check(String... productName);
 
   void wipe();
   MREnv env();
-  SerializationRepository marshaling();
-  MRState snapshot();
 
+  // to ext
+  MRState snapshot();
+  SerializationRepository marshaling();
   MRErrorsHandler errorsHandler();
   void setErrorsHandler(MRErrorsHandler errorsHandler);
 }

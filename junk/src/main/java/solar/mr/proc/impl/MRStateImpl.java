@@ -63,7 +63,7 @@ public class MRStateImpl implements MRState, Serializable {
   }
 
   @Override
-  public boolean availableAll(final String[] consumes) {
+  public boolean available(final String... consumes) {
     for (int i = 0; i < consumes.length; i++) {
       if (!available(consumes[i]))
         return false;
@@ -71,8 +71,7 @@ public class MRStateImpl implements MRState, Serializable {
     return true;
   }
 
-  @Override
-  public boolean available(final String consumes) {
+  private boolean available(final String consumes) {
     final String key = resolveVars(consumes);
     if (!state.containsKey(key))
       return false;

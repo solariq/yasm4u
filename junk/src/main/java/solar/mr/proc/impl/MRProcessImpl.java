@@ -106,7 +106,7 @@ public class MRProcessImpl implements MRProcess {
       MRState next = currentTestWB;
       for (int i = 0; i < jobs.size(); i++) {
         final MRJoba mrJoba = jobs.get(i);
-        boolean consumesAvailable = currentTestWB.availableAll(mrJoba.consumes());
+        boolean consumesAvailable = currentTestWB.available(mrJoba.consumes());
         for (String resource : mrJoba.consumes()) {
           if (bannedResources.contains(resource))
             consumesAvailable = false;
@@ -120,7 +120,7 @@ public class MRProcessImpl implements MRProcess {
 
         if (producesAvailable)
           continue;
-        boolean needToRunProd = !prod.checkAll(mrJoba.produces());
+        boolean needToRunProd = !prod.check(mrJoba.produces());
 
         final Map<String, String> crcs = new HashMap<>();
         for (final String productName : mrJoba.produces()) {

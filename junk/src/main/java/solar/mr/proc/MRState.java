@@ -21,7 +21,6 @@ public interface MRState extends Serializable {
   @Nullable
   <T> T get(String uri);
 
-  boolean availableAll(String[] consumes);
-  boolean available(String consumes);
+  boolean available(String... consumes);
   String[] available();
 }
