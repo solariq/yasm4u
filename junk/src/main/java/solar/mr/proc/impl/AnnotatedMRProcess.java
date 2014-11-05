@@ -100,5 +100,10 @@ public class AnnotatedMRProcess extends MRProcessImpl {
     public String[] produces() {
       return out;
     }
+
+    @Override
+    public String toString() {
+      return "Annotated method routine: " + method.getDeclaringClass().getName() + " " + method.getName();
+    }
   }
 }

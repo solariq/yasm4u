@@ -80,13 +80,15 @@ public class RemoteYaMREnvironment extends YaMREnvBase {
           remoteOutput = fromProxy.readLine();
 
           finalCommand.append("nohup ").append(command).append(" >").append(remoteOutput).append(" 2>&1 & echo $!\n");
-          System.out.println(finalCommand);
+//          System.out.println(finalCommand);
           toProxy.append(finalCommand);
           toProxy.flush();
           pid = fromProxy.readLine();
           toProxy.close();
           fromProxy.close();
-          System.err.print(StreamTools.readStream(process.getErrorStream()));
+          final CharSequence errors = StreamTools.readStream(process.getErrorStream());
+          if (errors.length() > 1)
+            System.err.print(errors);
           process.waitFor();
           final File tempFile = File.createTempFile("wait", ".sh");
           //noinspection ResultOfMethodCallIgnored
@@ -107,13 +109,15 @@ public class RemoteYaMREnvironment extends YaMREnvBase {
           return process;
         }
         else {
-          System.out.println(command);
+//          System.out.println(command);
           toProxy.append(command).append("\n");
           toProxy.flush();
           StreamTools.transferData(content, toProxy);
           toProxy.close();
           fromProxy.close();
-          System.err.print(StreamTools.readStream(process.getErrorStream()));
+          final CharSequence errors = StreamTools.readStream(process.getErrorStream());
+          if (errors.length() > 1)
+            System.err.print(errors);
           process.waitFor();
           return null;
         }

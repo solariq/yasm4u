@@ -175,7 +175,7 @@ public class MRWhiteboardImpl implements MRWhiteboard {
       final MRTableShard currentShard = env.resolve(knownShard.path());
       return knownShard.isAvailable() && currentShard.isAvailable() && currentShard.crc().equals(knownShard.crc());
     }
-    return true;
+    return resolve != null;
   }
 
   @Override

@@ -1,5 +1,6 @@
 package solar.mr.proc.impl;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Iterator;
@@ -8,6 +9,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 
 
 import com.spbsu.commons.func.Processor;
+import com.spbsu.commons.seq.CharSeqTools;
 import solar.mr.MRTable;
 import solar.mr.proc.MRJoba;
 import solar.mr.proc.MRState;
@@ -32,35 +34,37 @@ class ReadJoba implements MRJoba {
   @Override
   public boolean run(final MRWhiteboard wb) {
     final MRState state = wb.slice();
-    final MRTable input = state.get(readAnn.input());
+    final MRTableShard shard = state.get(readAnn.input());
     final ArrayBlockingQueue<CharSequence> seqs = new ArrayBlockingQueue<>(1000);
     final Thread readTh = new Thread(){
       @Override
       public void run() {
         try {
-          for (MRTableShard shard : wb.env().shards(input)) {
-            wb.env().read(shard, new Processor<CharSequence>() {
-              @Override
-              public void process(final CharSequence arg) {
-                try {
-                  seqs.put(arg);
-                } catch (InterruptedException e) {
-                  throw new RuntimeException(e);
-                }
+          wb.env().read(shard, new Processor<CharSequence>() {
+            @Override
+            public void process(final CharSequence arg) {
+              try {
+                seqs.put(arg);
+              } catch (InterruptedException e) {
+                throw new RuntimeException(e);
               }
-            });
-          }
+            }
+          });
+          seqs.put(CharSeqTools.EMPTY);
         }
         catch (RuntimeException re) {
           if (re.getCause() instanceof InterruptedException)
             return;
           throw re;
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
         }
       }
     };
     readTh.start();
     try {
-      wb.set(readAnn.output(), method.invoke(new Iterator<CharSequence>() {
+      final Constructor<?> constructor = method.getDeclaringClass().getConstructor(MRState.class);
+      wb.set(readAnn.output(), method.invoke(constructor.newInstance(state), new Iterator<CharSequence>() {
         CharSequence next = null;
         boolean needs2wait = true;
 
@@ -69,6 +73,10 @@ class ReadJoba implements MRJoba {
           if (next == null && needs2wait) {
             try {
               next = seqs.take();
+              if (next == CharSeqTools.EMPTY) {
+                needs2wait = false;
+                next = null;
+              }
             } catch (InterruptedException e) {
               needs2wait = false;
             }
@@ -80,7 +88,9 @@ class ReadJoba implements MRJoba {
         public CharSequence next() {
           if (!hasNext())
             throw new NoSuchElementException();
-          return next;
+          final CharSequence result = next;
+          next = null;
+          return result;
         }
 
         @Override
@@ -88,7 +98,7 @@ class ReadJoba implements MRJoba {
           throw new UnsupportedOperationException();
         }
       }));
-    } catch (IllegalAccessException | InvocationTargetException e) {
+    } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | InstantiationException e) {
       throw new RuntimeException(e);
     }
     try {
