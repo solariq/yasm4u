@@ -9,6 +9,7 @@ import java.util.*;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.random.FastRandom;
+import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqReader;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.system.RuntimeUtils;
@@ -85,7 +86,7 @@ public class LocalMREnv implements MREnv {
         outputs.add(new FileWriter(((LocalMRTableShard) out[i]).file()));
       }
 
-      final MRRoutine routine = constructor.newInstance(inputNames.toArray(new String[inputNames.size()]), new MROutputImpl(outputs.toArray(new Writer[outputs.size()]), new MRErrorsHandler() {
+      final MROutputImpl mrOutput = new MROutputImpl(outputs.toArray(new Writer[outputs.size()]), new MRErrorsHandler() {
         @Override
         public void error(final String type, final String cause, final String table, final CharSequence record) {
           hasErrors[0] = true;
@@ -97,24 +98,19 @@ public class LocalMREnv implements MREnv {
           hasErrors[0] = true;
           throw new RuntimeException(table + "\t" + record, th);
         }
-      }), state);
+      });
+      final MRRoutine routine = constructor.newInstance(inputNames.toArray(new String[inputNames.size()]), mrOutput, state);
 
       for (int i = 0; i < inputFiles.size(); i++) {
         final File file = inputFiles.get(i);
         CharSeqTools.processLines(new FileReader(file), routine);
       }
+      routine.process(CharSeq.EMPTY);
 
+      mrOutput.interrupt();
+      mrOutput.join();
     } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException | IOException e) {
       throw new RuntimeException(e);
-    }
-    finally {
-      for (int i = 0; i < outputs.size(); i++) {
-        try {
-          outputs.get(i).close();
-        } catch (IOException e) {
-          // skip
-        }
-      }
     }
     return !hasErrors[0];
   }

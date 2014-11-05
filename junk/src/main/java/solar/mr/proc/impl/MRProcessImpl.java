@@ -89,7 +89,7 @@ public class MRProcessImpl implements MRProcess {
       if (resource instanceof MRTableShard) {
         final CharSeqBuilder builder = new CharSeqBuilder();
         final MRTableShard table = (MRTableShard) resource;
-        final MRTableShard prodShard = prod.resolve(resourceName);
+        final MRTableShard prodShard = prod.refresh(resourceName);
         if (!prodShard.isAvailable())
           throw new RuntimeException("Resource is not available at production: " + resourceName + " as " + prodShard.toString());
         prod.env().sample(prodShard, new Processor<CharSequence>() {

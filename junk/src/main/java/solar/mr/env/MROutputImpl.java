@@ -61,7 +61,7 @@ public class MROutputImpl implements MROutput {
 
   public MROutputImpl(final Writer[] out, final MRErrorsHandler errorsHandler) {
     this.errorsHandler = errorsHandler;
-    errorTable = out.length - 1;
+    errorTable = out.length;
     outputThread = new Thread(new Runnable() {
       @Override
       public void run() {
@@ -70,7 +70,7 @@ public class MROutputImpl implements MROutput {
           try {
             Pair<Integer, CharSequence> next;
             while ((next = queue.take()) != MRRunner.STOP) {
-              out[next.getFirst()].append(next.getFirst().toString()).append('\n');
+              out[next.getFirst()].append(next.getSecond().toString()).append('\n');
             }
           }
           finally {

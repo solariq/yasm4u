@@ -237,8 +237,9 @@ public class YaMREnv implements MREnv {
       final CharSeq build = builder.build();
       JsonParser parser = JSONTools.parseJSON(build);
       ObjectMapper mapper = new ObjectMapper();
-      assert JsonToken.START_ARRAY.equals(parser.nextToken());
       JsonToken next = parser.nextToken();
+      assert JsonToken.START_ARRAY.equals(next);
+      next = parser.nextToken();
       while (!JsonToken.END_ARRAY.equals(next)) {
         final JsonNode metaJSON = mapper.readTree(parser);
         final JsonNode nameNode = metaJSON.get("name");
@@ -359,6 +360,8 @@ public class YaMREnv implements MREnv {
       public void invoke(final MRRoutine.Record record) {
         CharSequence[] parts = CharSeqTools.split(record.value, '\t', new CharSequence[2]);
         errorsHandler.error(record.key, record.sub, parts[0].toString(), parts[1]);
+        System.err.println(record.value);
+        System.err.println(record.key + "\t" + record.sub.replace("\\n", "\n"));
       }
     });
     delete(errorsShard);

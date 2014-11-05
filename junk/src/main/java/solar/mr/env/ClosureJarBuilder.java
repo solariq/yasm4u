@@ -74,6 +74,12 @@ public class ClosureJarBuilder {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+    finally {
+      resourcesMap.clear();
+      input.clear();
+      output.clear();
+      routine = null;
+    }
     return tempFile;
   }
 

@@ -26,10 +26,11 @@ public abstract class MRRoutine implements Processor<CharSequence>, Action<MRRou
 
   @Override
   public final void process(final CharSequence record) {
-
-    if (record == CharSeq.EMPTY) {
+    if (record == CharSeq.EMPTY)
       onEndOfInput();
-    }
+    if (record.length() == 0)
+      return;
+
     if (interrupted) // this is trash and ugar but we need to read entire stream before closing it, so that YaMR won't gone mad
       return;
     try {
