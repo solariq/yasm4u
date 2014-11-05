@@ -198,6 +198,26 @@ public abstract class YaMREnvBase implements MREnv {
   }
 
 
+//        {
+//            "name": "user_sessions/20130901/yandex_staff",
+//            "user": "userdata",
+//            "chunks": 3,
+//            "records": 61756,
+//            "size": 280079420,
+//            "full_size": 281067516,
+//            "byte_size": 281067516,
+//            "disk_size": 60832775,
+//            "sorted": 1,
+//            "write_locked": 1,
+//            "mod_time": 1388675067,
+//            "atime": 1388675067,
+//            "creat_time": 1388675067,
+//            "creat_transaction": "dbf2a388-2e7f4968-9997cded-41903667",
+//            "replicas": 0,
+//            "compression_algo": "zlib",
+//            "block_format": "none"
+//        }
+  /* TODO: lazy initialization of isAvailable and crc */
   private MRTableShard shard(String shardName, final MRTable owner) {
     final List<String> options = defaultOptions();
     if (shardName.startsWith("/"))
@@ -220,25 +240,6 @@ public abstract class YaMREnvBase implements MREnv {
       assert JsonToken.START_ARRAY.equals(parser.nextToken());
       JsonToken next = parser.nextToken();
       while (!JsonToken.END_ARRAY.equals(next)) {
-//        {
-//            "name": "user_sessions/20130901/yandex_staff",
-//            "user": "userdata",
-//            "chunks": 3,
-//            "records": 61756,
-//            "size": 280079420,
-//            "full_size": 281067516,
-//            "byte_size": 281067516,
-//            "disk_size": 60832775,
-//            "sorted": 1,
-//            "write_locked": 1,
-//            "mod_time": 1388675067,
-//            "atime": 1388675067,
-//            "creat_time": 1388675067,
-//            "creat_transaction": "dbf2a388-2e7f4968-9997cded-41903667",
-//            "replicas": 0,
-//            "compression_algo": "zlib",
-//            "block_format": "none"
-//        }
         final JsonNode metaJSON = mapper.readTree(parser);
         final JsonNode nameNode = metaJSON.get("name");
         if (nameNode != null && !nameNode.isMissingNode() && shardName.equals(nameNode.textValue())) {
@@ -315,7 +316,7 @@ public abstract class YaMREnvBase implements MREnv {
       }
       jarBuilder.setRoutine(routineClass);
       jarBuilder.setState(state);
-      jarFile = jarBuilder.build(this);
+      jarFile = jarBuilder.build();
       options.add("-file");
       options.add(jarFile.getAbsolutePath());
     }
@@ -385,5 +386,9 @@ public abstract class YaMREnvBase implements MREnv {
   @Override
   public String name() {
     return "YaMR://" + master + "/";
+  }
+
+  public ClosureJarBuilder getJarBuilder() {
+    return jarBuilder;
   }
 }

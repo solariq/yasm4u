@@ -94,7 +94,7 @@ public class MRTools {
             @SuppressWarnings("PrimitiveArrayArgumentToVariableArgMethod")
             final byte[] content = resourcesMap.get(charArrConstructor.newInstance(name.toCharArray()));
             if (content != null) {
-              return new URL("jar", "localhost", -1, name, new URLStreamHandler() {
+              return new URL("jar", "localhost", -1, "/" + name, new URLStreamHandler() {
                 @Override
                 protected URLConnection openConnection(final URL u) throws IOException {
                   return new FileURLConnection(u, new File("/dev/null")) {
@@ -135,16 +135,25 @@ public class MRTools {
         classLoader.loadClass(new String(needLoading.iterator().next()));
       }
 
+      for (Map.Entry<String, byte[]> entry : resourcesMap.entrySet()) {
+        final String resourceName = entry.getKey();
+        file.putNextEntry(new JarEntry(resourceName));
+        file.write(entry.getValue());
+        file.closeEntry();
+      }
+
       for (Iterator<String> iterator = resources.iterator(); iterator.hasNext(); ) {
         final String resourceName = new String(iterator.next().toCharArray());
         final URL resource = parent.findResource(resourceName);
         if (resource != null) {
           file.putNextEntry(new JarEntry(resourceName));
           StreamTools.transferData(resource.openStream(), file);
+          file.closeEntry();
         }
         else
           LOG.warn("Requested resource was not found in current classpath: " + resourceName);
       }
+      file.close();
     } catch (ClassNotFoundException e) {
       throw new RuntimeException(e);
     } catch (NoSuchMethodException e) {

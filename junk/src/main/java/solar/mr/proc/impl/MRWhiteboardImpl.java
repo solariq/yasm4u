@@ -69,13 +69,16 @@ public class MRWhiteboardImpl implements MRWhiteboard {
     this.user = user;
     myShard = env.resolve("temp/" + user + "/state/" + id);
     env.read(myShard, new Processor<CharSequence>() {
-      private CharSequence[] buf = new CharSequence[3];
-
       @Override
       public void process(final CharSequence arg) {
-        CharSequence[] parts = CharSeqTools.split(arg, '\t', buf);
+        if (arg.length() == 0)
+          return;
+        CharSequence[] parts = CharSeqTools.split(arg, '\t');
         try {
-          state.state.put(parts[0].toString(), marshaling.read(parts[2], Class.forName(parts[1].toString())));
+          if (parts[1].length() > 0)
+            state.state.put(parts[0].toString(), marshaling.read(parts[2], Class.forName(parts[1].toString())));
+          else
+            state.state.remove(parts[0].toString());
         } catch (ClassNotFoundException e) {
           throw new RuntimeException(e);
         }
@@ -145,8 +148,6 @@ public class MRWhiteboardImpl implements MRWhiteboard {
   public <T> void set(final String uri, final T data) {
     if (data.equals(state.state.get(uri)))
       return;
-//    if (state.state.containsKey(uri))
-//      throw new IllegalArgumentException("Resource named " + uri + " already set to " + state.get(uri));
     final Class<?> dataClass = data.getClass();
     final TypeConverter<T, CharSequence> converter = (TypeConverter<T, CharSequence>)marshaling.base.converter(dataClass, CharSequence.class);
     final Class[] typeParameters = RuntimeUtils.findTypeParameters(converter.getClass(), TypeConverter.class);
@@ -158,6 +159,7 @@ public class MRWhiteboardImpl implements MRWhiteboard {
   @Override
   public void remove(final String var) {
     state.state.remove(var);
+    env.append(myShard, new CharSeqReader(var + "\t\n"));
   }
 
   @Override

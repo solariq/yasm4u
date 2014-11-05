@@ -90,7 +90,7 @@ public class MROutputImpl implements MROutput {
 
   @Override
   public void add(final String key, final String subkey, final CharSequence value) {
-    add(1, key, subkey, value);
+    add(0, key, subkey, value);
   }
 
   @Override

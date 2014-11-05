@@ -6,11 +6,12 @@ import java.util.*;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqReader;
-import com.spbsu.commons.system.RuntimeUtils;
 import solar.mr.MREnv;
 import solar.mr.MRErrorsHandler;
 import solar.mr.MRTable;
 import solar.mr.env.LocalMREnv;
+import solar.mr.env.RemoteYaMREnvironment;
+import solar.mr.env.YaMREnvBase;
 import solar.mr.proc.MRJoba;
 import solar.mr.proc.MRProcess;
 import solar.mr.proc.MRState;
@@ -74,10 +75,13 @@ public class MRProcessImpl implements MRProcess {
     }
     MRState current = test.slice();
     neededResources.removeAll(bannedResources);
+    if (prod.env() instanceof YaMREnvBase) {
+      ((YaMREnvBase)prod.env()).getJarBuilder().setLocalEnv(cache);
+    }
     for (String resourceName : neededResources) {
-      if (current.available(resourceName))
+      if (test.check(resourceName))
         continue;
-      final Object resource = test.resolve(resourceName);
+      final Object resource = test.refresh(resourceName);
       if (resource instanceof MRTableShard) {
         final CharSeqBuilder builder = new CharSeqBuilder();
         final MRTableShard table = (MRTableShard) resource;
@@ -97,52 +101,49 @@ public class MRProcessImpl implements MRProcess {
       MRState next = current;
       for (int i = 0; i < jobs.size(); i++) {
         final MRJoba mrJoba = jobs.get(i);
-        if (current.availableAll(mrJoba.produces()))
-          continue;
-        boolean consumesBanned = false;
+        boolean consumesAvailable = true;
         for (String resource : mrJoba.consumes()) {
           if (bannedResources.contains(resource))
-            consumesBanned = true;
+            consumesAvailable = false;
         }
-        if (consumesBanned)
+        if (!consumesAvailable)
           continue;
-        boolean producesBanned = false;
+        boolean producesAvailable = true;
         for (String resource : mrJoba.produces()) {
-          if (bannedResources.contains(resource))
-            producesBanned = true;
+          producesAvailable &= !current.available(resource) && !bannedResources.contains(resource);
         }
 
-        if (producesBanned || !current.availableAll(mrJoba.produces())) {
-          boolean needToRunProd = prod.checkAll(mrJoba.produces());
+        if (!producesAvailable) {
+          boolean needToRunProd = !prod.checkAll(mrJoba.produces());
 
-          if (!needToRunProd) { // performing a test run
-            final Map<String, String> crcs = new HashMap<>();
-            for (final String productName : mrJoba.produces()) {
-              final Object product = test.resolve(productName);
-              if (product instanceof MRTable) {
-                final MRTable productTable = (MRTable) product;
-                crcs.put(productTable.name(), productTable.crc(test.env()));
-              }
+          final Map<String, String> crcs = new HashMap<>();
+          for (final String productName : mrJoba.produces()) {
+            final Object product = test.resolve(productName);
+            if (product instanceof MRTableShard) {
+              final MRTableShard productTable = (MRTableShard) product;
+              crcs.put(productName, productTable.isAvailable() ? productTable.crc() : "");
             }
-            if (!mrJoba.run(test))
-              throw new RuntimeException("MR job failed in test environment: " + mrJoba.toString());
-            // checking what have been produced
-            for (final String productName : mrJoba.produces()) {
-              if (!next.available(productName))
-                throw new RuntimeException("MR job " + mrJoba.toString() + " failed to produce resource " + productName);
-              bannedResources.remove(productName);
-              final Object product = test.refresh(productName);
-              if (product instanceof MRTable) {
-                if (!((MRTable)product).crc(test.env()).equals(crcs.get(productName))) {
-                  needToRunProd = true;
-                }
-              }
+          }
+          if (!mrJoba.run(test))
+            throw new RuntimeException("MR job failed in test environment: " + mrJoba.toString());
+          // checking what have been produced
+          for (final String productName : mrJoba.produces()) {
+            if (!next.available(productName))
+              throw new RuntimeException("MR job " + mrJoba.toString() + " failed to produce resource " + productName);
+            bannedResources.remove(productName);
+            final Object product = test.refresh(productName);
+            if (product instanceof MRTableShard) {
+              needToRunProd |= !((MRTableShard)product).crc().equals(crcs.get(productName));
             }
-            next = test.slice();
           }
-          if (needToRunProd && !mrJoba.run(prod)) {
-            throw new RuntimeException("MR job failed at production: " + mrJoba.toString());
+          if (needToRunProd) {
+            if (!mrJoba.run(prod))
+              throw new RuntimeException("MR job failed at production: " + mrJoba.toString());
           }
+          else {
+            System.out.println("Fast forwarding joba: " + mrJoba.toString());
+          }
+          next = test.slice();
         }
       }
       if (current.equals(next)) {

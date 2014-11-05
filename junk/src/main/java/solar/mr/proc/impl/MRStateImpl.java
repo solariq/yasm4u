@@ -25,7 +25,7 @@ import solar.mr.tables.MRTableShard;
  */
 public class MRStateImpl implements MRState, Serializable {
   // never ever use this variable out of impl package!!!!!!!!
-  final Map<String, Object> state = new HashMap<>();
+  Map<String, Object> state = new HashMap<>();
 
   public MRStateImpl() {}
 
@@ -43,7 +43,7 @@ public class MRStateImpl implements MRState, Serializable {
     return (T)state.get(resolveVars(uri));
   }
 
-  private final Pattern varPattern = Pattern.compile("\\{([^\\},]+)([^\\}]+)\\}");
+  private static final Pattern varPattern = Pattern.compile("\\{([^\\},]+)([^\\}]+)\\}");
   String resolveVars(String resource) {
     final Matcher matcher = varPattern.matcher(resource);
     final StringBuffer format = new StringBuffer();
@@ -93,27 +93,29 @@ public class MRStateImpl implements MRState, Serializable {
   }
 
   private void writeObject(ObjectOutputStream out) throws IOException {
-    out.writeInt(available().length);
     for(int i = 0; i < available().length; i++) {
       final String current = available()[i];
       final Object instance = get(current);
       assert instance != null;
       final SerializationRepository<CharSequence> serialization = MRState.SERIALIZATION;
-      final TypeConverter<?, CharSequence> converter = serialization.base.converter(instance.getClass(), CharSequence.class);
+      final TypeConverter<CharSequence, ?> converter = serialization.base.converter(CharSequence.class, instance.getClass());
       if (converter != null && !new ClassFilter<TypeConverter>(Action.class, MRWhiteboard.class).accept(converter)) {
+        out.writeBoolean(true);
         out.writeUTF(current);
         out.writeUTF(instance.getClass().getName());
         out.writeUTF(serialization.write(instance).toString());
       }
     }
+    out.writeBoolean(false);
   }
 
   private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-    final int count = in.readInt();
-    for (int i = 0; i < count; i++) {
+    while(in.readBoolean()) {
       final String current = in.readUTF();
       final String itemClass = in.readUTF();
       final Object read = MRState.SERIALIZATION.read(in.readUTF(), Class.forName(itemClass));
+      if (state == null)
+        state = new HashMap<>();
       state.put(current, read);
     }
   }

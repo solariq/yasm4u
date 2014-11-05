@@ -3,15 +3,14 @@ package solar.mr.env;
 import java.io.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 
 import com.spbsu.commons.func.Action;
-import solar.mr.MREnv;
 import solar.mr.MRRoutine;
-import solar.mr.MRTable;
 import solar.mr.MRTools;
 import solar.mr.proc.MRState;
 import solar.mr.tables.MRTableShard;
@@ -22,7 +21,7 @@ import solar.mr.tables.MRTableShard;
  * Time: 11:18
  */
 public class ClosureJarBuilder {
-  private final String localMRHome;
+  private String localMRHome;
   private Class<? extends MRRoutine> routine;
   private final List<MRTableShard> input = new ArrayList<>();
   private final List<MRTableShard> output = new ArrayList<>();
@@ -32,7 +31,7 @@ public class ClosureJarBuilder {
     this.localMRHome = localMRHome;
   }
 
-  public File build(MREnv targetEnv) {
+  public File build() {
     final File tempFile;
     try {
       tempFile = File.createTempFile("yamr-routine-", ".jar");
@@ -40,7 +39,6 @@ public class ClosureJarBuilder {
       tempFile.delete();
       tempFile.deleteOnExit();
 
-      final LocalMREnv sampleEnv = new LocalMREnv(localMRHome);
       final char[][] inTables = new char[input.size()][];
       final char[][] outTables = new char[output.size()][];
       {
@@ -49,35 +47,25 @@ public class ClosureJarBuilder {
         for (int i = 0; i < input.size(); i++) {
           final MRTableShard shard = input.get(i);
           tablesOut.println(MRRunner.AccessType.READ.toString() + "\t" + shard.path());
-          inTables[i] = sampleEnv.shards(shard.owner())[0].path().toCharArray();
+          inTables[i] = shard.path().toCharArray();
         }
 
         for (int i = 0; i < output.size(); i++) {
           final MRTableShard shard = output.get(i);
           tablesOut.println(MRRunner.AccessType.WRITE.toString() + "\t" + shard.path());
-          outTables[i] = sampleEnv.shards(shard.owner())[0].path().toCharArray();
+          outTables[i] = shard.path().toCharArray();
         }
         addResource(MRRunner.TABLES_RESOURCE_NAME, tablesDump.toByteArray());
       }
       MRTools.buildClosureJar(MRRunner.class, tempFile.getAbsolutePath(), new Action<Class>() {
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({"PrimitiveArrayArgumentToVariableArgMethod", "unchecked"})
         @Override
         public void invoke(final Class loadedClass) {
-          final LocalMREnv sampleEnv = new LocalMREnv(new String(localMRHome.toCharArray()));
-          final Constructor<MRRunner> constructor;
           try {
-            constructor = loadedClass.getConstructor(char[].class);
-            @SuppressWarnings("PrimitiveArrayArgumentToVariableArgMethod")
-            final MRRunner instance = constructor.newInstance(routine.getName().toCharArray());
-            final MRTable[] input = new MRTable[ClosureJarBuilder.this.input.size()];
-            final MRTable[] output = new MRTable[ClosureJarBuilder.this.output.size()];
-            for (int i = 0; i < input.length; i++) {
-              input[i] = sampleEnv.resolve(new String(inTables[i])).owner();
-            }
-            for (int i = 0; i < output.length; i++) {
-              output[i] = sampleEnv.resolve(new String(outTables[i])).owner();
-            }
-            sampleEnv.execute(instance.routine(), instance.state(), input, output, null);
+            Constructor constructor = loadedClass.getConstructor(char[].class);
+            Object runner = constructor.newInstance(routine.getName().toCharArray());
+            final Method runLocally = loadedClass.getMethod("runLocally", char[].class, char[][].class, char[][].class);
+            runLocally.invoke(runner, localMRHome.toCharArray(), inTables, outTables);
           } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
             throw new RuntimeException(e);
           }
@@ -90,11 +78,11 @@ public class ClosureJarBuilder {
   }
 
   public void addOutput(final MRTableShard mrTable) {
-    input.add(mrTable);
+    output.add(mrTable);
   }
 
   public void addInput(final MRTableShard mrTable) {
-    output.add(mrTable);
+    input.add(mrTable);
   }
 
   public void setRoutine(final Class<? extends MRRoutine> routine) {
@@ -106,6 +94,7 @@ public class ClosureJarBuilder {
       final ByteArrayOutputStream out = new ByteArrayOutputStream();
       final ObjectOutputStream oos = new ObjectOutputStream(out);
       oos.writeObject(state);
+      oos.close();
       addResource(MRRunner.STATE_RESOURCE_NAME, out.toByteArray());
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -113,5 +102,9 @@ public class ClosureJarBuilder {
   }
   public void addResource(final String name, final byte[] content) {
     resourcesMap.put(name, content);
+  }
+
+  public void setLocalEnv(final LocalMREnv localEnv) {
+    localMRHome = localEnv.home();
   }
 }

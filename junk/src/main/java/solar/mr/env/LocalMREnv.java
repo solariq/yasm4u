@@ -53,9 +53,9 @@ public class LocalMREnv implements MREnv {
     }
     final List<MRTableShard> outputShards = new ArrayList<>();
     for(int i = 0; i < out.length; i++) {
-      inputShards.addAll(Arrays.asList(shards(out[i])));
+      outputShards.addAll(Arrays.asList(shards(out[i])));
     }
-    return execute(MRRoutine.class, state, inputShards.toArray(new MRTableShard[inputShards.size()]), outputShards.toArray(new MRTableShard[outputShards.size()]), errorsHandler);
+    return execute(routineClass, state, inputShards.toArray(new MRTableShard[inputShards.size()]), outputShards.toArray(new MRTableShard[outputShards.size()]), errorsHandler);
   }
 
   @Override
@@ -115,13 +115,7 @@ public class LocalMREnv implements MREnv {
 
   @Override
   public LocalMRTableShard[] shards(final MRTable table) {
-    final File tableFile = new File(home, table.name());
-    try {
-      FileUtils.forceMkdir(tableFile.getParentFile());
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    return new LocalMRTableShard[]{new LocalMRTableShard(table.name(), table, tableFile)};
+    return new LocalMRTableShard[]{resolve(table.name())};
   }
 
   @Override
@@ -224,6 +218,10 @@ public class LocalMREnv implements MREnv {
   @Override
   public String name() {
     return "LocalMR://" + home;
+  }
+
+  public String home() {
+    return home;
   }
 
   public class LocalMRTableShard extends MRTableShard {

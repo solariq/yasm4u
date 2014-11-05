@@ -85,7 +85,7 @@ public class AnnotatedMRProcess extends MRProcessImpl {
       }
       final MRState state = wb.slice();
       for (int i = 0; i < out.length; i++) {
-        if (state.available(out[i]))
+        if (!state.available(out[i]))
           return false;
       }
       return true;

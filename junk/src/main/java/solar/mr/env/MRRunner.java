@@ -18,6 +18,7 @@ import com.spbsu.commons.util.ArrayTools;
 import com.spbsu.commons.util.Pair;
 import solar.mr.MROutput;
 import solar.mr.MRRoutine;
+import solar.mr.MRTable;
 import solar.mr.proc.MRState;
 
 /**
@@ -55,9 +56,20 @@ public class MRRunner implements Runnable {
     try {
       //noinspection unchecked
       routine = (Class<? extends MRRoutine>)Class.forName(mrClass);
-      final ObjectInputStream is = new ObjectInputStream(MRRunner.class.getResourceAsStream(STATE_RESOURCE_NAME));
+      final ClassLoader loader = getClass().getClassLoader();
+      final ObjectInputStream is = new ObjectInputStream(MRRunner.class.getResourceAsStream("/" + STATE_RESOURCE_NAME)){
+        @Override
+        protected Class<?> resolveClass(final ObjectStreamClass desc) throws IOException, ClassNotFoundException {
+          try {
+            return loader.loadClass(desc.getName());
+          }
+          catch (ClassNotFoundException cnfe) {
+            return super.resolveClass(desc);
+          }
+        }
+      };
       state = (MRState)is.readObject();
-      CharSeqTools.processLines(new InputStreamReader(new ObjectInputStream(MRRunner.class.getResourceAsStream(TABLES_RESOURCE_NAME)), StreamTools.UTF), new Processor<CharSequence>() {
+      CharSeqTools.processLines(new InputStreamReader(MRRunner.class.getResourceAsStream("/" + TABLES_RESOURCE_NAME), StreamTools.UTF), new Processor<CharSequence>() {
         @Override
         public void process(final CharSequence arg) {
           final CharSequence[] parts = CharSeqTools.split(arg, '\t');
@@ -90,6 +102,23 @@ public class MRRunner implements Runnable {
       out.interrupt();
       out.join();
     }
+  }
+
+  public void runLocally(char[] localMRHome, char[][] inTables, char[][] outTables) throws NoSuchMethodException,
+                                                                                           InvocationTargetException,
+                                                                                           InstantiationException,
+                                                                                           IllegalAccessException
+  {
+    final LocalMREnv sampleEnv = new LocalMREnv(new String(localMRHome));
+    final MRTable[] input = new MRTable[inTables.length];
+    final MRTable[] output = new MRTable[outTables.length];
+    for (int i = 0; i < input.length; i++) {
+      input[i] = sampleEnv.resolve(new String(inTables[i])).owner();
+    }
+    for (int i = 0; i < output.length; i++) {
+      output[i] = sampleEnv.resolve(new String(outTables[i])).owner();
+    }
+    sampleEnv.execute(routine(), state(), input, output, null);
   }
 
   public static void main(String[] args) {
