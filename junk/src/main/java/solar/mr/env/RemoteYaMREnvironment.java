@@ -1,4 +1,4 @@
-package solar.mr;
+package solar.mr.env;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -13,17 +13,18 @@ import com.spbsu.commons.seq.CharSeqBuilder;
  * Date: 25.09.14
  * Time: 12:28
  */
-public class RemoteMREnvironment extends MREnvironment {
+public class RemoteYaMREnvironment extends YaMREnvBase {
   private final String proxyHost;
   private final String mrBinaryPath;
 
-  public RemoteMREnvironment(final String proxyHost, final String mrBinaryPath) {
+  public RemoteYaMREnvironment(final String proxyHost, final String mrBinaryPath, final String yamrMaster, final String yamrUser) {
+    super(yamrUser, yamrMaster);
     this.proxyHost = proxyHost;
     this.mrBinaryPath = mrBinaryPath;
   }
 
   @Override
-  protected Process generateExecCommand(final List<String> mrOptions) {
+  protected Process runYaMRProcess(final List<String> mrOptions) {
     try {
       final String pid;
       final String remoteOutput;
@@ -86,6 +87,7 @@ public class RemoteMREnvironment extends MREnvironment {
         sshLink.waitFor();
       }
       final File tempFile = File.createTempFile("wait", ".sh");
+      //noinspection ResultOfMethodCallIgnored
       tempFile.delete();
       tempFile.deleteOnExit();
 

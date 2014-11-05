@@ -3,6 +3,7 @@ package solar.mr;
 import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqComposite;
 import com.spbsu.commons.seq.CharSeqTools;
+import solar.mr.proc.MRState;
 
 /**
 * User: solar
@@ -10,19 +11,13 @@ import com.spbsu.commons.seq.CharSeqTools;
 * Time: 11:19
 */
 public abstract class MRMap extends MRRoutine {
-  public MRMap(final MROutput output) {
-    super(output);
+  public MRMap(final String[] inputTables, final MROutput output, final MRState state) {
+    super(inputTables, output, state);
   }
 
   @Override
-  public void invoke(final CharSeq record) {
-    if (record == CharSeq.EMPTY)
-      return;
-    final CharSequence[] split = CharSeqTools.split(record, '\t');
-    if (split.length < 3)
-      output.error("Illegal record", "Contains less then 3 fields", record);
-    else
-      map(split[0].toString(), split[1].toString(), record.subSequence(split[0].length() + split[1].length() + 2));
+  public final void invoke(Record rec) {
+    map(rec.key, rec.sub, rec.value);
   }
 
   public abstract void map(String key, String sub, CharSequence value);

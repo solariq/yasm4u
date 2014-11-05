@@ -8,6 +8,7 @@ import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.seq.regexp.SimpleRegExp;
 import solar.mr.MRMap;
 import solar.mr.MROutput;
+import solar.mr.proc.MRState;
 
 /**
 * User: solar
@@ -15,8 +16,8 @@ import solar.mr.MROutput;
 * Time: 23:56
 */
 public class SAPPCounterMap extends MRMap {
-  public SAPPCounterMap(final MROutput output) {
-    super(output);
+  public SAPPCounterMap(final String[] inputTables, final MROutput output, final MRState state) {
+    super(inputTables, output, state);
   }
 
   @Override

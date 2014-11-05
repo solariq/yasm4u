@@ -1,14 +1,10 @@
 package solar.mr;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.JarURLConnection;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.io.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.net.*;
+import java.util.*;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
@@ -16,11 +12,14 @@ import java.util.jar.Manifest;
 
 
 import com.spbsu.commons.func.Action;
+import com.spbsu.commons.func.types.ConversionRepository;
+import com.spbsu.commons.func.types.SerializationRepository;
 import com.spbsu.commons.io.StreamTools;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.bytecode.ConstPool;
 import org.apache.log4j.Logger;
+import sun.net.www.protocol.file.FileURLConnection;
 
 /**
  * User: solar
@@ -29,8 +28,15 @@ import org.apache.log4j.Logger;
  */
 public class MRTools {
   private static Logger LOG = Logger.getLogger(MRTools.class);
+  public static final String FORBIDEN = MREnv.class.getName().replace('.', '/');
 
   public static void buildClosureJar(final Class aRootClass, final String outputJar, Action<Class> action) throws IOException {
+    buildClosureJar(aRootClass, outputJar, action, Collections.<String,byte[]>emptyMap());
+  }
+
+  public static void buildClosureJar(final Class aRootClass, final String outputJar, Action<Class> action, final Map<String, byte[]> resourcesMap)
+      throws IOException
+  {
     final URLClassLoader parent = (URLClassLoader)aRootClass.getClassLoader();
 
     final Manifest manifest = new Manifest();
@@ -41,6 +47,7 @@ public class MRTools {
     try (final JarOutputStream file = new JarOutputStream(new FileOutputStream(outputJar), manifest)) {
       final Set<String> resources = new HashSet<>();
       final Set<String> needLoading = new HashSet<>();
+      final Constructor<String> charArrConstructor = String.class.getConstructor(char[].class);
 
       final URLClassLoader classLoader = new URLClassLoader(parent.getURLs(), null) {
         private final Set<String> known = new HashSet<>();
@@ -54,6 +61,7 @@ public class MRTools {
               needLoading.remove(name);
               final URL resource = getResource(name.replace('.', '/').concat(".class"));
               if (kosherResource) {
+                assert resource != null;
                 final CtClass ctClass = pool.makeClass(resource.openStream());
                 final ConstPool constPool = ctClass.getClassFile().getConstPool();
                 final Set classNames = constPool.getClassNames();
@@ -83,8 +91,28 @@ public class MRTools {
         @Override
         public synchronized URL getResource(final String name) {
           try {
+            @SuppressWarnings("PrimitiveArrayArgumentToVariableArgMethod")
+            final byte[] content = resourcesMap.get(charArrConstructor.newInstance(name.toCharArray()));
+            if (content != null) {
+              return new URL("jar", "localhost", -1, name, new URLStreamHandler() {
+                @Override
+                protected URLConnection openConnection(final URL u) throws IOException {
+                  return new FileURLConnection(u, new File("/dev/null")) {
+                    @Override
+                    public long getContentLengthLong() {
+                      return content.length;
+                    }
+
+                    @Override
+                    public synchronized InputStream getInputStream() throws IOException {
+                      return new ByteArrayInputStream(content);
+                    }
+                  };
+                }
+              });
+            }
             final URL resource = super.getResource(name);
-            kosherResource = resource != null && !name.contains(MREnvironment.FORBIDEN);
+            kosherResource = resource != null && !name.contains(FORBIDEN);
             if (kosherResource && "jar".equals(resource.getProtocol())) {
               final JarURLConnection connection;
               connection = (JarURLConnection) resource.openConnection();
@@ -96,13 +124,14 @@ public class MRTools {
               resources.add(name);
             }
             return resource;
-          } catch (IOException e) {
+          } catch (IOException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
             throw new RuntimeException(e);
           }
         }
       };
       action.invoke(classLoader.loadClass(aRootClass.getName()));
       while (!needLoading.isEmpty()) {
+        //noinspection RedundantStringConstructorCall
         classLoader.loadClass(new String(needLoading.iterator().next()));
       }
 
@@ -118,6 +147,8 @@ public class MRTools {
       }
     } catch (ClassNotFoundException e) {
       throw new RuntimeException(e);
+    } catch (NoSuchMethodException e) {
+      // never happen
     }
   }
 }

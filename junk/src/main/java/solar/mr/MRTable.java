@@ -1,40 +1,62 @@
 package solar.mr;
 
-import java.util.Calendar;
-import java.util.Date;
 
-
-import com.spbsu.commons.func.Computable;
 import com.spbsu.commons.func.Processor;
-import com.spbsu.commons.seq.Seq;
+import solar.mr.tables.MRTableShard;
 
 /**
  * User: solar
  * Date: 23.09.14
  * Time: 13:36
  */
-public interface MRTable  {
+public interface MRTable {
   String name();
 
-  void visitShards(Processor<String> shardNameProcessor);
+  boolean available(MREnv env);
+  String crc(MREnv env);
+  void read(MREnv env, final Processor<CharSequence> sapp);
+  void sort(MREnv env);
+  void delete(MREnv env);
 
-  Computable<String, MRTable> RESOLVER = new Computable<String, MRTable>() {
+  abstract class Stub implements MRTable {
     @Override
-    public MRTable compute(final String argument) {
-      if (argument.startsWith("user_sessions/")) {
-        final Date date = parseDate(argument.subSequence(argument.indexOf("/") + 1, argument.length()));
-        return new DailyMRTable("user_sessions", date, date);
+    public boolean available(final MREnv env) {
+      final MRTableShard[] shards = env.shards(this);
+      for (MRTableShard shard : shards) {
+        if (!shard.isAvailable())
+          return false;
       }
-      return new FixedMRTable(argument);
+      return true;
     }
 
-    private Date parseDate(final CharSequence sequence) {
-      final int year = Integer.parseInt(sequence.subSequence(0, 4).toString());
-      final int month = Integer.parseInt(sequence.subSequence(4, 6).toString());
-      final int day = Integer.parseInt(sequence.subSequence(6, 8).toString());
-      final Calendar calendar = Calendar.getInstance();
-      calendar.set(year, month - 1, day - 1);
-      return calendar.getTime();
+    @Override
+    public String crc(final MREnv env) {
+      final StringBuilder crc = new StringBuilder();
+      for (MRTableShard shard : env.shards(this)) {
+        crc.append(shard.crc());
+      }
+      return crc.toString();
     }
-  };
+
+    @Override
+    public void read(final MREnv env, final Processor<CharSequence> proc) {
+      for (MRTableShard shard : env.shards(this)) {
+        env.read(shard, proc);
+      }
+    }
+
+    @Override
+    public void sort(final MREnv env) {
+      for (MRTableShard shard : env.shards(this)) {
+        env.sort(shard);
+      }
+    }
+
+    @Override
+    public void delete(final MREnv env) {
+      for (MRTableShard shard : env.shards(this)) {
+        env.delete(shard);
+      }
+    }
+  }
 }

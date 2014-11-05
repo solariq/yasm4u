@@ -1,25 +1,27 @@
-package solar.mr;
+package solar.mr.tables;
 
+import java.text.MessageFormat;
 import java.util.Calendar;
 import java.util.Date;
 
 
-import com.spbsu.commons.func.Processor;
-import com.spbsu.commons.seq.Seq;
+import solar.mr.MRTable;
 
 /**
 * User: solar
 * Date: 25.09.14
 * Time: 20:59
 */
-public class DailyMRTable implements MRTable {
+public class DailyMRTable extends MRTable.Stub {
+  private final String name;
+  private final MessageFormat shardNameFormat;
   private final Date start;
   private final Date end;
   private final int length;
-  private String path;
 
-  public DailyMRTable(final String path, final Date start, final Date end) {
-    this.path = path;
+  public DailyMRTable(final String name, final MessageFormat shardNameFormat, final Date start, final Date end) {
+    this.name = name;
+    this.shardNameFormat = shardNameFormat;
     this.start = start;
     this.end = end;
     final Calendar instance = Calendar.getInstance();
@@ -34,23 +36,20 @@ public class DailyMRTable implements MRTable {
 
   @Override
   public String name() {
-    return path;
+    return name;
   }
 
-  @Override
-  public void visitShards(final Processor<String> shardNameProcessor) {
-    for (int i = 0; i < length; i++) {
-      final Calendar instance = dateAt(i);
-      shardNameProcessor.process(name() + "/" + instance.get(Calendar.YEAR) + "" + String.format("%02d", instance.get(Calendar.MONTH) + 1) + "" + (instance.get(Calendar.DAY_OF_MONTH) + 1));
-    }
-  }
-
-  private Calendar dateAt(final int i) {
+  public String shardName(final int i) {
     final Calendar instance = Calendar.getInstance();
     instance.setTime(start);
     instance.add(Calendar.DAY_OF_YEAR, i);
     if (end.after(instance.getTime()))
       throw new ArrayIndexOutOfBoundsException(i);
-    return instance;
+
+    return shardNameFormat.format(new Object[]{instance.getTime()});
+  }
+
+  public int length() {
+    return length;
   }
 }

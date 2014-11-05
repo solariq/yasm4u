@@ -5,9 +5,8 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ArrayBlockingQueue;
 
 
-import com.spbsu.commons.seq.CharSeq;
-import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.Pair;
+import solar.mr.proc.MRState;
 
 /**
 * User: solar
@@ -15,24 +14,25 @@ import com.spbsu.commons.util.Pair;
 * Time: 11:19
 */
 public abstract class MRReduce extends MRRoutine {
+  public static final Record EOF = new Record("/dev/random", "", "", "");
+
   public static final int MAX_REDUCE_SIZE = 100000;
   private final Thread reduceThread;
-  private final ArrayBlockingQueue<CharSeq> recordsQueue = new ArrayBlockingQueue<>(MAX_REDUCE_SIZE);
+  private final ArrayBlockingQueue<Record> recordsQueue = new ArrayBlockingQueue<>(MAX_REDUCE_SIZE);
 
-  public MRReduce(final MROutput output) {
-    super(output);
+  public MRReduce(String[] inputTables, final MROutput output, MRState state) {
+    super(inputTables, output, state);
     reduceThread = new Thread(new Runnable() {
-      private CharSeq record;
+      private Record record;
       @Override
       public void run() {
         while (true) {
           try {
             if (record == null)
               record = recordsQueue.take();
-            if (record == CharSeq.EMPTY)
+            if (record == EOF)
               return;
-            final CharSequence[] split = CharSeqTools.split(record, '\t');
-            final String key = split[0].toString();
+            final String key = record.key;
             final Iterator<Pair<String, CharSequence>> reduceIterator = new Iterator<Pair<String, CharSequence>>() {
               @Override
               public boolean hasNext() {
@@ -43,20 +43,19 @@ public abstract class MRReduce extends MRRoutine {
                     // skip, need to empty queue
                   }
                 }
-                if (record == CharSeq.EMPTY)
+                if (record == EOF)
                   return false;
                 //noinspection EqualsBetweenInconvertibleTypes
-                return record.subSequence(0, key.length()).equals(key) && record.at(key.length()) == '\t';
+                return key.equals(record.key);
               }
 
               @Override
               public Pair<String, CharSequence> next() {
                 if (!hasNext())
                   throw new NoSuchElementException();
-                final CharSeq keyChop = record.subSequence(key.length() + 1);
-                int delim = keyChop.indexOf('\t');
+                final Record current = record;
                 record = null;
-                return new Pair<>(keyChop.sub(0, delim).toString(), (CharSequence) keyChop.subSequence(delim + 1));
+                return new Pair<>(current.sub, current.value);
               }
 
               @Override
@@ -68,7 +67,7 @@ public abstract class MRReduce extends MRRoutine {
               reduce(key, reduceIterator);
             } catch (Exception e) {
               if (record != null)
-                output.error(e, record);
+                output.error(e, currentTable(), record.toString());
             }
             while (reduceIterator.hasNext())
               reduceIterator.next();
@@ -84,15 +83,18 @@ public abstract class MRReduce extends MRRoutine {
   }
 
   @Override
-  public final void invoke(final CharSeq record) {
-    recordsQueue.add(record);
-    if (record == CharSeq.EMPTY) {
-      try {
-        reduceThread.interrupt();
-        reduceThread.join();
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
+  public final void invoke(Record rec) {
+    recordsQueue.add(rec);
+  }
+
+  @Override
+  protected final void onEndOfInput() {
+    try {
+      recordsQueue.add(EOF);
+      reduceThread.interrupt();
+      reduceThread.join();
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
     }
   }
 

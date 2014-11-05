@@ -6,6 +6,7 @@ import java.util.Iterator;
 import com.spbsu.commons.util.Pair;
 import solar.mr.MROutput;
 import solar.mr.MRReduce;
+import solar.mr.proc.MRState;
 
 /**
 * User: solar
@@ -13,8 +14,8 @@ import solar.mr.MRReduce;
 * Time: 1:56
 */
 public class SAPPCounterReduce extends MRReduce {
-  public SAPPCounterReduce(final MROutput output) {
-    super(output);
+  public SAPPCounterReduce(final String[] inputTables, final MROutput output, final MRState state) {
+    super(inputTables, output, state);
   }
 
   @Override

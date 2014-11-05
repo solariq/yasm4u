@@ -2,14 +2,10 @@ package yamr;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
 
 import com.spbsu.commons.func.Processor;
-import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.seq.*;
 import com.spbsu.commons.seq.regexp.SimpleRegExp;
 import com.spbsu.commons.util.Pair;
@@ -18,6 +14,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import solar.mr.*;
+import solar.mr.proc.MRState;
+import solar.mr.tables.FixedMRTable;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -28,7 +26,7 @@ import static org.junit.Assert.assertTrue;
  * Time: 13:09
  */
 public class MREnvironmentTest {
-  final TestMREnvironment testEnvironment = new TestMREnvironment();
+  final TestYaMREnv testEnvironment = new TestYaMREnv();
   private File samplesDirTmp;
 
   @Before
@@ -37,7 +35,7 @@ public class MREnvironmentTest {
     //noinspection ResultOfMethodCallIgnored
     samplesDirTmp.delete();
     FileUtils.forceMkdir(samplesDirTmp);
-    testEnvironment.setMRSamplesDir(samplesDirTmp.getAbsolutePath());
+    testEnvironment.setSamplesDir(samplesDirTmp.getAbsolutePath());
     testEnvironment.setReadEnabled(false);
   }
 
@@ -155,8 +153,8 @@ public class MREnvironmentTest {
   }
 
   private static class MyMap extends MRMap {
-    public MyMap(final MROutput output) {
-      super(output);
+    public MyMap(final String[] input, final MROutput output, final MRState state) {
+      super(input, output, state);
     }
 
     @Override
@@ -166,8 +164,8 @@ public class MREnvironmentTest {
   }
 
   private static class MyMapException extends MRMap {
-    public MyMapException(final MROutput output) {
-      super(output);
+    public MyMapException(final String[] input, final MROutput output, final MRState state) {
+      super(input, output, state);
     }
 
     @Override
@@ -177,8 +175,8 @@ public class MREnvironmentTest {
   }
 
   private static class MyMapOutput extends MRMap {
-    public MyMapOutput(final MROutput output) {
-      super(output);
+    public MyMapOutput(final String[] input, final MROutput output, final MRState state) {
+      super(input, output, state);
     }
 
     @Override
@@ -188,8 +186,8 @@ public class MREnvironmentTest {
   }
 
   private static class MyReduceCounter extends MRReduce {
-    public MyReduceCounter(final MROutput output) {
-      super(output);
+    public MyReduceCounter(final String[] input, final MROutput output, final MRState state) {
+      super(input, output, state);
     }
 
     @Override
@@ -203,73 +201,4 @@ public class MREnvironmentTest {
     }
   }
 
-  private static class TestMREnvironment extends MREnvironment {
-    private Map<String, String> tableContents = new HashMap<>();
-
-    {
-      tableContents.put("poh/neh", "preved\tsubkey\tmedved");
-    }
-
-    public SeqBuilder<CharSeq> commands = new ArraySeqBuilder<>(CharSeq.class);
-    private boolean readEnabled;
-
-    @Override
-    protected Process generateExecCommand(final List<String> mrOptions) {
-      try {
-        final File input = File.createTempFile("input", ".txt");
-        input.deleteOnExit();
-        int index = 0;
-        String command = "cat " + input.getAbsolutePath();
-        File jarFile = null;
-
-        while(index < mrOptions.size()) {
-          String opt = mrOptions.get(index++);
-          switch (opt) {
-            case "-src": {
-              final String contents = tableContents.get(mrOptions.get(index++));
-              if (contents != null)
-                StreamTools.writeChars(contents, input);
-              break;
-            }
-            case "-map":
-            case "-reduce":
-              command += " | " + CharSeqTools.replace(mrOptions.get(index++).replace(jarFile.getName(), jarFile.getAbsolutePath()), "$", "\\$");
-              break;
-            case "-read": {
-              if (readEnabled) {
-                final String contents = tableContents.get(mrOptions.get(index++));
-                if (contents != null)
-                  StreamTools.writeChars(contents, input);
-              }
-              break;
-            }
-            case "-count":
-              command += " | head -" + mrOptions.get(index++);
-              break;
-            case "-file":
-              jarFile = new File(mrOptions.get(index++));
-              command = command.replace(jarFile.getName(), jarFile.getAbsolutePath());
-              break;
-            case "-drop":
-              return null;
-          }
-        }
-
-        commands.add(new CharSeqAdapter(command));
-        final Process result = Runtime.getRuntime().exec("bash -s");
-        StreamTools.writeChars(command, result.getOutputStream());
-        return result;
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
-
-    public void setContent(final String tableName, final CharSequence content) {
-      tableContents.put(tableName, content.toString());
-    }
-
-    public void setReadEnabled(final boolean readEnabled) {
-      this.readEnabled = readEnabled;
-    }
-  }
 }
