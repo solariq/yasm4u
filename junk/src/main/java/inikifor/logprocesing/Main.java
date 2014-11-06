@@ -22,7 +22,7 @@ import solar.mr.proc.tags.MRReduceMethod;
 public final class Main {
 
   @MRProcessClass(goal = "mr:///mobilesearchtest/count_tmp")
-  public static class SampleCounter {
+  public static final class SampleCounter {
 
     private static final String TMP_TABLE_URI = "temp:mr:///test-counter";
 
@@ -55,7 +55,7 @@ public final class Main {
         Pair<String, CharSequence> sv = reduce.next();
         count += CharSeqTools.parseInt(sv.second);
       }
-      output.add(key, "", "" + count);
+      output.add(key, "1", "" + count);
     }
 
   }
@@ -66,6 +66,7 @@ public final class Main {
     final MREnv env = new YaMREnv(runner, "mobilesearch", "cedar:8013");
     final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SampleCounter.class, env);
     mrProcess.execute();
+    mrProcess.wb().wipe();
   }
 
 }
