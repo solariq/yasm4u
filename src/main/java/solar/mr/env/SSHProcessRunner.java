@@ -117,6 +117,8 @@ public class SSHProcessRunner implements ProcessRunner {
           if (errors.length() > 1)
             System.err.print(errors);
           process.waitFor();
+          if (process.exitValue() != 0)
+            throw new RuntimeException("Write process exited with rc != 0");
           return null;
         }
       }

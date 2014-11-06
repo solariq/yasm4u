@@ -42,15 +42,15 @@ public class MRTableShardConverter implements ConversionPack<MRTableShard,CharSe
 
     @Override
     public MRTableShard convert(final CharSequence from) {
-      final int hostStart = CharSeqTools.indexOf(from, ":") + 1;
-      final int tsStart = CharSeqTools.indexOf(from, hostStart, ":") + 1;
-      final int pathStart = CharSeqTools.indexOf(from, tsStart, "/") + 1;
+      final int hostStart = CharSeqTools.indexOf(from, ":");
+      final int tsStart = CharSeqTools.indexOf(from, hostStart + 1, ":");
+      final int pathStart = CharSeqTools.indexOf(from, tsStart + 1, "/");
 
       final String env = from.subSequence(0, tsStart).toString();
       if (!env.equals(wb.env().name()))
         throw new IllegalStateException("Serialized shard does not correspond to current environment");
-      final long ts = CharSeqTools.parseLong(from.subSequence(tsStart, pathStart));
-      CharSequence[] parts = CharSeqTools.split(from.subSequence(pathStart, from.length()), "?");
+      final long ts = CharSeqTools.parseLong(from.subSequence(tsStart + 1, pathStart));
+      CharSequence[] parts = CharSeqTools.split(from.subSequence(pathStart + 1, from.length()), "?");
       final String path = parts[0].toString();
       parts = CharSeqTools.split(parts[1], "&");
       boolean available = false;
