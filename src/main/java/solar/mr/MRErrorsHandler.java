@@ -1,5 +1,7 @@
 package solar.mr;
 
+import solar.mr.routines.MRRecord;
+
 /**
  * User: solar
  * Date: 23.09.14

@@ -1,26 +1,5 @@
 package yamr;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Iterator;
-
-
-import com.spbsu.commons.func.Processor;
-import com.spbsu.commons.seq.*;
-import com.spbsu.commons.seq.regexp.SimpleRegExp;
-import com.spbsu.commons.util.Pair;
-import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import solar.mr.*;
-import solar.mr.env.YaMREnv;
-import solar.mr.proc.MRState;
-import solar.mr.tables.FixedMRTable;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 /**
  * User: solar
  * Date: 23.09.14

@@ -1,11 +1,11 @@
 package solar.mr;
 
 import java.io.Reader;
+import java.net.URI;
 
 
 import com.spbsu.commons.func.Processor;
 import solar.mr.proc.MRState;
-import solar.mr.tables.MRTableShard;
 
 /**
  * User: solar
@@ -14,12 +14,7 @@ import solar.mr.tables.MRTableShard;
  */
 public interface MREnv {
   boolean execute(Class<? extends MRRoutine> exec, MRState state, MRTableShard[] in, MRTableShard[] out, final MRErrorsHandler errorsHandler);
-  boolean execute(Class<? extends MRRoutine> exec, MRState state, MRTable[] in, MRTable[] out, final MRErrorsHandler errorsHandler);
-  boolean execute(Class<? extends MRRoutine> exec, MRState state, MRTable in, MRTable... out);
-
-  MRTableShard[] shards(MRTable table);
   MRTableShard resolve(String path);
-  MRTableShard restore(String path, long ts, boolean available, String crc);
 
   int read(MRTableShard shard, Processor<CharSequence> seq);
   void write(MRTableShard shard, Reader content);
@@ -27,7 +22,7 @@ public interface MREnv {
   void delete(MRTableShard shard);
   void sample(MRTableShard shard, Processor<CharSequence> seq);
 
-  void sort(MRTableShard shard);
+  MRTableShard sort(MRTableShard shard);
 
   String name();
 }

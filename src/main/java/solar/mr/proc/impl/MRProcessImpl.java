@@ -6,17 +6,16 @@ import java.util.*;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqReader;
-import com.spbsu.commons.seq.CharSeqTools;
 import solar.mr.MREnv;
 import solar.mr.MRErrorsHandler;
-import solar.mr.MRRecord;
+import solar.mr.routines.MRRecord;
 import solar.mr.env.LocalMREnv;
 import solar.mr.env.YaMREnv;
 import solar.mr.proc.MRJoba;
 import solar.mr.proc.MRProcess;
 import solar.mr.proc.MRState;
 import solar.mr.proc.MRWhiteboard;
-import solar.mr.tables.MRTableShard;
+import solar.mr.MRTableShard;
 
 /**
  * User: solar

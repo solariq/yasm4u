@@ -8,7 +8,6 @@ import java.util.Random;
 import com.spbsu.commons.filters.*;
 import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
-import com.spbsu.commons.func.types.ConversionRepository;
 import com.spbsu.commons.func.types.SerializationRepository;
 import com.spbsu.commons.func.types.TypeConverter;
 import com.spbsu.commons.random.FastRandom;
@@ -17,10 +16,10 @@ import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.system.RuntimeUtils;
 import solar.mr.MREnv;
 import solar.mr.MRErrorsHandler;
-import solar.mr.MRRecord;
+import solar.mr.routines.MRRecord;
 import solar.mr.proc.MRState;
 import solar.mr.proc.MRWhiteboard;
-import solar.mr.tables.MRTableShard;
+import solar.mr.MRTableShard;
 
 /**
  * User: solar

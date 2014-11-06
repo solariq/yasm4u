@@ -5,6 +5,7 @@ import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqTools;
 import solar.mr.proc.MRState;
+import solar.mr.routines.MRRecord;
 
 /**
 * User: solar

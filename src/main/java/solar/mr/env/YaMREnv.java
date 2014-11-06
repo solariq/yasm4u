@@ -1,15 +1,17 @@
 package solar.mr.env;
 
-import java.io.*;
-import java.text.MessageFormat;
-import java.util.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.util.ArrayList;
+import java.util.List;
 
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.spbsu.commons.func.Computable;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.random.FastRandom;
@@ -19,9 +21,10 @@ import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.JSONTools;
 import solar.mr.*;
 import solar.mr.proc.MRState;
-import solar.mr.tables.DailyMRTable;
-import solar.mr.tables.FixedMRTable;
-import solar.mr.tables.MRTableShard;
+import solar.mr.MRTableShard;
+import solar.mr.routines.MRMap;
+import solar.mr.routines.MRRecord;
+import solar.mr.routines.MRReduce;
 
 /**
  * User: solar
@@ -134,13 +137,16 @@ public class YaMREnv implements MREnv {
     options.remove(options.size() - 1);
   }
 
-  public void sort(final MRTableShard table) {
+  public MRTableShard sort(final MRTableShard table) {
+    if (table.isSorted())
+      return table;
     final List<String> options = defaultOptions();
 
     options.add("-sort");
     options.add(table.path());
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     options.remove(options.size() - 1);
+    return resolve(table.path());
   }
 
   private void executeCommand(final List<String> options, final Processor<CharSequence> outputProcessor,
@@ -180,23 +186,6 @@ public class YaMREnv implements MREnv {
     }
   }
 
-  @Override
-  public MRTableShard[] shards(final MRTable table) {
-    MRTableShard[] result;
-    if (table instanceof DailyMRTable) {
-      final DailyMRTable daily = (DailyMRTable) table;
-      result = new MRTableShard[daily.length()];
-      for (int i = 0; i < daily.length(); i++) {
-        result[i] = shard(daily.shardName(i), table);
-      }
-    }
-    else if (table instanceof FixedMRTable) {
-      result = new MRTableShard[]{shard(table.name(), table)};
-    }
-    else throw new IllegalArgumentException("Unsupported table type");
-    return result;
-  }
-
 
 //        {
 //            "name": "user_sessions/20130901/yandex_staff",
@@ -218,7 +207,7 @@ public class YaMREnv implements MREnv {
 //            "block_format": "none"
 //        }
   /* TODO: lazy initialization of isAvailable and crc */
-  private MRTableShard shard(String shardName, final MRTable owner) {
+  private MRTableShard shard(String shardName) {
     final List<String> options = defaultOptions();
     if (shardName.startsWith("/"))
       shardName = shardName.substring(1);
@@ -245,44 +234,20 @@ public class YaMREnv implements MREnv {
         final JsonNode nameNode = metaJSON.get("name");
         if (nameNode != null && !nameNode.isMissingNode() && shardName.equals(nameNode.textValue())) {
           final String size = metaJSON.get("full_size").toString();
-          return new MRTableShard(shardName, this, owner, true, size);
+          final String sorted = metaJSON.get("sorted").toString();
+          return new MRTableShard(shardName, this, true, "1".equals(sorted), size);
         }
         next = parser.nextToken();
       }
-      return new MRTableShard(shardName, this, owner, false, "");
+      return new MRTableShard(shardName, this, false, false, "");
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
 
-  private static final Computable<String, MRTable> RESOLVER = new Computable<String, MRTable>() {
-    @Override
-    public MRTable compute(final String argument) {
-      if (argument.startsWith("user_sessions/")) {
-        final Date date = parseDate(argument.subSequence(argument.indexOf("/") + 1, argument.length()));
-        return new DailyMRTable("user_sessions", new MessageFormat("user_sessions/{0,date,yyyyMMdd}"), date, date);
-      }
-      return new FixedMRTable(argument);
-    }
-
-    private Date parseDate(final CharSequence sequence) {
-      final int year = Integer.parseInt(sequence.subSequence(0, 4).toString());
-      final int month = Integer.parseInt(sequence.subSequence(4, 6).toString());
-      final int day = Integer.parseInt(sequence.subSequence(6, 8).toString());
-      final Calendar calendar = Calendar.getInstance();
-      //noinspection MagicConstant
-      calendar.set(year, month - 1, day - 1);
-      return calendar.getTime();
-    }
-  };
   @Override
   public MRTableShard resolve(final String path) {
-    return shard(path, RESOLVER.compute(path));
-  }
-
-  @Override
-  public MRTableShard restore(final String path, final long ts, final boolean available, final String crc) {
-    return new MRTableShard(path, this, RESOLVER.compute(path), available, crc);
+    return shard(path);
   }
 
   @Override
@@ -304,7 +269,7 @@ public class YaMREnv implements MREnv {
       outputShardsCount++;
     }
     final String errorsShardName = "temp/errors-" + Integer.toHexString(new FastRandom().nextInt());
-    final MRTableShard errorsShard = shard(errorsShardName, new FixedMRTable(errorsShardName));
+    final MRTableShard errorsShard = shard(errorsShardName);
     options.add("-dst");
     options.add(errorsShardName);
     final File jarFile;
@@ -367,23 +332,6 @@ public class YaMREnv implements MREnv {
     delete(errorsShard);
 
     return errorsCount[0] == 0;
-  }
-
-  public boolean execute(final Class<? extends MRRoutine> routineClass, MRState state, final MRTable[] in, final MRTable[] out, final MRErrorsHandler errorsHandler) {
-    final List<MRTableShard> inputShards = new ArrayList<>();
-    for(int i = 0; i < in.length; i++) {
-      inputShards.addAll(Arrays.asList(shards(in[i])));
-    }
-    final List<MRTableShard> outputShards = new ArrayList<>();
-    for(int i = 0; i < out.length; i++) {
-      outputShards.addAll(Arrays.asList(shards(out[i])));
-    }
-    return execute(MRRoutine.class, state, inputShards.toArray(new MRTableShard[inputShards.size()]), outputShards.toArray(new MRTableShard[outputShards.size()]), errorsHandler);
-  }
-
-  @Override
-  public boolean execute(final Class<? extends MRRoutine> exec, final MRState state, final MRTable in, final MRTable... out) {
-    return execute(exec, state, new MRTable[]{in}, out, null);
   }
 
   @Override

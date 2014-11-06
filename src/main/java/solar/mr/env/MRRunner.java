@@ -18,9 +18,9 @@ import com.spbsu.commons.util.ArrayTools;
 import com.spbsu.commons.util.Pair;
 import solar.mr.MROutput;
 import solar.mr.MRRoutine;
-import solar.mr.MRTable;
 import solar.mr.RuntimeInterruptedException;
 import solar.mr.proc.MRState;
+import solar.mr.MRTableShard;
 
 /**
 * User: solar
@@ -113,13 +113,13 @@ public class MRRunner implements Runnable {
                                                                                            IllegalAccessException
   {
     final LocalMREnv sampleEnv = new LocalMREnv(new String(localMRHome));
-    final MRTable[] input = new MRTable[inTables.length];
-    final MRTable[] output = new MRTable[outTables.length];
+    final MRTableShard[] input = new MRTableShard[inTables.length];
+    final MRTableShard[] output = new MRTableShard[outTables.length];
     for (int i = 0; i < input.length; i++) {
-      input[i] = sampleEnv.resolve(new String(inTables[i])).owner();
+      input[i] = sampleEnv.resolve(new String(inTables[i]));
     }
     for (int i = 0; i < output.length; i++) {
-      output[i] = sampleEnv.resolve(new String(outTables[i])).owner();
+      output[i] = sampleEnv.resolve(new String(outTables[i]));
     }
     sampleEnv.execute(routine(), state(), input, output, null);
   }

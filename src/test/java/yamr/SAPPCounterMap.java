@@ -1,12 +1,8 @@
 package yamr;
 
-import java.util.regex.Matcher;
 
-
-import com.spbsu.commons.seq.CharSeqAdapter;
 import com.spbsu.commons.seq.CharSeqTools;
-import com.spbsu.commons.seq.regexp.SimpleRegExp;
-import solar.mr.MRMap;
+import solar.mr.routines.MRMap;
 import solar.mr.MROutput;
 import solar.mr.proc.MRState;
 
