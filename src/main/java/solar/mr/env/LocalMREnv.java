@@ -12,6 +12,7 @@ import com.spbsu.commons.random.FastRandom;
 import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqReader;
 import com.spbsu.commons.seq.CharSeqTools;
+import com.spbsu.commons.util.Pair;
 import org.apache.commons.io.FileUtils;
 import solar.mr.*;
 import solar.mr.proc.MRState;
@@ -69,19 +70,21 @@ public class LocalMREnv implements MREnv {
 
     try {
       final Constructor<? extends MRRoutine> constructor = exec.getConstructor(String[].class, MROutput.class, MRState.class);
-      for(int i = 0; i < in.length; i++) {
-        inputNames.add(in[i].path());
-        inputFiles.add(file(in[i].path(), in[i].isSorted()));
+      for (MRTableShard anIn : in) {
+        inputNames.add(anIn.path());
+        inputFiles.add(file(anIn.path(), anIn.isSorted()));
       }
-      for(int i = 0; i < out.length; i++) {
-        outputs.add(new FileWriter(file(out[i].path(), out[i].isSorted())));
+      for (MRTableShard anOut : out) {
+        outputs.add(new FileWriter(file(anOut.path(), false)));
+        //noinspection ResultOfMethodCallIgnored
+        file(anOut.path(), true).delete();
       }
 
       final MROutputImpl mrOutput = new MROutputImpl(outputs.toArray(new Writer[outputs.size()]), new MRErrorsHandler() {
         @Override
         public void error(final String type, final String cause, MRRecord rec) {
           hasErrors[0] = true;
-          throw new RuntimeException(rec.source + "\t" + rec.toString() + "\n\t" + type + "\t" + cause + "\t");
+          throw new RuntimeException(rec.source + "\t" + rec.toString() + "\n\t" + type + "\t" + cause.replace("\\n", "\n") + "\t");
         }
 
         @Override
@@ -92,8 +95,7 @@ public class LocalMREnv implements MREnv {
       });
       final MRRoutine routine = constructor.newInstance(inputNames.toArray(new String[inputNames.size()]), mrOutput, state);
 
-      for (int i = 0; i < inputFiles.size(); i++) {
-        final File file = inputFiles.get(i);
+      for (final File file : inputFiles) {
         CharSeqTools.processLines(new FileReader(file), routine);
       }
       routine.process(CharSeq.EMPTY);
@@ -107,7 +109,10 @@ public class LocalMREnv implements MREnv {
   }
 
   @Override
-  public MRTableShard resolve(final String path) {
+  public MRTableShard resolve(String path) {
+    if (path.startsWith("/"))
+      path = path.substring(1);
+
     {
       final File sortedFile = file(path, true);
       if (sortedFile.exists())
@@ -142,15 +147,16 @@ public class LocalMREnv implements MREnv {
 
   @Override
   public void write(final MRTableShard shard, final Reader content) {
-    writeFile(content, file(shard.path(), shard.isSorted()), false);
+    writeFile(content, shard.path(), false, false);
   }
 
   @Override
   public void append(final MRTableShard shard, final Reader content) {
-    writeFile(content, file(shard.path(), shard.isSorted()), true);
+    writeFile(content, shard.path(), false, true);
   }
 
-  private void writeFile(final Reader content, final File file, final boolean append) {
+  private void writeFile(final Reader content, final String path, boolean sorted, final boolean append) {
+    File file = file(path, sorted);
     try {
       FileUtils.forceMkdir(file.getParentFile());
     }
@@ -162,6 +168,11 @@ public class LocalMREnv implements MREnv {
     }
     catch (IOException e) {
       throw new RuntimeException(e);
+    }
+    finally {
+      if (!sorted)
+        //noinspection ResultOfMethodCallIgnored
+        file(path, true).delete();
     }
   }
 
@@ -199,29 +210,35 @@ public class LocalMREnv implements MREnv {
   public MRTableShard sort(final MRTableShard shard) {
     if (shard.isSorted())
       return shard;
-    final TreeMap<String, CharSequence> sort = new TreeMap<>();
+    final List<Pair<String, CharSequence>> sort = new ArrayList<>();
     read(shard, new Processor<CharSequence>() {
       private CharSequence[] result = new CharSequence[3];
 
       @Override
       public void process(final CharSequence arg) {
         final CharSequence[] split = CharSeqTools.split(arg, '\t', result);
-        sort.put(split[0].toString() + '\t' + split[1].toString(), arg);
+        sort.add(Pair.create(split[0].toString() + '\t' + split[1].toString(), arg));
       }
     });
-
+    Collections.sort(sort, new Comparator<Pair<String, CharSequence>>() {
+      @Override
+      public int compare(Pair<String, CharSequence> o1, Pair<String, CharSequence> o2) {
+        return o1.getFirst().compareTo(o2.getFirst());
+      }
+    });
     final List<CharSequence> sorted = new ArrayList<>();
-    for (Map.Entry<String, CharSequence> entry : sort.entrySet()) {
-      sorted.add(entry.getValue());
+    for (Pair<String, CharSequence> entry : sort) {
+      sorted.add(entry.getSecond());
     }
+    sorted.add(CharSeqTools.EMPTY);
 
-    writeFile(new CharSeqReader(CharSeqTools.concatWithDelimeter("\n", sorted)), file(shard.path(), true), false);
+    writeFile(new CharSeqReader(CharSeqTools.concatWithDelimeter("\n", sorted)), shard.path(), true, false);
     return resolve(shard.path());
   }
 
   @Override
   public String name() {
-    return "LocalMR://" + home.getAbsolutePath();
+    return "LocalMR://" + home.getAbsolutePath() + "/";
   }
 
   public String home() {

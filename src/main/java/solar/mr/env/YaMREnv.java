@@ -187,27 +187,9 @@ public class YaMREnv implements MREnv {
   }
 
 
-//        {
-//            "name": "user_sessions/20130901/yandex_staff",
-//            "user": "userdata",
-//            "chunks": 3,
-//            "records": 61756,
-//            "size": 280079420,
-//            "full_size": 281067516,
-//            "byte_size": 281067516,
-//            "disk_size": 60832775,
-//            "sorted": 1,
-//            "write_locked": 1,
-//            "mod_time": 1388675067,
-//            "atime": 1388675067,
-//            "creat_time": 1388675067,
-//            "creat_transaction": "dbf2a388-2e7f4968-9997cded-41903667",
-//            "replicas": 0,
-//            "compression_algo": "zlib",
-//            "block_format": "none"
-//        }
-  /* TODO: lazy initialization of isAvailable and crc */
-  private MRTableShard shard(String shardName) {
+  @Override
+  public MRTableShard resolve(final String path) {
+    String shardName = path;
     final List<String> options = defaultOptions();
     if (shardName.startsWith("/"))
       shardName = shardName.substring(1);
@@ -234,7 +216,7 @@ public class YaMREnv implements MREnv {
         final JsonNode nameNode = metaJSON.get("name");
         if (nameNode != null && !nameNode.isMissingNode() && shardName.equals(nameNode.textValue())) {
           final String size = metaJSON.get("full_size").toString();
-          final String sorted = metaJSON.get("sorted").toString();
+          final String sorted = metaJSON.has("sorted") ? metaJSON.get("sorted").toString() : "0";
           return new MRTableShard(shardName, this, true, "1".equals(sorted), size);
         }
         next = parser.nextToken();
@@ -243,11 +225,6 @@ public class YaMREnv implements MREnv {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  @Override
-  public MRTableShard resolve(final String path) {
-    return shard(path);
   }
 
   @Override
@@ -269,7 +246,7 @@ public class YaMREnv implements MREnv {
       outputShardsCount++;
     }
     final String errorsShardName = "temp/errors-" + Integer.toHexString(new FastRandom().nextInt());
-    final MRTableShard errorsShard = shard(errorsShardName);
+    final MRTableShard errorsShard = resolve(errorsShardName);
     options.add("-dst");
     options.add(errorsShardName);
     final File jarFile;

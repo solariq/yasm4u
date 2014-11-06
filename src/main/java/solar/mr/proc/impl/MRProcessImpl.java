@@ -77,9 +77,9 @@ public class MRProcessImpl implements MRProcess {
     // at start banning all producible resources
     final Set<String> bannedResources = new HashSet<>();
     final Set<String> neededResources = new HashSet<>();
-    for (int j = 0; j < jobs.size(); j++) {
-      bannedResources.addAll(Arrays.asList(jobs.get(j).produces()));
-      neededResources.addAll(Arrays.asList(jobs.get(j).consumes()));
+    for (MRJoba joba : jobs) {
+      bannedResources.addAll(Arrays.asList(joba.produces()));
+      neededResources.addAll(Arrays.asList(joba.consumes()));
     }
     neededResources.removeAll(bannedResources);
     for (String resourceName : neededResources) {
@@ -104,8 +104,7 @@ public class MRProcessImpl implements MRProcess {
     MRState currentTestWB = test.snapshot();
     while (currentTestWB.get(goal) == null || bannedResources.contains(goal)) {
       MRState next = currentTestWB;
-      for (int i = 0; i < jobs.size(); i++) {
-        final MRJoba mrJoba = jobs.get(i);
+      for (final MRJoba mrJoba : jobs) {
         boolean consumesAvailable = currentTestWB.available(mrJoba.consumes());
         for (String resource : mrJoba.consumes()) {
           if (bannedResources.contains(resource))
@@ -141,15 +140,14 @@ public class MRProcessImpl implements MRProcess {
           bannedResources.remove(productName);
           final Object product = test.refresh(productName);
           if (product instanceof MRTableShard) {
-            needToRunProd |= !((MRTableShard)product).crc().equals(crcs.get(productName));
+            needToRunProd |= !((MRTableShard) product).crc().equals(crcs.get(productName));
           }
         }
         if (needToRunProd) {
           System.out.println("Starting joba " + mrJoba.toString() + " at " + prod.env().name());
           if (!mrJoba.run(prod))
             throw new RuntimeException("MR job failed at production: " + mrJoba.toString());
-        }
-        else {
+        } else {
           System.out.println("Fast forwarding joba: " + mrJoba.toString());
         }
       }
@@ -159,8 +157,7 @@ public class MRProcessImpl implements MRProcess {
 
         final Set<Object> consumes = new HashSet<>();
         final Set<Object> produces = new HashSet<>();
-        for (int i = 0; i < jobs.size(); i++) {
-          final MRJoba mrJoba = jobs.get(i);
+        for (final MRJoba mrJoba : jobs) {
           for (int j = 0; j < mrJoba.consumes().length; j++) {
             consumes.add(test.resolve(mrJoba.consumes()[j]));
           }

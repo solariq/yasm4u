@@ -67,7 +67,7 @@ public class AnnotatedMRProcess extends MRProcessImpl {
       final List<MRTableShard> inTables = new ArrayList<>();
       final boolean need2sort = MRReduce.class.isAssignableFrom(routineClass);
       for (int i = 0; i < in.length; i++) {
-        final Object resolve = wb.resolve(in[i]);
+        final Object resolve = wb.refresh(in[i]);
         if (resolve instanceof MRTableShard) {
           MRTableShard shard = (MRTableShard) resolve;
           if (need2sort)

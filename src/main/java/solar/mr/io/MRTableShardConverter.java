@@ -20,14 +20,14 @@ public class MRTableShardConverter implements ConversionPack<MRTableShard,CharSe
     @Override
     public CharSequence convert(final MRTableShard from) {
       final StringBuilder builder = new StringBuilder();
-      builder.append(from.container().name())
-          .append(":").append(Long.toString(from.metaTS()))
-          .append("/").append(from.path())
+      builder.append(from.container().name()).append("!").append(from.path())
           .append("?available=").append(from.isAvailable())
           .append("&sorted=").append(from.isSorted());
       if (from.isAvailable()) {
         builder.append("&crc=").append(from.crc());
       }
+      builder.append("#").append(Long.toString(from.metaTS()));
+
       return builder.toString();
     }
   }
@@ -42,17 +42,15 @@ public class MRTableShardConverter implements ConversionPack<MRTableShard,CharSe
 
     @Override
     public MRTableShard convert(final CharSequence from) {
-      final int hostStart = CharSeqTools.indexOf(from, ":") + 1;
-      final int tsStart = CharSeqTools.indexOf(from, hostStart, ":") + 1;
-      final int pathStart = CharSeqTools.indexOf(from, tsStart, "/") + 1;
-
-      final String env = from.subSequence(0, tsStart - 1).toString();
+      CharSequence[] parts = CharSeqTools.split(from, "!");
+      final String env = parts[0].toString();
       if (!env.equals(wb.env().name()))
         throw new IllegalStateException("Serialized shard does not correspond to current environment");
-      final long ts = CharSeqTools.parseLong(from.subSequence(tsStart, pathStart - 1));
-      CharSequence[] parts = CharSeqTools.split(from.subSequence(pathStart, from.length()), "?");
+      parts = CharSeqTools.split(parts[1], "?");
       final String path = parts[0].toString();
-      parts = CharSeqTools.split(parts[1], "&");
+      parts = CharSeqTools.split(parts[1], "#");
+      final long ts = CharSeqTools.parseLong(parts[1]);
+      parts = CharSeqTools.split(parts[0], "&");
       boolean available = false;
       boolean sorted = false;
       String crc = "0";
@@ -63,11 +61,11 @@ public class MRTableShardConverter implements ConversionPack<MRTableShard,CharSe
           available = kv[1].equals("true");
         if (kv[0].equals("sorted"))
           sorted = kv[1].equals("true");
-        if (kv[0].equals("available"))
+        if (kv[0].equals("crc"))
           crc = kv[1].toString();
       }
 
-      return new MRTableShard(path, wb.env(), available, sorted, crc);
+      return new MRTableShard(path, wb.env(), available, sorted, crc, ts);
     }
   }
   @Override
