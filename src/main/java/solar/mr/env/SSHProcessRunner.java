@@ -121,8 +121,6 @@ public class SSHProcessRunner implements ProcessRunner {
             throw new RuntimeException("Write process exited with status other then 0");
           fromProxy.close();
           process.waitFor();
-          if (process.exitValue() != 0)
-            throw new RuntimeException("Write process exited with rc != 0");
           return null;
         }
       }
