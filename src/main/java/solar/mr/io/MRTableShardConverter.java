@@ -1,11 +1,14 @@
 package solar.mr.io;
 
+import java.net.URI;
+
+
 import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.types.ConversionPack;
 import com.spbsu.commons.func.types.TypeConverter;
 import com.spbsu.commons.seq.CharSeqTools;
 import solar.mr.proc.MRWhiteboard;
-import solar.mr.tables.MRTableShard;
+import solar.mr.MRTableShard;
 
 /**
  * User: solar
@@ -17,9 +20,13 @@ public class MRTableShardConverter implements ConversionPack<MRTableShard,CharSe
     @Override
     public CharSequence convert(final MRTableShard from) {
       final StringBuilder builder = new StringBuilder();
-      builder.append(from.path()).append("@").append(from.container().name()).append("&").append(Long.toString(from.metaTS())).append("/").append(from.isAvailable());
+      builder.append(from.container().name())
+          .append(":").append(Long.toString(from.metaTS()))
+          .append("/").append(from.path())
+          .append("?available=").append(from.isAvailable())
+          .append("&sorted=").append(from.isSorted());
       if (from.isAvailable()) {
-        builder.append("/").append(from.crc());
+        builder.append("&crc=").append(from.crc());
       }
       return builder.toString();
     }
@@ -35,18 +42,32 @@ public class MRTableShardConverter implements ConversionPack<MRTableShard,CharSe
 
     @Override
     public MRTableShard convert(final CharSequence from) {
-      CharSequence[] split = CharSeqTools.split(from, "@");
-      final String path = split[0].toString();
-      split = CharSeqTools.split(split[1], "&");
-      final String env = split[0].toString();
-      if (!env.equals(wb.env().name())) {
+      final int hostStart = CharSeqTools.indexOf(from, ":") + 1;
+      final int tsStart = CharSeqTools.indexOf(from, hostStart, ":") + 1;
+      final int pathStart = CharSeqTools.indexOf(from, tsStart, "/") + 1;
+
+      final String env = from.subSequence(0, tsStart - 1).toString();
+      if (!env.equals(wb.env().name()))
         throw new IllegalStateException("Serialized shard does not correspond to current environment");
+      final long ts = CharSeqTools.parseLong(from.subSequence(tsStart, pathStart - 1));
+      CharSequence[] parts = CharSeqTools.split(from.subSequence(pathStart, from.length()), "?");
+      final String path = parts[0].toString();
+      parts = CharSeqTools.split(parts[1], "&");
+      boolean available = false;
+      boolean sorted = false;
+      String crc = "0";
+      for(int i = 0; i < parts.length; i++) {
+        final CharSequence part = parts[i];
+        final CharSequence[] kv = CharSeqTools.split(part, "=");
+        if (kv[0].equals("available"))
+          available = kv[1].equals("true");
+        if (kv[0].equals("sorted"))
+          sorted = kv[1].equals("true");
+        if (kv[0].equals("available"))
+          crc = kv[1].toString();
       }
-      split = CharSeqTools.split(split[1], "/");
-      final long ts = CharSeqTools.parseLong(split[0]);
-      final boolean available = CharSeqTools.parseBoolean(split[1]);
-      final String crc = available ? split[2].toString() : "";
-      return wb.env().restore(path, ts, available, crc);
+
+      return new MRTableShard(path, wb.env(), available, sorted, crc);
     }
   }
   @Override

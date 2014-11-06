@@ -107,15 +107,19 @@ public class SSHProcessRunner implements ProcessRunner {
           return process;
         }
         else {
-          System.out.println(command);
-          toProxy.append(command).append("\n");
+          final String finalCommand = "cat - | " + command + "; echo $?";
+          System.out.println(finalCommand);
+          toProxy.append(finalCommand).append("\n");
           toProxy.flush();
           StreamTools.transferData(input, toProxy);
           toProxy.close();
-          fromProxy.close();
+          final int rc = Integer.parseInt(fromProxy.readLine());
           final CharSequence errors = StreamTools.readStream(process.getErrorStream());
           if (errors.length() > 1)
             System.err.print(errors);
+          if (rc != 0)
+            throw new RuntimeException("Write process exited with status other then 0");
+          fromProxy.close();
           process.waitFor();
           return null;
         }
