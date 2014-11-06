@@ -17,6 +17,7 @@ import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.system.RuntimeUtils;
 import solar.mr.MREnv;
 import solar.mr.MRErrorsHandler;
+import solar.mr.MRRecord;
 import solar.mr.proc.MRState;
 import solar.mr.proc.MRWhiteboard;
 import solar.mr.tables.MRTableShard;
@@ -39,16 +40,16 @@ public class MRWhiteboardImpl implements MRWhiteboard {
   public MRWhiteboardImpl(final MREnv env, final String id, final String user) {
     this(env, id, user, new MRErrorsHandler() {
       @Override
-      public void error(final String type, final String cause, final String table, final CharSequence record) {
-        System.err.println(table + "\t" + type + "\t" + cause);
-        System.err.println(record);
+      public void error(final String type, final String cause, final MRRecord rec) {
+        System.err.println(rec.source + "\t" + type + "\t" + cause);
+        System.err.println(rec.toString());
       }
 
       @Override
-      public void error(final Throwable th, final String table, final CharSequence record) {
-        System.err.print(table + "\t");
+      public void error(final Throwable th, final MRRecord rec) {
+        System.err.print(rec.source + "\t");
         th.printStackTrace(System.err);
-        System.err.println(record);
+        System.err.println(rec.toString());
       }
     });
   }

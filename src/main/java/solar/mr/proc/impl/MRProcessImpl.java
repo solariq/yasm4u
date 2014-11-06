@@ -9,6 +9,7 @@ import com.spbsu.commons.seq.CharSeqReader;
 import com.spbsu.commons.seq.CharSeqTools;
 import solar.mr.MREnv;
 import solar.mr.MRErrorsHandler;
+import solar.mr.MRRecord;
 import solar.mr.env.LocalMREnv;
 import solar.mr.env.YaMREnv;
 import solar.mr.proc.MRJoba;
@@ -37,13 +38,13 @@ public class MRProcessImpl implements MRProcess {
     test = new MRWhiteboardImpl(cache, name() + "/" + prod.env().name(), System.getenv("USER"), null);
     prod.setErrorsHandler(new MRErrorsHandler() {
       @Override
-      public void error(final String type, final String cause, final String table, final CharSequence record) {
-        cache.append(cache.resolve(table), new CharSeqReader(CharSeqTools.concat(record, "\n")));
+      public void error(final String type, final String cause, MRRecord rec) {
+        cache.append(cache.resolve(rec.source), new CharSeqReader(rec.toString() + "\n"));
       }
 
       @Override
-      public void error(final Throwable th, final String table, final CharSequence record) {
-        cache.append(cache.resolve(table), new CharSeqReader(CharSeqTools.concat(record, "\n")));
+      public void error(final Throwable th, MRRecord rec) {
+        cache.append(cache.resolve(rec.source), new CharSeqReader(rec.toString() + "\n"));
       }
     });
     if (prod.env() instanceof YaMREnv) {

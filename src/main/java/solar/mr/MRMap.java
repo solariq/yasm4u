@@ -1,8 +1,5 @@
 package solar.mr;
 
-import com.spbsu.commons.seq.CharSeq;
-import com.spbsu.commons.seq.CharSeqComposite;
-import com.spbsu.commons.seq.CharSeqTools;
 import solar.mr.proc.MRState;
 
 /**
@@ -16,7 +13,7 @@ public abstract class MRMap extends MRRoutine {
   }
 
   @Override
-  public final void invoke(Record rec) {
+  public final void invoke(MRRecord rec) {
     map(rec.key, rec.sub, rec.value);
   }
 

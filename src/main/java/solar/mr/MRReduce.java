@@ -5,7 +5,6 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ArrayBlockingQueue;
 
 
-import com.spbsu.commons.util.Pair;
 import solar.mr.proc.MRState;
 
 /**
@@ -14,17 +13,17 @@ import solar.mr.proc.MRState;
 * Time: 11:19
 */
 public abstract class MRReduce extends MRRoutine {
-  public static final Record EOF = new Record("/dev/random", "", "", "");
+  public static final MRRecord EOF = new MRRecord("/dev/random", "", "", "");
 
   public static final int MAX_REDUCE_SIZE = 100000;
   private final Thread reduceThread;
-  private final ArrayBlockingQueue<Record> recordsQueue = new ArrayBlockingQueue<>(MAX_REDUCE_SIZE);
+  private final ArrayBlockingQueue<MRRecord> recordsQueue = new ArrayBlockingQueue<>(MAX_REDUCE_SIZE);
 
   public MRReduce(String[] inputTables, final MROutput output, MRState state) {
     super(inputTables, output, state);
     reduceThread = new Thread(new Runnable() {
-      private Record record;
-      private Record lastRetrieved;
+      private MRRecord record;
+      private MRRecord lastRetrieved;
       @Override
       public void run() {
         while (true) {
@@ -34,7 +33,7 @@ public abstract class MRReduce extends MRRoutine {
             if (record == EOF)
               return;
             final String key = record.key;
-            final Iterator<Pair<String, CharSequence>> reduceIterator = new Iterator<Pair<String, CharSequence>>() {
+            final Iterator<MRRecord> reduceIterator = new Iterator<MRRecord>() {
               @Override
               public boolean hasNext() {
                 while (record == null) {
@@ -51,13 +50,12 @@ public abstract class MRReduce extends MRRoutine {
               }
 
               @Override
-              public Pair<String, CharSequence> next() {
+              public MRRecord next() {
                 if (!hasNext())
                   throw new NoSuchElementException();
-                final Record current = record;
+                final MRRecord current = record;
                 record = null;
-                lastRetrieved = current;
-                return new Pair<>(current.sub, current.value);
+                return lastRetrieved = current;
               }
 
               @Override
@@ -69,7 +67,7 @@ public abstract class MRReduce extends MRRoutine {
               reduce(key, reduceIterator);
             } catch (Exception e) {
               if (lastRetrieved != null)
-                output.error(e, currentTable(), lastRetrieved.toString());
+                output.error(e, lastRetrieved);
               interrupt();
               break;
             }
@@ -87,7 +85,7 @@ public abstract class MRReduce extends MRRoutine {
   }
 
   @Override
-  public final void invoke(Record rec) {
+  public final void invoke(MRRecord rec) {
     recordsQueue.add(rec);
   }
 
@@ -103,5 +101,5 @@ public abstract class MRReduce extends MRRoutine {
     }
   }
 
-  public abstract void reduce(String key, Iterator<Pair<String, CharSequence>> reduce);
+  public abstract void reduce(String key, Iterator<MRRecord> reduce);
 }

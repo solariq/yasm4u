@@ -10,6 +10,7 @@ import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.Pair;
 import solar.mr.MROutput;
+import solar.mr.MRRecord;
 import solar.mr.MRReduce;
 import solar.mr.env.MRRunner;
 import solar.mr.proc.MRState;
@@ -37,7 +38,7 @@ public class ReduceMethod extends MRReduce {
   }
 
   @Override
-  public void reduce(final String key, final Iterator<Pair<String, CharSequence>> reduce) {
+  public void reduce(final String key, final Iterator<MRRecord> reduce) {
     try {
       method.invoke(routineObj, key, reduce, output);
     } catch (IllegalAccessException | InvocationTargetException e) {

@@ -12,7 +12,6 @@ import com.spbsu.commons.random.FastRandom;
 import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqReader;
 import com.spbsu.commons.seq.CharSeqTools;
-import com.spbsu.commons.system.RuntimeUtils;
 import org.apache.commons.io.FileUtils;
 import solar.mr.*;
 import solar.mr.proc.MRState;
@@ -88,15 +87,15 @@ public class LocalMREnv implements MREnv {
 
       final MROutputImpl mrOutput = new MROutputImpl(outputs.toArray(new Writer[outputs.size()]), new MRErrorsHandler() {
         @Override
-        public void error(final String type, final String cause, final String table, final CharSequence record) {
+        public void error(final String type, final String cause, MRRecord rec) {
           hasErrors[0] = true;
-          throw new RuntimeException(table + "\t" + record + "\n\t" + type + "\t" + cause + "\t");
+          throw new RuntimeException(rec.source + "\t" + rec.toString() + "\n\t" + type + "\t" + cause + "\t");
         }
 
         @Override
-        public void error(final Throwable th, final String table, final CharSequence record) {
+        public void error(final Throwable th, final MRRecord rec) {
           hasErrors[0] = true;
-          throw new RuntimeException(table + "\t" + record, th);
+          throw new RuntimeException(rec.source + "\t" + rec.toString(), th);
         }
       });
       final MRRoutine routine = constructor.newInstance(inputNames.toArray(new String[inputNames.size()]), mrOutput, state);

@@ -11,7 +11,7 @@ import solar.mr.proc.MRState;
 * Date: 23.09.14
 * Time: 11:19
 */
-public abstract class MRRoutine implements Processor<CharSequence>, Action<MRRoutine.Record> {
+public abstract class MRRoutine implements Processor<CharSequence>, Action<MRRecord> {
   protected final MROutput output;
   private final MRState state;
   private final String[] inputTables;
@@ -28,24 +28,23 @@ public abstract class MRRoutine implements Processor<CharSequence>, Action<MRRou
   public final void process(final CharSequence record) {
     if (record == CharSeq.EMPTY)
       onEndOfInput();
-    if (record.length() == 0)
+    if (interrupted || record.length() == 0) // this is trash and ugar but we need to read entire stream before closing it, so that YaMR won't gone mad
       return;
-
-    if (interrupted) // this is trash and ugar but we need to read entire stream before closing it, so that YaMR won't gone mad
-      return;
-    try {
-      final CharSequence[] split = CharSeqTools.split(record, '\t');
-      if (split.length == 1) // switch table record
-        currentInputIndex = CharSeqTools.parseInt(split[0]);
-      else if (split.length < 3)
-        output.error("Illegal record", "Contains less then 3 fields", inputTables[currentInputIndex], record);
-      else
-        invoke(new Record(currentTable(), split[0].toString(), split[1].toString(), record.subSequence(
-            split[0].length() + split[1].length() + 2, record.length())));
-    }
-    catch (Exception e) {
-      output.error(e, currentTable(), record);
-      interrupt();
+    final CharSequence[] split = new CharSequence[3];
+    int parts = CharSeqTools.trySplit(record, '\t', split);
+    if (parts == 1) // switch table record
+      currentInputIndex = CharSeqTools.parseInt(split[0]);
+    else if (split.length < 3)
+      output.error("Illegal record", "Contains 2 fields only!", new MRRecord(currentTable(), split[0].toString(), "", split[1]));
+    else {
+      final MRRecord mrRecord = new MRRecord(currentTable(), split[0].toString(), split[1].toString(), split[2]);
+      try {
+        invoke(mrRecord);
+      }
+      catch (Exception e) {
+        output.error(e, mrRecord);
+        interrupt();
+      }
     }
   }
 
@@ -63,21 +62,4 @@ public abstract class MRRoutine implements Processor<CharSequence>, Action<MRRou
     return state;
   }
 
-  public static class Record {
-    public String source;
-    public String key;
-    public String sub;
-    public CharSequence value;
-
-    public Record(final String source, final String key, final String sub, final CharSequence value) {
-      this.key = key;
-      this.sub = sub;
-      this.value = value;
-    }
-
-    @Override
-    public String toString() {
-      return key + "\t" + sub + "\t" + value.toString();
-    }
-  }
 }

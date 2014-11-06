@@ -3,8 +3,8 @@ package yamr;
 import java.util.Iterator;
 
 
-import com.spbsu.commons.util.Pair;
 import solar.mr.MROutput;
+import solar.mr.MRRecord;
 import solar.mr.MRReduce;
 import solar.mr.proc.MRState;
 
@@ -19,7 +19,7 @@ public class SAPPCounterReduce extends MRReduce {
   }
 
   @Override
-  public void reduce(final String key, final Iterator<Pair<String, CharSequence>> reduce) {
+  public void reduce(final String key, final Iterator<MRRecord> reduce) {
     int count = 0;
     while (reduce.hasNext()) {
       reduce.next();

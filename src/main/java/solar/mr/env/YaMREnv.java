@@ -350,16 +350,16 @@ public class YaMREnv implements MREnv {
         }
         else if (CharSeqTools.startsWith(arg, " value(p): ")) {
           value = arg.subSequence(" value(p): ".length(), arg.length()).toString();
-          errorsHandler.error(table, key, subkey, value);
+          errorsHandler.error("MR exec error", "Who knows", new MRRecord(table, key, subkey, value));
         }
         System.err.println(arg);
       }
     }, null);
     errorsCount[0] += read(errorsShard, new MRRoutine(new String[]{errorsShardName}, null, state) {
       @Override
-      public void invoke(final MRRoutine.Record record) {
-        CharSequence[] parts = CharSeqTools.split(record.value, '\t', new CharSequence[2]);
-        errorsHandler.error(record.key, record.sub, parts[0].toString(), parts[1]);
+      public void invoke(final MRRecord record) {
+        CharSequence[] parts = CharSeqTools.split(record.value, '\t', new CharSequence[4]);
+        errorsHandler.error(record.key, record.sub, new MRRecord(parts[0].toString(), parts[1].toString(), parts[2].toString(), parts[3]));
         System.err.println(record.value);
         System.err.println(record.key + "\t" + record.sub.replace("\\n", "\n"));
       }

@@ -12,6 +12,7 @@ import com.spbsu.commons.util.Pair;
 import org.apache.log4j.Logger;
 import solar.mr.MRErrorsHandler;
 import solar.mr.MROutput;
+import solar.mr.MRRecord;
 
 /**
 * User: solar
@@ -114,11 +115,11 @@ public class MROutputImpl implements MROutput {
   }
 
   @Override
-  public void error(final String type, final String cause, String table, final CharSequence record) {
+  public void error(final String type, final String cause, final MRRecord rec) {
     if (errorsHandler != null)
-      errorsHandler.error(type, cause, table, record);
+      errorsHandler.error(type, cause, rec);
     else
-      push(errorTable, CharSeqTools.concatWithDelimeter("\t", type, encodeKey(cause), table, record));
+      push(errorTable, CharSeqTools.concatWithDelimeter("\t", type, encodeKey(cause), rec.source, rec.toString()));
   }
 
   private CharSequence encodeKey(final String cause) {
@@ -126,10 +127,10 @@ public class MROutputImpl implements MROutput {
   }
 
   @Override
-  public void error(final Throwable th, String table, CharSequence record) {
+  public void error(final Throwable th, final MRRecord rec) {
     final ByteArrayOutputStream out = new ByteArrayOutputStream();
     th.printStackTrace(new PrintStream(out));
-    error(th.getClass().getName(), out.toString(), table, CharSeqTools.replace(record, "\n", "\\n"));
+    error(th.getClass().getName(), out.toString().replace("\n", "\\n"), rec);
   }
 
   private void push(int tableNo, CharSequence record) {
