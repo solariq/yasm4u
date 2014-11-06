@@ -1,14 +1,11 @@
 package solar.mr.proc.impl;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 
-import com.spbsu.commons.io.StreamTools;
-import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.Pair;
-import solar.mr.MRMap;
+import solar.mr.routines.MRMap;
 import solar.mr.MROutput;
 import solar.mr.env.MRRunner;
 import solar.mr.proc.MRState;

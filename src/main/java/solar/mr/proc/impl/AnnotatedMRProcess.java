@@ -16,7 +16,8 @@ import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
 import solar.mr.proc.tags.MRRead;
 import solar.mr.proc.tags.MRReduceMethod;
-import solar.mr.tables.MRTableShard;
+import solar.mr.MRTableShard;
+import solar.mr.routines.MRReduce;
 
 /**
 * User: solar
@@ -64,10 +65,15 @@ public class AnnotatedMRProcess extends MRProcessImpl {
     @Override
     public boolean run(final MRWhiteboard wb) {
       final List<MRTableShard> inTables = new ArrayList<>();
+      final boolean need2sort = MRReduce.class.isAssignableFrom(routineClass);
       for (int i = 0; i < in.length; i++) {
         final Object resolve = wb.resolve(in[i]);
-        if (resolve instanceof MRTableShard)
-          inTables.add((MRTableShard) resolve);
+        if (resolve instanceof MRTableShard) {
+          MRTableShard shard = (MRTableShard) resolve;
+          if (need2sort)
+            wb.set(in[i], shard = wb.env().sort(shard));
+          inTables.add(shard);
+        }
       }
       final MRTableShard[] outTables = new MRTableShard[out.length];
       for (int i = 0; i < out.length; i++) {

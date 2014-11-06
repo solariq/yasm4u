@@ -13,7 +13,7 @@ import com.spbsu.commons.func.Action;
 import solar.mr.MRRoutine;
 import solar.mr.MRTools;
 import solar.mr.proc.MRState;
-import solar.mr.tables.MRTableShard;
+import solar.mr.MRTableShard;
 
 /**
  * User: solar

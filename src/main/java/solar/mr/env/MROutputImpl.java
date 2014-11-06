@@ -12,7 +12,7 @@ import com.spbsu.commons.util.Pair;
 import org.apache.log4j.Logger;
 import solar.mr.MRErrorsHandler;
 import solar.mr.MROutput;
-import solar.mr.MRRecord;
+import solar.mr.routines.MRRecord;
 
 /**
 * User: solar

@@ -4,8 +4,8 @@ import java.util.Iterator;
 
 
 import solar.mr.MROutput;
-import solar.mr.MRRecord;
-import solar.mr.MRReduce;
+import solar.mr.routines.MRRecord;
+import solar.mr.routines.MRReduce;
 import solar.mr.proc.MRState;
 
 /**

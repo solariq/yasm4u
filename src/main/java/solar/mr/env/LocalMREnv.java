@@ -15,8 +15,8 @@ import com.spbsu.commons.seq.CharSeqTools;
 import org.apache.commons.io.FileUtils;
 import solar.mr.*;
 import solar.mr.proc.MRState;
-import solar.mr.tables.FixedMRTable;
-import solar.mr.tables.MRTableShard;
+import solar.mr.MRTableShard;
+import solar.mr.routines.MRRecord;
 
 /**
  * User: solar
@@ -30,7 +30,9 @@ public class LocalMREnv implements MREnv {
   public static LocalMREnv createTemp() {
     try {
       final File temp = File.createTempFile("mrenv", "local");
+      //noinspection ResultOfMethodCallIgnored
       temp.delete();
+      //noinspection ResultOfMethodCallIgnored
       temp.mkdir();
       temp.deleteOnExit();
       return new LocalMREnv(temp.getAbsolutePath());
@@ -38,9 +40,11 @@ public class LocalMREnv implements MREnv {
       throw new RuntimeException(e);
     }
   }
+
   public LocalMREnv(final String home) {
     this.home = new File(home);
     if (!this.home.isDirectory())
+      //noinspection ResultOfMethodCallIgnored
       this.home.delete();
     if (!this.home.exists())
       try {
@@ -52,18 +56,6 @@ public class LocalMREnv implements MREnv {
 
   public LocalMREnv() {
     this(DEFAULT_HOME);
-  }
-
-  public boolean execute(final Class<? extends MRRoutine> routineClass, MRState state, final MRTable[] in, final MRTable[] out, final MRErrorsHandler errorsHandler) {
-    final List<MRTableShard> inputShards = new ArrayList<>();
-    for(int i = 0; i < in.length; i++) {
-      inputShards.addAll(Arrays.asList(shards(in[i])));
-    }
-    final List<MRTableShard> outputShards = new ArrayList<>();
-    for(int i = 0; i < out.length; i++) {
-      outputShards.addAll(Arrays.asList(shards(out[i])));
-    }
-    return execute(routineClass, state, inputShards.toArray(new MRTableShard[inputShards.size()]), outputShards.toArray(new MRTableShard[outputShards.size()]), errorsHandler);
   }
 
   @Override
@@ -79,10 +71,10 @@ public class LocalMREnv implements MREnv {
       final Constructor<? extends MRRoutine> constructor = exec.getConstructor(String[].class, MROutput.class, MRState.class);
       for(int i = 0; i < in.length; i++) {
         inputNames.add(in[i].path());
-        inputFiles.add(((LocalMRTableShard)in[i]).file());
+        inputFiles.add(file(in[i].path(), in[i].isSorted()));
       }
       for(int i = 0; i < out.length; i++) {
-        outputs.add(new FileWriter(((LocalMRTableShard) out[i]).file()));
+        outputs.add(new FileWriter(file(out[i].path(), out[i].isSorted())));
       }
 
       final MROutputImpl mrOutput = new MROutputImpl(outputs.toArray(new Writer[outputs.size()]), new MRErrorsHandler() {
@@ -115,30 +107,25 @@ public class LocalMREnv implements MREnv {
   }
 
   @Override
-  public boolean execute(final Class<? extends MRRoutine> exec, final MRState state, final MRTable in, final MRTable... out) {
-    return execute(exec, state, new MRTable[]{in}, out, null);
-  }
-
-  @Override
-  public LocalMRTableShard[] shards(final MRTable table) {
-    return new LocalMRTableShard[]{resolve(table.name())};
-  }
-
-  @Override
-  public LocalMRTableShard resolve(final String path) {
-    return new LocalMRTableShard(path, new FixedMRTable(path), new File(home, path + ".txt"));
-  }
-
-  @Override
-  public MRTableShard restore(final String path, final long ts, final boolean available, final String crc) {
-    return new LocalMRTableShard(path, new FixedMRTable(path), new File(home, path + ".txt"), ts, available, crc);
+  public MRTableShard resolve(final String path) {
+    {
+      final File sortedFile = file(path, true);
+      if (sortedFile.exists())
+        return new MRTableShard(path, this, true, true, "" + sortedFile.length());
+    }
+    {
+      final File unsortedFile = file(path, false);
+      if (unsortedFile.exists())
+        return new MRTableShard(path, this, true, false, "" + unsortedFile.length());
+    }
+    return new MRTableShard(path, this, false, false, "0");
   }
 
   @Override
   public int read(final MRTableShard shard, final Processor<CharSequence> seq) {
     try {
       final int[] counter = new int[]{0};
-      final File file = ((LocalMRTableShard) shard).file();
+      final File file = file(shard.path(), shard.isSorted());
       if (file.exists())
         CharSeqTools.processLines(new FileReader(file), new Processor<CharSequence>() {
           @Override
@@ -155,25 +142,25 @@ public class LocalMREnv implements MREnv {
 
   @Override
   public void write(final MRTableShard shard, final Reader content) {
-    final LocalMRTableShard localShard = (LocalMRTableShard) shard;
-    try {
-      StreamTools.transferData(content, new FileWriter(localShard.file()));
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    writeFile(content, file(shard.path(), shard.isSorted()), false);
   }
 
   @Override
   public void append(final MRTableShard shard, final Reader content) {
-    final LocalMRTableShard localShard = (LocalMRTableShard) shard;
+    writeFile(content, file(shard.path(), shard.isSorted()), true);
+  }
+
+  private void writeFile(final Reader content, final File file, final boolean append) {
     try {
-      FileUtils.forceMkdir(((LocalMRTableShard) shard).file().getParentFile());
-    } catch (IOException e) {
+      FileUtils.forceMkdir(file.getParentFile());
+    }
+    catch (IOException e) {
       throw new RuntimeException(e);
     }
-    try (final Writer out = new FileWriter(localShard.file(), true)) {
+    try (final Writer out = new FileWriter(file, append)) {
       StreamTools.transferData(content, out);
-    } catch (IOException e) {
+    }
+    catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -181,8 +168,12 @@ public class LocalMREnv implements MREnv {
   @Override
   public void delete(final MRTableShard shard) {
     try {
-      if (((LocalMRTableShard) shard).file().exists())
-        FileUtils.forceDelete(((LocalMRTableShard) shard).file());
+      final File sorted = file(shard.path(), true);
+      if (sorted.exists())
+        FileUtils.forceDelete(sorted);
+      final File unsorted = file(shard.path(), false);
+      if (unsorted.exists())
+        FileUtils.forceDelete(unsorted);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -192,7 +183,7 @@ public class LocalMREnv implements MREnv {
   public void sample(final MRTableShard shard, final Processor<CharSequence> seq) {
     final Random rng = new FastRandom(shard.crc().hashCode());
     try {
-      CharSeqTools.processLines(new FileReader(((LocalMRTableShard)shard).file()), new Processor<CharSequence>() {
+      CharSeqTools.processLines(new FileReader(file(shard.path(), shard.isSorted())), new Processor<CharSequence>() {
         @Override
         public void process(final CharSequence arg) {
           if (rng.nextDouble() > 0.9)
@@ -205,10 +196,11 @@ public class LocalMREnv implements MREnv {
   }
 
   @Override
-  public void sort(final MRTableShard shard) {
+  public MRTableShard sort(final MRTableShard shard) {
+    if (shard.isSorted())
+      return shard;
     final TreeMap<String, CharSequence> sort = new TreeMap<>();
     read(shard, new Processor<CharSequence>() {
-
       private CharSequence[] result = new CharSequence[3];
 
       @Override
@@ -222,7 +214,9 @@ public class LocalMREnv implements MREnv {
     for (Map.Entry<String, CharSequence> entry : sort.entrySet()) {
       sorted.add(entry.getValue());
     }
-    write(shard, new CharSeqReader(CharSeqTools.concatWithDelimeter("\n", sorted)));
+
+    writeFile(new CharSeqReader(CharSeqTools.concatWithDelimeter("\n", sorted)), file(shard.path(), true), false);
+    return resolve(shard.path());
   }
 
   @Override
@@ -234,25 +228,7 @@ public class LocalMREnv implements MREnv {
     return home.getAbsolutePath();
   }
 
-  public class LocalMRTableShard extends MRTableShard {
-    private final File tableFile;
-
-    private LocalMRTableShard(final String path, final MRTable owner, final File tableFile) {
-      this(path, owner, tableFile, System.currentTimeMillis(), tableFile.exists(), tableFile.exists() ? "" + tableFile.length() : "");
-    }
-
-    public LocalMRTableShard(final String path, final MRTable table, final File file, final long ts, final boolean available, final String crc) {
-      super(path, LocalMREnv.this, table, available, crc, ts);
-      tableFile = file;
-      try {
-        FileUtils.forceMkdir(tableFile.getParentFile());
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
-
-    public File file() {
-      return tableFile;
-    }
+  public File file(final String path, boolean sorted) {
+    return new File(home, path + (sorted ? ".txt.sorted" : ".txt"));
   }
 }

@@ -14,7 +14,7 @@ import solar.mr.proc.MRJoba;
 import solar.mr.proc.MRState;
 import solar.mr.proc.MRWhiteboard;
 import solar.mr.proc.tags.MRRead;
-import solar.mr.tables.MRTableShard;
+import solar.mr.MRTableShard;
 
 /**
 * User: solar

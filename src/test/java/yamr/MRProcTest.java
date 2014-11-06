@@ -24,7 +24,7 @@ import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
 import solar.mr.proc.tags.MRRead;
 import solar.mr.proc.tags.MRReduceMethod;
-import solar.mr.tables.MRTableShard;
+import solar.mr.MRTableShard;
 
 /**
  * User: solar
