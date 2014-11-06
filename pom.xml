@@ -68,23 +68,14 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>2.3.2</version>
-        <executions>
-          <execution>
-            <id>compilation</id>
-            <goals>
-              <goal>compile</goal>
-            </goals>
-            <phase>compile</phase>
-            <configuration>
-              <source>1.7</source>
-              <target>1.7</target>
-              <compileSourceRoots default-value="junk"/>
+        <configuration>
+          <source>1.7</source>
+          <target>1.7</target>
+          <!--compileSourceRoots default-value="junk"/>
               <includes>
-                <include>**/*.java</include>
-              </includes>
-            </configuration>
-          </execution>
-        </executions>
+              <include>**/*.java</include>
+              </includes-->
+        </configuration>
       </plugin>
     </plugins>
   </build>
