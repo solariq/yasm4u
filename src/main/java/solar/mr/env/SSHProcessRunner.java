@@ -88,6 +88,8 @@ public class SSHProcessRunner implements ProcessRunner {
           if (errors.length() > 1)
             System.err.print(errors);
           process.waitFor();
+          if (process.exitValue() != 0)
+            throw new RuntimeException("Unable to start remote process");
           final File tempFile = File.createTempFile("wait", ".sh");
           //noinspection ResultOfMethodCallIgnored
           tempFile.delete();

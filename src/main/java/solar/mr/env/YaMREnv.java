@@ -204,8 +204,8 @@ public class YaMREnv implements MREnv {
         builder.append(arg);
       }
     }, defaultErrorsProcessor, null);
+    final CharSeq build = builder.build();
     try {
-      final CharSeq build = builder.build();
       JsonParser parser = JSONTools.parseJSON(build);
       ObjectMapper mapper = new ObjectMapper();
       JsonToken next = parser.nextToken();
@@ -223,7 +223,7 @@ public class YaMREnv implements MREnv {
       }
       return new MRTableShard(shardName, this, false, false, "");
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Error parsing JSON from server: " + build, e);
     }
   }
 
