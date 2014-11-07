@@ -79,7 +79,7 @@
         <configuration>
           <source>1.7</source>
           <target>1.7</target>
-          <compileSourceRoots default-value="src"/>
+          <compileSourceRoots default-value="${basedir}/src"/>
               <includes>
               <include>**/*.java</include>
               </includes>
