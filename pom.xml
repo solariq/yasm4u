@@ -65,6 +65,7 @@
   <!-- till syncronization end we need special rule to
        compile sources.-->
   <build>
+    <sourceDirectory>${basedir}/src</sourceDirectory>
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -79,10 +80,9 @@
         <configuration>
           <source>1.7</source>
           <target>1.7</target>
-          <compileSourceRoots default-value="${basedir}/src"/>
-              <includes>
-              <include>**/*.java</include>
-              </includes>
+          <includes>
+            <include>**/*.java</include>
+          </includes>
         </configuration>
       </plugin>
     </plugins>
