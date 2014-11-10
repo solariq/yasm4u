@@ -303,7 +303,7 @@ public class YaMREnv implements MREnv {
         CharSequence[] parts = CharSeqTools.split(record.value, '\t', new CharSequence[4]);
         errorsHandler.error(record.key, record.sub, new MRRecord(parts[0].toString(), parts[1].toString(), parts[2].toString(), parts[3]));
         System.err.println(record.value);
-        System.err.println(record.key + "\t" + record.sub.replace("\\n", "\n"));
+        System.err.println(record.key + "\t" + record.sub.replace("\\n", "\n").replace("\\t", "\t"));
       }
     });
     delete(errorsShard);

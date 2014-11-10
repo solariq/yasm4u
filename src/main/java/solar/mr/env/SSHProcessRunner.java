@@ -2,6 +2,7 @@ package solar.mr.env;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -38,8 +39,8 @@ public class SSHProcessRunner implements ProcessRunner {
 //        toProxy.flush();
 //        toProxy.append("echo $MR_RUNTIME;\n"); toProxy.flush();
 //        System.out.println(fromProxy.readLine());
-        File remoteJar = null;
-        File jarFile = null;
+        List<File> localResources = new ArrayList<>();
+        List<File> remoteResources = new ArrayList<>();
         int index = 0;
         CharSeqBuilder command = new CharSeqBuilder();
         command.append(mrBinaryPath);
@@ -50,22 +51,26 @@ public class SSHProcessRunner implements ProcessRunner {
             case "-reduce":
               command.append(" ").append(opt);
               String routine = options.get(index++);
-              if (remoteJar != null) {
-                routine = routine.replace(jarFile.getName(), remoteJar.getName());
+              for (int i = 0; i < remoteResources.size(); i++) {
+                File remoteFile = remoteResources.get(i);
+                File localFile = localResources.get(i);
+                routine = routine.replace(localFile.getName(), remoteFile.getName());
               }
               command.append(" \'").append(routine).append("\'");
               break;
             case "-file":
               command.append(" ").append(opt);
-              jarFile = new File(options.get(index++));
+              File localResource = new File(options.get(index++));
               toProxy.append("mktemp --suffix .jar;\n");
               toProxy.flush();
-              remoteJar = new File(fromProxy.readLine());
-              toProxy.append("rm -f ").append(remoteJar.getAbsolutePath()).append(";echo Ok;\n");
+              File remoteResource = new File(fromProxy.readLine());
+              toProxy.append("rm -f ").append(remoteResource.getAbsolutePath()).append(";echo Ok;\n");
               toProxy.flush();
               fromProxy.readLine();
-              Runtime.getRuntime().exec("scp " + jarFile.getAbsolutePath() + " " + proxyHost + ":" + remoteJar).waitFor();
-              command.append(" ").append(remoteJar.getAbsolutePath());
+              Runtime.getRuntime().exec("scp " + localResource.getAbsolutePath() + " " + proxyHost + ":" + remoteResource.getAbsolutePath()).waitFor();
+              command.append(" ").append(remoteResource.getAbsolutePath());
+              localResources.add(localResource);
+              remoteResources.add(remoteResource);
               break;
             default:
               command.append(" ").append(opt);
@@ -95,7 +100,7 @@ public class SSHProcessRunner implements ProcessRunner {
           tempFile.delete();
           tempFile.deleteOnExit();
 
-          final String waitCmd =
+          String waitCmd =
               "result=\"live\";\n"
               + "while [ \"$?\" != \"0\" -o \"$result\" = \"live\" ]; do\n"
               + "  sleep 1;\n"
@@ -103,7 +108,10 @@ public class SSHProcessRunner implements ProcessRunner {
               + " 2>/dev/null; then echo live; else echo dead; fi'\"`;\n"
               + "done\n"
               + "ssh " + proxyHost + " cat " + remoteOutput + ";\n"
-              + "ssh " + proxyHost + " rm -rf " + remoteOutput + " " + remoteJar + ";\n";
+              + "ssh " + proxyHost + " rm -rf " + remoteOutput + ";\n";
+          for (final File remoteResource : remoteResources) {
+            waitCmd += "ssh " + proxyHost + " rm -rf " + remoteResource.getAbsolutePath() + ";\n";
+          }
           StreamTools.writeChars(waitCmd, tempFile);
           process = Runtime.getRuntime().exec("bash " + tempFile.getAbsolutePath());
           return process;

@@ -35,14 +35,17 @@ public class MROutputImpl implements MROutput {
         int lastActiveTable = 0;
         try {
           try {
-            //noinspection InfiniteLoopStatement
-            Pair<Integer, CharSequence> next;
-            while ((next = queue.take()) != MRRunner.STOP) {
-              if (next.getFirst() != lastActiveTable) {
-                out.append(next.getFirst().toString()).append('\n');
-                lastActiveTable = next.getFirst();
+            synchronized (outputThread) {
+              //noinspection InfiniteLoopStatement
+              Pair<Integer, CharSequence> next;
+              while ((next = queue.take()) != MRRunner.STOP) {
+                if (next.getFirst() != lastActiveTable) {
+                  out.append(next.getFirst().toString()).append('\n');
+                  lastActiveTable = next.getFirst();
+                }
+                out.append(next.getSecond()).append('\n');
+                out.flush();
               }
-              out.append(next.getSecond()).append('\n');
             }
           }
           finally {
