@@ -79,7 +79,7 @@ public class MRProcessImpl implements MRProcess {
   /** need to implement Dijkstra's algorithm on state machine in case of several alternative routes
    * @param jobs*/
   private List<MRJoba> generateExecutionPlan(final List<MRJoba> jobs) {
-    final Stack<MRJoba> result = new Stack<>();
+    final Deque<MRJoba> result = new ArrayDeque<>();
     final Set<String> unresolved = new HashSet<>();
     final Set<String> resolved = new HashSet<>();
     unresolved.addAll(Arrays.asList(goals));
@@ -129,7 +129,7 @@ public class MRProcessImpl implements MRProcess {
       resolved.add(resource2resolve);
       unresolved.remove(resource2resolve);
     }
-    return result;
+    return Arrays.asList(result.toArray(new MRJoba[result.size()]));
   }
 
   private List<MRJoba> unmergeJobs(final List<MRJoba> jobs) {
@@ -186,6 +186,11 @@ public class MRProcessImpl implements MRProcess {
           @Override
           public String[] produces() {
             return outputs;
+          }
+
+          @Override
+          public String toString() {
+            return "SplitAdapter for " + joba.toString();
           }
         });
       }

@@ -257,6 +257,15 @@ public class LocalMREnv implements MREnv {
   }
 
   public File file(final String path, boolean sorted) {
-    return new File(home, path + (sorted ? ".txt.sorted" : ".txt"));
+    final File file = new File(home, path + (sorted ? ".txt.sorted" : ".txt"));
+    if (!file.getParentFile().exists()) {
+      try {
+        FileUtils.forceMkdir(file.getParentFile());
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    return file;
   }
 }
