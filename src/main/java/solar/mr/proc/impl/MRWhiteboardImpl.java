@@ -176,20 +176,17 @@ public class MRWhiteboardImpl implements MRWhiteboard {
   @Override
   public boolean check(final String... productName) {
     for (String resource : productName) {
-      if (!check(resource))
+      final Object resolve = resolve(resource);
+      if (resolve instanceof MRTableShard) {
+        final MRTableShard knownShard = (MRTableShard) resolve;
+        final MRTableShard currentShard = env.resolve(knownShard.path());
+        if (!knownShard.isAvailable() || !currentShard.isAvailable() || !currentShard.crc().equals(knownShard.crc()))
+          return false;
+      }
+      else if (resolve == null)
         return false;
     }
     return true;
-  }
-
-  private boolean check(final String resource) {
-    final Object resolve = resolve(resource);
-    if (resolve instanceof MRTableShard) {
-      final MRTableShard knownShard = (MRTableShard) resolve;
-      final MRTableShard currentShard = env.resolve(knownShard.path());
-      return knownShard.isAvailable() && currentShard.isAvailable() && currentShard.crc().equals(knownShard.crc());
-    }
-    return resolve != null;
   }
 
   @Override

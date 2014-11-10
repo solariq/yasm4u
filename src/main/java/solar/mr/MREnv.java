@@ -21,6 +21,7 @@ public interface MREnv {
   void append(MRTableShard shard, Reader content);
   void delete(MRTableShard shard);
   void sample(MRTableShard shard, Processor<CharSequence> seq);
+  void copy(MRTableShard from, MRTableShard to, boolean append);
 
   MRTableShard sort(MRTableShard shard);
 

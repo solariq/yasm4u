@@ -132,10 +132,10 @@ public class MRProcTest {
     final ProcessRunner runner = new SSHProcessRunner("dodola", "/Berkanavt/mapreduce/bin/mapreduce-dev");
     final MREnv env = new YaMREnv(runner, "mobilesearch", "cedar:8013");
     final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SAPPCounter.class, env);
+    mrProcess.wb().wipe();
     mrProcess.wb().set("var:date", new Date(2014-1900, 8, 1));
     int count = mrProcess.<Integer>result();
     Assert.assertEquals(2611709, count);
-    mrProcess.wb().wipe();
   }
 
   @Test
@@ -172,5 +172,49 @@ public class MRProcTest {
     final MRTableShard resolveTable = wb.resolve("mr://xxx");
 
     Assert.assertEquals("yyy", resolveString);
+  }
+
+
+  @MRProcessClass(goal = {"temp:mr:///split1_tmp", "temp:mr:///split2_tmp", "temp:mr:///split3_tmp"})
+  public static final class SampleSplitter {
+
+    private final MRState state;
+    private static final Random rnd = new Random(0xdeadbeef);
+
+    public SampleSplitter(MRState state) {
+      this.state = state;
+    }
+
+    @MRMapMethod(
+            input = "mr:///mobilesearchtest/20141017_655_11",
+            output = {
+                    "temp:mr:///split1_tmp",
+                    "temp:mr:///split2_tmp",
+                    "temp:mr:///split3_tmp"
+            })
+    public void map(final String key, final String sub, final CharSequence value, MROutput output) {
+      int v = rnd.nextInt();
+      final int i = Math.abs(v % 3);
+      switch (i) {
+        case 0:
+          output.add(0, "" + v, "#", "" + v);
+          break;
+        case 1:
+          output.add(1, "" + v, "#", "" + v);
+          break;
+        case 2:
+          output.add(2, "" + v, "#", "" + v);
+          break;
+      }
+    }
+  }
+
+  @Test
+  public void testSplit() {
+    final ProcessRunner runner = new SSHProcessRunner("batista", "/Berkanavt/mapreduce/bin/mapreduce-dev");
+    final MREnv env = new YaMREnv(runner, "mobilesearch", "cedar:8013");
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SampleSplitter.class, env);
+    mrProcess.wb().wipe();
+    mrProcess.execute();
   }
 }

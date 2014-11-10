@@ -103,13 +103,24 @@ public class YaMREnv implements MREnv {
     options.add("-read");
     options.add(table.path());
     options.add("-count");
-    options.add("" + 100);
+    options.add("" + 100000);
     executeCommand(options, new Processor<CharSequence>() {
       @Override
       public void process(final CharSequence arg) {
         linesProcessor.process(arg);
       }
     }, defaultErrorsProcessor, null);
+  }
+
+  @Override
+  public void copy(MRTableShard from, MRTableShard to, boolean append) {
+    final List<String> options = defaultOptions();
+    options.add("-src");
+    options.add(from.path());
+    options.add(append ? "-dstappend" : "-dst");
+    options.add(to.path());
+    options.add("-copy");
+    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
   }
 
   public void write(final MRTableShard shard, final Reader content) {
@@ -134,7 +145,6 @@ public class YaMREnv implements MREnv {
     options.add("-drop");
     options.add(table.path());
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
-    options.remove(options.size() - 1);
   }
 
   public MRTableShard sort(final MRTableShard table) {

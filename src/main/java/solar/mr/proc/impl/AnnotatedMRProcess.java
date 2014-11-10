@@ -2,7 +2,9 @@ package solar.mr.proc.impl;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 import com.spbsu.commons.util.Pair;
@@ -80,7 +82,7 @@ public class AnnotatedMRProcess extends MRProcessImpl {
         final Object resolve = wb.resolve(out[i]);
         if (resolve instanceof MRTableShard)
           outTables[i] = (MRTableShard)resolve;
-        else throw new RuntimeException("MR routine can produce only MR table tresources");
+        else throw new RuntimeException("MR routine can produce only MR table resources");
       }
 
       wb.set(MRRunner.ROUTINES_PROPERTY_NAME, Pair.create(method.getDeclaringClass().getName(), method.getName()));

@@ -12,5 +12,5 @@ import java.lang.annotation.*;
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
 public @interface MRProcessClass {
-  String goal() default "var:result";
+  String[] goal() default {"var:result"};
 }

@@ -207,6 +207,17 @@ public class LocalMREnv implements MREnv {
   }
 
   @Override
+  public void copy(MRTableShard from, MRTableShard to, boolean append) {
+    if (!from.isAvailable())
+      return;
+    try {
+      writeFile(new FileReader(file(from.path(), false)), to.path(), false, append);
+    } catch (FileNotFoundException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
   public MRTableShard sort(final MRTableShard shard) {
     if (shard.isSorted())
       return shard;
