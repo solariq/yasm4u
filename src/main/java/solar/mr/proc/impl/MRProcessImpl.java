@@ -136,7 +136,7 @@ public class MRProcessImpl implements MRProcess {
     final TObjectIntMap<String> sharded = new TObjectIntHashMap<>();
     for (final MRJoba joba : jobs) {
       for (final String resource : joba.produces()) {
-        sharded.increment(resource);
+        sharded.adjustOrPutValue(resource, 1, 1);
       }
     }
 
