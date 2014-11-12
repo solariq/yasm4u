@@ -3,6 +3,7 @@ package solar.mr.routines;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 
 import solar.mr.MROutput;
@@ -88,7 +89,11 @@ public abstract class MRReduce extends MRRoutine {
 
   @Override
   public final void invoke(MRRecord rec) {
-    recordsQueue.add(rec);
+    try {
+      recordsQueue.put(rec);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
