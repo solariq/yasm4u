@@ -33,7 +33,8 @@ import solar.mr.MRTableShard;
  */
 public class MRProcTest {
 
-  private final static String TEST_SERVER_PROXY = "batista"; 
+  private final static String TEST_SERVER_PROXY = "batista";
+  private final static String TEST_MR_USER = "mobilesearch";
   
   @MRProcessClass(goal = "var:result")
   public static class SAPPCounter {
@@ -133,7 +134,7 @@ public class MRProcTest {
   @Test
   public void testProcCreate() {
     final ProcessRunner runner = new SSHProcessRunner(TEST_SERVER_PROXY, "/Berkanavt/mapreduce/bin/mapreduce-dev");
-    final MREnv env = new YaMREnv(runner, "mobilesearch", "cedar:8013");
+    final MREnv env = new YaMREnv(runner, TEST_MR_USER, "cedar:8013");
     final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SAPPCounter.class, env);
     mrProcess.wb().wipe();
     mrProcess.wb().set("var:date", new Date(2014-1900, 8, 1));
@@ -144,7 +145,7 @@ public class MRProcTest {
   @Test
   public void testExceptionMap() {
     final ProcessRunner runner = new SSHProcessRunner(TEST_SERVER_PROXY, "/Berkanavt/mapreduce/bin/mapreduce-dev");
-    final MREnv env = new YaMREnv(runner, "mobilesearch", "cedar:8013");
+    final MREnv env = new YaMREnv(runner, TEST_MR_USER, "cedar:8013");
     final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(FailAtRandomReduce.class, env);
     mrProcess.wb().wipe();
     mrProcess.wb().set("var:date", new Date(2014-1900, 8, 1));
@@ -156,7 +157,7 @@ public class MRProcTest {
   @Test
   public void testExceptionReduce() {
     final ProcessRunner runner = new SSHProcessRunner(TEST_SERVER_PROXY, "/Berkanavt/mapreduce/bin/mapreduce-dev");
-    final MREnv env = new YaMREnv(runner, "mobilesearch", "cedar:8013");
+    final MREnv env = new YaMREnv(runner, TEST_MR_USER, "cedar:8013");
     final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(FailAtRandomReduce.class, env);
     mrProcess.wb().wipe();
     mrProcess.wb().set("var:date", new Date(2014-1900, 8, 1));
@@ -170,11 +171,31 @@ public class MRProcTest {
   public void testResolve() {
     final MREnv env = LocalMREnv.createTemp();
     final MRWhiteboard wb = new MRWhiteboardImpl(env, "proc", "none");
-    wb.set("xxx", "yyy");
+    wb.set("var:xxx", "yyy");
     final String resolveString = wb.resolve("{var:xxx}");
     final MRTableShard resolveTable = wb.resolve("mr://xxx");
 
     Assert.assertEquals("yyy", resolveString);
+
+    wb.set("var:xx1", new Date(2014-1900,7,1));
+    Assert.assertEquals("20140801", wb.resolve("{var:xx1,date,yyyyMMdd}"));
+    String path = wb.<MRTableShard>resolve("mr:///sometest/{var:xx1,date,yyyyMMdd}").path();
+    path = wb.<MRTableShard>resolve("mr:///sometest/{var:xx1,date,yyyyMMdd}_test").path();
+    Assert.assertEquals("sometest/20140801_test",path);
+    wb.set("var:xx2", "sometest/{var:xx1,date,yyyyMMdd}");
+    path = wb.<MRTableShard>resolve("mr:///{var:xx2}_test").path();
+    Assert.assertEquals("sometest/20140801_test",path);
+  }
+
+  @Test
+  public void testResolve2() {
+    final MREnv env = LocalMREnv.createTemp();
+    final MRWhiteboard wb = new MRWhiteboardImpl(env, "proc", "none");
+
+    wb.set("var:xx1", new Date(2014-1900,7,1));
+    wb.set("var:xx2", "sometest/{var:xx1,date,yyyyMMdd}");
+    String path = wb.<MRTableShard>resolve("mr:///{var:xx2}_test").path();
+    Assert.assertEquals("sometest/20140801_test",path);
   }
 
 
