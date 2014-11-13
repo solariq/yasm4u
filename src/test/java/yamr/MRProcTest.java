@@ -32,6 +32,9 @@ import solar.mr.MRTableShard;
  * Time: 10:35
  */
 public class MRProcTest {
+
+  private final static String TEST_SERVER_PROXY = "batista"; 
+  
   @MRProcessClass(goal = "var:result")
   public static class SAPPCounter {
     private final MRState state;
@@ -129,7 +132,7 @@ public class MRProcTest {
 
   @Test
   public void testProcCreate() {
-    final ProcessRunner runner = new SSHProcessRunner("dodola", "/Berkanavt/mapreduce/bin/mapreduce-dev");
+    final ProcessRunner runner = new SSHProcessRunner(TEST_SERVER_PROXY, "/Berkanavt/mapreduce/bin/mapreduce-dev");
     final MREnv env = new YaMREnv(runner, "mobilesearch", "cedar:8013");
     final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SAPPCounter.class, env);
     mrProcess.wb().wipe();
@@ -140,7 +143,7 @@ public class MRProcTest {
 
   @Test
   public void testExceptionMap() {
-    final ProcessRunner runner = new SSHProcessRunner("dodola", "/Berkanavt/mapreduce/bin/mapreduce-dev");
+    final ProcessRunner runner = new SSHProcessRunner(TEST_SERVER_PROXY, "/Berkanavt/mapreduce/bin/mapreduce-dev");
     final MREnv env = new YaMREnv(runner, "mobilesearch", "cedar:8013");
     final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(FailAtRandomReduce.class, env);
     mrProcess.wb().wipe();
@@ -152,7 +155,7 @@ public class MRProcTest {
   }
   @Test
   public void testExceptionReduce() {
-    final ProcessRunner runner = new SSHProcessRunner("dodola", "/Berkanavt/mapreduce/bin/mapreduce-dev");
+    final ProcessRunner runner = new SSHProcessRunner(TEST_SERVER_PROXY, "/Berkanavt/mapreduce/bin/mapreduce-dev");
     final MREnv env = new YaMREnv(runner, "mobilesearch", "cedar:8013");
     final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(FailAtRandomReduce.class, env);
     mrProcess.wb().wipe();
