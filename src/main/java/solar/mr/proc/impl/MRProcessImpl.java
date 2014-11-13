@@ -68,7 +68,7 @@ public class MRProcessImpl implements MRProcess {
 
   @Override
   public MRState execute() {
-    final List<MRJoba> unmergedJobs = unmergeJobs(this.jobs);
+    final List<MRJoba> unmergedJobs = unmergeJobs(this.jobs, prod);
     final List<MRJoba> plan = generateExecutionPlan(unmergedJobs);
     for (MRJoba joba : plan) {
       runJoba(joba);
@@ -80,7 +80,7 @@ public class MRProcessImpl implements MRProcess {
    * @param jobs*/
   private List<MRJoba> generateExecutionPlan(final List<MRJoba> jobs) {
     final Deque<MRJoba> result = new ArrayDeque<>();
-    final Set<String> unresolved = new HashSet<>();
+    final Set<String> unresolved = new LinkedHashSet<>();
     final Set<String> resolved = new HashSet<>();
     unresolved.addAll(Arrays.asList(goals));
     while (!unresolved.isEmpty()) {
@@ -117,7 +117,7 @@ public class MRProcessImpl implements MRProcess {
         result.push(joba); // multiple ways of producing the same resource is not supported yet
         for (final String product : joba.produces()) {
           unresolved.remove(product);
-          resolved.contains(product);
+          resolved.add(product);
         }
         for (final String resource : joba.consumes()) {
           if (!resolved.contains(resource)) {
@@ -132,7 +132,7 @@ public class MRProcessImpl implements MRProcess {
     return Arrays.asList(result.toArray(new MRJoba[result.size()]));
   }
 
-  private List<MRJoba> unmergeJobs(final List<MRJoba> jobs) {
+  private List<MRJoba> unmergeJobs(final List<MRJoba> jobs, MRWhiteboardImpl wb) {
     final TObjectIntMap<String> sharded = new TObjectIntHashMap<>();
     for (final MRJoba joba : jobs) {
       for (final String resource : joba.produces()) {
@@ -150,7 +150,7 @@ public class MRProcessImpl implements MRProcess {
           List<String> shards4resource = shards.get(resourceName);
           if (shards4resource == null)
             shards.put(resourceName, shards4resource = new ArrayList<>());
-          outputs[i] = "temp:" + resourceName + "-" + shards4resource.size();
+          outputs[i] = "temp:" + wb.resolveName(resourceName) + "-" + shards4resource.size();
           shards4resource.add(outputs[i]);
         }
         else outputs[i] = resourceName;
