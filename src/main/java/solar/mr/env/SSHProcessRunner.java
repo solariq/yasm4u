@@ -49,6 +49,7 @@ public class SSHProcessRunner implements ProcessRunner {
           switch (opt) {
             case "-map":
             case "-reduce":
+            case "-reducews":
               command.append(" ").append(opt);
               String routine = options.get(index++);
               for (int i = 0; i < remoteResources.size(); i++) {
