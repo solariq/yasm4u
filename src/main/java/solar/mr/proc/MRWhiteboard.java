@@ -26,4 +26,6 @@ public interface MRWhiteboard {
   SerializationRepository marshaling();
   MRErrorsHandler errorsHandler();
   void setErrorsHandler(MRErrorsHandler errorsHandler);
+
+  String resolveName(String resourceName);
 }

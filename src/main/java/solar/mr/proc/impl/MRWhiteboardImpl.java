@@ -146,6 +146,11 @@ public class MRWhiteboardImpl implements MRWhiteboard {
   }
 
   @Override
+  public String resolveName(String resourceName) {
+    return state.resolveVars(resourceName);
+  }
+
+  @Override
   public SerializationRepository marshaling() {
     return marshaling;
   }

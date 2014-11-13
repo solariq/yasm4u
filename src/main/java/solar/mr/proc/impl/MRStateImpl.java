@@ -14,6 +14,7 @@ import com.spbsu.commons.filters.ClassFilter;
 import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.types.SerializationRepository;
 import com.spbsu.commons.func.types.TypeConverter;
+import solar.mr.env.YaMREnv;
 import solar.mr.proc.MRState;
 import solar.mr.proc.MRWhiteboard;
 import solar.mr.MRTableShard;
@@ -76,8 +77,11 @@ public class MRStateImpl implements MRState, Serializable {
     if (!state.containsKey(key))
       return false;
     final Object resource = state.get(key);
-    if (resource instanceof MRTableShard)
-      return ((MRTableShard) resource).refresh().isAvailable();
+    if (resource instanceof MRTableShard) {
+      final MRTableShard tableShard = (MRTableShard) resource;
+//      return tableShard.container() instanceof YaMREnv || tableShard.refresh().isAvailable();
+      return tableShard.refresh().isAvailable();
+    }
     return true;
   }
 

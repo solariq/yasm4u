@@ -6,10 +6,10 @@ package solar.mr.routines;
 * Time: 15:58
 */
 public class MRRecord {
-  public String source;
-  public String key;
-  public String sub;
-  public CharSequence value;
+  public final String source;
+  public final String key;
+  public final String sub;
+  public final CharSequence value;
 
   public MRRecord(final String source, final String key, final String sub, final CharSequence value) {
     this.source = source;
