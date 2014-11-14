@@ -44,7 +44,7 @@ public class MRStateImpl implements MRState, Serializable {
     return (T)state.get(resolveVars(uri));
   }
 
-  private static final Pattern varPattern = Pattern.compile("\\{([^\\},]+)([^\\}]+)\\}");
+  private static final Pattern varPattern = Pattern.compile("\\{([^\\},]+),?(.*)\\}");
   String resolveVars(String resource) {
     final Matcher matcher = varPattern.matcher(resource);
     final StringBuffer format = new StringBuffer();
@@ -53,7 +53,7 @@ public class MRStateImpl implements MRState, Serializable {
       final String name = matcher.group(1);
       final int index = namesMap.containsKey(name) ? namesMap.get(name) : namesMap.size();
       namesMap.put(name, index);
-      matcher.appendReplacement(format, "{" + index + (matcher.groupCount() > 1 ? matcher.group(2) : "") + "}");
+      matcher.appendReplacement(format, "{" + index + (matcher.groupCount() > 1 && !matcher.group(2).isEmpty()? "," + matcher.group(2) : "") + "}");
     }
     matcher.appendTail(format);
     final Object[] args = new Object[namesMap.size()];
