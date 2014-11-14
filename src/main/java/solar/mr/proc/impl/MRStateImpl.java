@@ -58,7 +58,8 @@ public class MRStateImpl implements MRState, Serializable {
     final Object[] args = new Object[namesMap.size()];
     for (final Map.Entry<String, Integer> entry : namesMap.entrySet()) {
       final Object resolution = get(entry.getKey());
-
+      if (resolution == null)
+        throw new IllegalArgumentException("Resource needed for name resolution is missing: " + entry.getKey());
       args[entry.getValue()] = resolution;
     }
 
@@ -79,6 +80,7 @@ public class MRStateImpl implements MRState, Serializable {
     while(matcher.find()) {
       final String name = matcher.group(1);
       names.add(name);
+      names.addAll(resolveDeps(name));
     }
     return names;
   }

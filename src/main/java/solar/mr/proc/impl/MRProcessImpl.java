@@ -79,58 +79,62 @@ public class MRProcessImpl implements MRProcess {
    * @param jobs*/
   private List<MRJoba> generateExecutionPlan(final List<MRJoba> jobs) {
     final Deque<MRJoba> result = new ArrayDeque<>();
-    final Set<String> unresolved = new LinkedHashSet<>();
+    final List<String> unresolved = new ArrayList<>();
     final Set<String> resolved = new HashSet<>();
-    unresolved.addAll(Arrays.asList(goals(prod)));
+    unresolved.addAll(Arrays.asList(goals));
     while (!unresolved.isEmpty()) {
-      final String name = unresolved.iterator().next();
-      for (final String deps : test.depends(name)) {
-        test.set(deps, prod.resolve(deps));
-      }
-      final String resource2resolve = prod.resolveName(name);
-      final List<MRJoba> producers = new ArrayList<>(jobs.size());
-      for (final MRJoba job : jobs) {
-        if (ArrayTools.indexOf(resource2resolve, job.produces(prod)) >= 0)
-          producers.add(job);
-      }
+      final Iterator<String> iterator = unresolved.iterator();
+      final String resource2resolve = iterator.next();
 
-      if (producers.isEmpty()) { // need to sample or copy
-        if (!prod.check(resource2resolve))
-          throw new RuntimeException("Resource is not available at production: " + resource2resolve + " as " + prod.resolve(resource2resolve));
-        if (!test.check(resource2resolve)) {
-          final Object resolution = prod.resolve(resource2resolve);
-          if (resolution instanceof MRTableShard) {
-            final CharSeqBuilder builder = new CharSeqBuilder();
-            final MRTableShard table = test.resolve(resource2resolve);
-            final MRTableShard prodShard = (MRTableShard)resolution;
-            prod.env().sample(prodShard, new Processor<CharSequence>() {
-              @Override
-              public void process(final CharSequence arg) {
-                builder.append(arg).append('\n');
-              }
-            });
-            test.env().write(table, new CharSeqReader(builder));
-          }
-          else
-            test.set(resource2resolve, resolution);
+      if (!test.depends(resource2resolve).isEmpty()) {
+        for (final String deps : test.depends(resource2resolve)) {
+          test.set(deps, prod.resolve(deps));
         }
+        unresolved.add(0, prod.resolveName(resource2resolve));
       }
       else {
-        final MRJoba joba = producers.get(0);
-        result.push(joba); // multiple ways of producing the same resource is not supported yet
-        for (final String product : joba.produces(prod)) {
-          unresolved.remove(product);
-          resolved.add(product);
+        final List<MRJoba> producers = new ArrayList<>(jobs.size());
+        for (final MRJoba job : jobs) {
+          if (ArrayTools.indexOf(resource2resolve, job.produces(prod)) >= 0)
+            producers.add(job);
         }
-        for (final String resource : joba.consumes(prod)) {
-          if (!resolved.contains(resource)) {
-            unresolved.add(resource);
+
+        if (producers.isEmpty()) { // need to sample or copy
+          if (!prod.check(resource2resolve))
+            throw new RuntimeException("Resource is not available at production: " + resource2resolve + " as " + prod.resolve(resource2resolve));
+          if (!test.check(resource2resolve)) {
+            final Object resolution = prod.resolve(resource2resolve);
+            if (resolution instanceof MRTableShard) {
+              final CharSeqBuilder builder = new CharSeqBuilder();
+              final MRTableShard table = test.resolve(resource2resolve);
+              final MRTableShard prodShard = (MRTableShard) resolution;
+              prod.env().sample(prodShard, new Processor<CharSequence>() {
+                @Override
+                public void process(final CharSequence arg) {
+                  builder.append(arg).append('\n');
+                }
+              });
+              test.env().write(table, new CharSeqReader(builder));
+            } else
+              test.set(resource2resolve, resolution);
+          }
+        } else {
+          final MRJoba joba = producers.get(0);
+          result.push(joba); // multiple ways of producing the same resource is not supported yet
+          for (final String product : joba.produces(prod)) {
+            unresolved.remove(product);
+            resolved.add(product);
+          }
+          for (final String resource : joba.consumes(prod)) {
+            if (!resolved.contains(resource)) {
+              unresolved.add(resource);
+            }
           }
         }
       }
 
-      resolved.add(name);
-      unresolved.remove(name);
+      resolved.add(resource2resolve);
+      unresolved.remove(resource2resolve);
     }
     return Arrays.asList(result.toArray(new MRJoba[result.size()]));
   }
