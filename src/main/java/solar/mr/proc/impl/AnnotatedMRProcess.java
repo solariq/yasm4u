@@ -106,13 +106,21 @@ public class AnnotatedMRProcess extends MRProcessImpl {
     }
 
     @Override
-    public String[] consumes() {
-      return in;
+    public String[] consumes(MRWhiteboard wb) {
+      final String[] result = new String[in.length];
+      for (int i = 0; i < result.length; i++) {
+        result[i] = wb.resolveName(in[i]);
+      }
+      return result;
     }
 
     @Override
-    public String[] produces() {
-      return out;
+    public String[] produces(MRWhiteboard wb) {
+      final String[] result = new String[out.length];
+      for (int i = 0; i < result.length; i++) {
+        result[i] = wb.resolveName(out[i]);
+      }
+      return result;
     }
 
     @Override

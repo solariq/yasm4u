@@ -4,8 +4,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.text.MessageFormat;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -58,13 +57,26 @@ public class MRStateImpl implements MRState, Serializable {
     matcher.appendTail(format);
     final Object[] args = new Object[namesMap.size()];
     for (final Map.Entry<String, Integer> entry : namesMap.entrySet()) {
-      args[entry.getValue()] = get(entry.getKey());
+      final Object resolution = get(entry.getKey());
+      if (resolution == null)
+        throw new IllegalArgumentException("Resource needed for name resolution is missing: " + entry.getKey());
+      args[entry.getValue()] = resolution;
     }
     final String resolvedCandidate = MessageFormat.format(format.toString(), args);
     if (resolvedCandidate.contains("{")) {
       return resolveVars(resolvedCandidate);
     }
     return resolvedCandidate;
+  }
+
+  Set<String> resolveDeps(String resource) {
+    final Matcher matcher = varPattern.matcher(resource);
+    final Set<String> names = new HashSet<>();
+    while(matcher.find()) {
+      final String name = matcher.group(1);
+      names.add(name);
+    }
+    return names;
   }
 
   @Override
@@ -83,8 +95,7 @@ public class MRStateImpl implements MRState, Serializable {
     final Object resource = state.get(key);
     if (resource instanceof MRTableShard) {
       final MRTableShard tableShard = (MRTableShard) resource;
-//      return tableShard.container() instanceof YaMREnv || tableShard.refresh().isAvailable();
-      return tableShard.refresh().isAvailable();
+      return tableShard.container() instanceof YaMREnv || tableShard.refresh().isAvailable();
     }
     return true;
   }

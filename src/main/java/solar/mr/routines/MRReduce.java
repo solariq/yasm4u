@@ -100,7 +100,11 @@ public abstract class MRReduce extends MRRoutine {
   protected final void onEndOfInput() {
     super.onEndOfInput();
     try {
-      recordsQueue.add(EOF);
+      try {
+        recordsQueue.put(EOF);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
       reduceThread.interrupt();
       reduceThread.join();
     } catch (InterruptedException e) {

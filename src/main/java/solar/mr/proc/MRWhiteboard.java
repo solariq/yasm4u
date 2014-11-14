@@ -5,6 +5,8 @@ import com.spbsu.commons.func.types.SerializationRepository;
 import solar.mr.MREnv;
 import solar.mr.MRErrorsHandler;
 
+import java.util.Set;
+
 /**
  * User: solar
  * Date: 12.10.14
@@ -17,6 +19,8 @@ public interface MRWhiteboard {
   <T> void set(String var, T data);
   void remove(String var);
   boolean check(String... productName);
+
+  Set<String> depends(String resourceName);
 
   void wipe();
   MREnv env();

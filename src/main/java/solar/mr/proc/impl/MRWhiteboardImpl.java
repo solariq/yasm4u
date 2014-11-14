@@ -3,6 +3,7 @@ package solar.mr.proc.impl;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Random;
+import java.util.Set;
 
 
 import com.spbsu.commons.filters.*;
@@ -192,6 +193,11 @@ public class MRWhiteboardImpl implements MRWhiteboard {
         return false;
     }
     return true;
+  }
+
+  @Override
+  public Set<String> depends(String resourceName) {
+    return state.resolveDeps(resourceName);
   }
 
   @Override

@@ -32,7 +32,6 @@ public class MRProcessImpl implements MRProcess {
   private final MRWhiteboardImpl prod;
   private final LocalMREnv cache = new LocalMREnv();
   private final MRWhiteboard test;
-  final Map<String, List<MRJoba>> producers = new HashMap<>();
 
   public MRProcessImpl(MREnv env, final String name, final String[] goals) {
     this.name = name;
@@ -84,10 +83,14 @@ public class MRProcessImpl implements MRProcess {
     final Set<String> resolved = new HashSet<>();
     unresolved.addAll(Arrays.asList(goals));
     while (!unresolved.isEmpty()) {
-      final String resource2resolve = unresolved.iterator().next();
+      String resource2resolve = unresolved.iterator().next();
+      for (final String deps : test.depends(resource2resolve)) {
+        test.set(deps, prod.resolve(deps));
+      }
+      resource2resolve = prod.resolveName(resource2resolve);
       final List<MRJoba> producers = new ArrayList<>(jobs.size());
       for (final MRJoba job : jobs) {
-        if (ArrayTools.indexOf(resource2resolve, job.produces()) >= 0)
+        if (ArrayTools.indexOf(resource2resolve, job.produces(prod)) >= 0)
           producers.add(job);
       }
 
@@ -115,11 +118,11 @@ public class MRProcessImpl implements MRProcess {
       else {
         final MRJoba joba = producers.get(0);
         result.push(joba); // multiple ways of producing the same resource is not supported yet
-        for (final String product : joba.produces()) {
+        for (final String product : joba.produces(prod)) {
           unresolved.remove(product);
           resolved.add(product);
         }
-        for (final String resource : joba.consumes()) {
+        for (final String resource : joba.consumes(prod)) {
           if (!resolved.contains(resource)) {
             unresolved.add(resource);
           }
@@ -135,7 +138,7 @@ public class MRProcessImpl implements MRProcess {
   private List<MRJoba> unmergeJobs(final List<MRJoba> jobs, MRWhiteboardImpl wb) {
     final TObjectIntMap<String> sharded = new TObjectIntHashMap<>();
     for (final MRJoba joba : jobs) {
-      for (final String resource : joba.produces()) {
+      for (final String resource : joba.produces(wb)) {
         sharded.adjustOrPutValue(resource, 1, 1);
       }
     }
@@ -143,9 +146,9 @@ public class MRProcessImpl implements MRProcess {
     final Map<String, List<String>> shards = new HashMap<>();
     final List<MRJoba> result = new ArrayList<>();
     for (final MRJoba joba : jobs) {
-      final String[] outputs = new String[joba.produces().length];
+      final String[] outputs = new String[joba.produces(wb).length];
       for(int i = 0; i < outputs.length; i++) {
-        final String resourceName = joba.produces()[i];
+        final String resourceName = joba.produces(wb)[i];
         if (sharded.get(resourceName) > 1) {
           List<String> shards4resource = shards.get(resourceName);
           if (shards4resource == null)
@@ -155,36 +158,36 @@ public class MRProcessImpl implements MRProcess {
         }
         else outputs[i] = resourceName;
       }
-      if (!Arrays.equals(outputs, joba.produces())) {
+      if (!Arrays.equals(outputs, joba.produces(wb))) {
         result.add(new MRJoba() {
           @Override
           public boolean run(MRWhiteboard wb) {
             synchronized (joba) {
               final Object[] resolved = new Object[outputs.length];
               for(int i = 0; i < outputs.length; i++) {
-                resolved[i] = wb.resolve(joba.produces()[i]);
+                resolved[i] = wb.resolve(joba.produces(wb)[i]);
               }
               try {
                 for(int i = 0; i < outputs.length; i++) {
-                  wb.set(joba.produces()[i], wb.resolve(outputs[i]));
+                  wb.set(joba.produces(wb)[i], wb.resolve(outputs[i]));
                 }
                 return joba.run(wb);
               }
               finally {
                 for(int i = 0; i < outputs.length; i++) {
-                  wb.set(joba.produces()[i], resolved[i]);
+                  wb.set(joba.produces(wb)[i], resolved[i]);
                 }
               }
             }
           }
 
           @Override
-          public String[] consumes() {
-            return joba.consumes();
+          public String[] consumes(MRWhiteboard wb) {
+            return joba.consumes(wb);
           }
 
           @Override
-          public String[] produces() {
+          public String[] produces(MRWhiteboard wb) {
             return outputs;
           }
 
@@ -204,10 +207,10 @@ public class MRProcessImpl implements MRProcess {
   }
 
   private MRState runJoba(MRJoba mrJoba) {
-    boolean needToRunProd = !prod.check(mrJoba.produces());
+    boolean needToRunProd = !prod.check(mrJoba.produces(prod));
 
     final Map<String, String> crcs = new HashMap<>();
-    for (final String productName : mrJoba.produces()) {
+    for (final String productName : mrJoba.produces(test)) {
       final Object product = test.resolve(productName);
       if (product instanceof MRTableShard) {
         final MRTableShard productTable = (MRTableShard) product;
@@ -220,7 +223,7 @@ public class MRProcessImpl implements MRProcess {
     final MRState next = test.snapshot();
 
     // checking what have been produced
-    for (final String productName : mrJoba.produces()) {
+    for (final String productName : mrJoba.produces(test)) {
       if (!next.available(productName))
         throw new RuntimeException("MR job " + mrJoba.toString() + " failed to produce resource " + productName);
       final Object product = test.refresh(productName);
@@ -239,13 +242,6 @@ public class MRProcessImpl implements MRProcess {
   }
 
   public void addJob(MRJoba job) {
-    final String[] produces = job.produces();
-    for (String product : produces) {
-      List<MRJoba> jobs = producers.get(product);
-      if (jobs == null)
-        producers.put(product, jobs = new ArrayList<>());
-      jobs.add(job);
-    }
     jobs.add(job);
   }
 

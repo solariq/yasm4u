@@ -34,12 +34,16 @@ public class MergeJoba implements MRJoba {
   }
 
   @Override
-  public String[] consumes() {
-    return shards;
+  public String[] consumes(MRWhiteboard wb) {
+    final String[] result = new String[shards.length];
+    for (int i = 0; i < result.length; i++) {
+      result[i] = wb.resolveName(shards[i]);
+    }
+    return result;
   }
 
   @Override
-  public String[] produces() {
-    return new String[]{result};
+  public String[] produces(MRWhiteboard wb) {
+    return new String[]{wb.resolveName(result)};
   }
 }

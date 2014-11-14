@@ -111,12 +111,12 @@ class ReadJoba implements MRJoba {
   }
 
   @Override
-  public String[] consumes() {
-    return new String[] {readAnn.input()};
+  public String[] consumes(MRWhiteboard wb) {
+    return new String[] {wb.resolveName(readAnn.input())};
   }
 
   @Override
-  public String[] produces() {
-    return new String[] {readAnn.output()};
+  public String[] produces(MRWhiteboard wb) {
+    return new String[] {wb.resolveName(readAnn.output())};
   }
 }
