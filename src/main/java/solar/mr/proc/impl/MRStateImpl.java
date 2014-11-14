@@ -60,7 +60,11 @@ public class MRStateImpl implements MRState, Serializable {
     for (final Map.Entry<String, Integer> entry : namesMap.entrySet()) {
       args[entry.getValue()] = get(entry.getKey());
     }
-    return MessageFormat.format(format.toString(), args);
+    final String resolvedCandidate = MessageFormat.format(format.toString(), args);
+    if (resolvedCandidate.contains("{")) {
+      return resolveVars(resolvedCandidate);
+    }
+    return resolvedCandidate;
   }
 
   @Override
