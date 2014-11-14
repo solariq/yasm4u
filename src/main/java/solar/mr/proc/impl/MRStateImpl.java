@@ -58,14 +58,18 @@ public class MRStateImpl implements MRState, Serializable {
     final Object[] args = new Object[namesMap.size()];
     for (final Map.Entry<String, Integer> entry : namesMap.entrySet()) {
       final Object resolution = get(entry.getKey());
-      if (resolution == null)
-        throw new IllegalArgumentException("Resource needed for name resolution is missing: " + entry.getKey());
+
       args[entry.getValue()] = resolution;
     }
-    final String resolvedCandidate = MessageFormat.format(format.toString(), args);
+
+    String resolvedCandidate = MessageFormat.format(format.toString(), args);
     if (resolvedCandidate.contains("{")) {
-      return resolveVars(resolvedCandidate);
+      resolvedCandidate = resolveVars(resolvedCandidate);
     }
+
+    if (resolvedCandidate == null)
+      throw new IllegalArgumentException("Resource needed for name resolution is missing: " + resolvedCandidate);
+
     return resolvedCandidate;
   }
 
