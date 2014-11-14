@@ -208,10 +208,8 @@ public class LocalMREnv implements MREnv {
 
   @Override
   public void copy(MRTableShard from, MRTableShard to, boolean append) {
-    if (!from.isAvailable())
-      return;
     try {
-      writeFile(new FileReader(file(from.path(), false)), to.path(), false, append);
+      writeFile(from.isAvailable() ? new FileReader(file(from.path(), false)) : new CharSeqReader(""), to.path(), false, append);
     } catch (FileNotFoundException e) {
       throw new RuntimeException(e);
     }
