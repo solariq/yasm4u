@@ -81,13 +81,13 @@ public class MRProcessImpl implements MRProcess {
     final Deque<MRJoba> result = new ArrayDeque<>();
     final Set<String> unresolved = new LinkedHashSet<>();
     final Set<String> resolved = new HashSet<>();
-    unresolved.addAll(Arrays.asList(goals));
+    unresolved.addAll(Arrays.asList(goals(prod)));
     while (!unresolved.isEmpty()) {
-      String resource2resolve = unresolved.iterator().next();
-      for (final String deps : test.depends(resource2resolve)) {
+      final String name = unresolved.iterator().next();
+      for (final String deps : test.depends(name)) {
         test.set(deps, prod.resolve(deps));
       }
-      resource2resolve = prod.resolveName(resource2resolve);
+      final String resource2resolve = prod.resolveName(name);
       final List<MRJoba> producers = new ArrayList<>(jobs.size());
       for (final MRJoba job : jobs) {
         if (ArrayTools.indexOf(resource2resolve, job.produces(prod)) >= 0)
@@ -129,10 +129,18 @@ public class MRProcessImpl implements MRProcess {
         }
       }
 
-      resolved.add(resource2resolve);
-      unresolved.remove(resource2resolve);
+      resolved.add(name);
+      unresolved.remove(name);
     }
     return Arrays.asList(result.toArray(new MRJoba[result.size()]));
+  }
+
+  public String[] goals(MRWhiteboard wb) {
+    final String[] result = new String[goals.length];
+    for (int i = 0; i < result.length; i++) {
+      result[i] = wb.resolveName(goals[i]);
+    }
+    return result;
   }
 
   private List<MRJoba> unmergeJobs(final List<MRJoba> jobs, MRWhiteboardImpl wb) {
