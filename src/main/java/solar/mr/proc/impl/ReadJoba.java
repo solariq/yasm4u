@@ -13,7 +13,6 @@ import com.spbsu.commons.seq.CharSeqTools;
 import solar.mr.proc.MRJoba;
 import solar.mr.proc.MRState;
 import solar.mr.proc.MRWhiteboard;
-import solar.mr.proc.tags.MRRead;
 import solar.mr.MRTableShard;
 
 /**
@@ -22,18 +21,20 @@ import solar.mr.MRTableShard;
 * Time: 8:04
 */
 class ReadJoba implements MRJoba {
-  private final MRRead readAnn;
+  private final String[] input;
+  private final String output;
   private final Method method;
 
-  public ReadJoba(final MRRead readAnn, final Method method) {
-    this.readAnn = readAnn;
+  public ReadJoba(String[] input, String output, Method method) {
+    this.input = input;
+    this.output = output;
     this.method = method;
   }
 
   @Override
   public boolean run(final MRWhiteboard wb) {
     final MRState state = wb.snapshot();
-    final MRTableShard shard = state.get(readAnn.input());
+    final MRTableShard shard = state.get(input[0]);
     final ArrayBlockingQueue<CharSequence> seqs = new ArrayBlockingQueue<>(1000);
     final Thread readTh = new Thread(){
       @Override
@@ -63,7 +64,7 @@ class ReadJoba implements MRJoba {
     readTh.start();
     try {
       final Constructor<?> constructor = method.getDeclaringClass().getConstructor(MRState.class);
-      wb.set(readAnn.output(), method.invoke(constructor.newInstance(state), new Iterator<CharSequence>() {
+      wb.set(output, method.invoke(constructor.newInstance(state), new Iterator<CharSequence>() {
         CharSequence next = null;
         boolean needs2wait = true;
 
@@ -111,12 +112,12 @@ class ReadJoba implements MRJoba {
   }
 
   @Override
-  public String[] consumes(MRWhiteboard wb) {
-    return new String[] {wb.resolveName(readAnn.input())};
+  public String[] consumes() {
+    return input;
   }
 
   @Override
-  public String[] produces(MRWhiteboard wb) {
-    return new String[] {wb.resolveName(readAnn.output())};
+  public String[] produces() {
+    return new String[] {output};
   }
 }

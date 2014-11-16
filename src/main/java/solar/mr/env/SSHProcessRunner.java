@@ -17,10 +17,42 @@ import com.spbsu.commons.seq.CharSeqBuilder;
 public class SSHProcessRunner implements ProcessRunner {
   private final String proxyHost;
   private final String mrBinaryPath;
+  private Process process;
+  private Writer toProxy;
+  private LineNumberReader fromProxy;
 
   public SSHProcessRunner(final String proxyHost, final String binaryPath) {
     this.proxyHost = proxyHost;
     this.mrBinaryPath = binaryPath;
+    initProxyLink();
+  }
+
+  private void initProxyLink() {
+    try {
+      if (process != null) {
+        try {
+          if (process.exitValue() != 0)
+            throw new RuntimeException("Unable to start remote process");
+        }
+        catch (IllegalThreadStateException is) { // the process is alive
+          return;
+        }
+      }
+
+      process = Runtime.getRuntime().exec("ssh " + proxyHost + " bash -s");
+      toProxy = new OutputStreamWriter(process.getOutputStream(), Charset.forName("UTF-8"));
+      fromProxy = new LineNumberReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF-8")));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  protected void finalize() throws Throwable {
+    super.finalize();
+    toProxy.close();
+    fromProxy.close();
+    process.destroy();
   }
 
   @Override
@@ -28,11 +60,9 @@ public class SSHProcessRunner implements ProcessRunner {
     try {
       final String pid;
       final String remoteOutput;
-      Process process = Runtime.getRuntime().exec("ssh " + proxyHost + " bash -s");
+      initProxyLink();
 
       { // Run command
-        final Writer toProxy = new OutputStreamWriter(process.getOutputStream(), Charset.forName("UTF-8"));
-        final LineNumberReader fromProxy = new LineNumberReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF-8")));
 
 //        toProxy.append("export YT_PREFIX=//userdata/;\n");
 //        toProxy.append("export MR_RUNTIME=YT;\n");
@@ -88,14 +118,7 @@ public class SSHProcessRunner implements ProcessRunner {
           toProxy.append(finalCommand);
           toProxy.flush();
           pid = fromProxy.readLine();
-          toProxy.close();
-          fromProxy.close();
-          final CharSequence errors = StreamTools.readStream(process.getErrorStream());
-          if (errors.length() > 1)
-            System.err.print(errors);
-          process.waitFor();
-          if (process.exitValue() != 0)
-            throw new RuntimeException("Unable to start remote process");
+
           final File tempFile = File.createTempFile("wait", ".sh");
           //noinspection ResultOfMethodCallIgnored
           tempFile.delete();
@@ -114,10 +137,13 @@ public class SSHProcessRunner implements ProcessRunner {
             waitCmd += "ssh " + proxyHost + " rm -rf " + remoteResource.getAbsolutePath() + ";\n";
           }
           StreamTools.writeChars(waitCmd, tempFile);
-          process = Runtime.getRuntime().exec("bash " + tempFile.getAbsolutePath());
-          return process;
+          return Runtime.getRuntime().exec("bash " + tempFile.getAbsolutePath());
         }
         else {
+          final Process process = Runtime.getRuntime().exec("ssh " + proxyHost + " bash -s");
+          final Writer toProxy = new OutputStreamWriter(process.getOutputStream(), Charset.forName("UTF-8"));
+          final LineNumberReader fromProxy = new LineNumberReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF-8")));
+
           final String finalCommand = "cat - | " + command + "; echo $?";
           System.out.println(finalCommand);
           toProxy.append(finalCommand).append("\n");

@@ -31,18 +31,16 @@ import solar.mr.MRTableShard;
  * Date: 12.10.14
  * Time: 10:35
  */
+@SuppressWarnings("deprecation")
 public class MRProcTest {
 
   private final static String TEST_SERVER_PROXY = "batista";
   private final static String TEST_MR_USER = "mobilesearch";
-  
+
+  @SuppressWarnings("UnusedDeclaration")
   @MRProcessClass(goal = "var:result")
   public static class SAPPCounter {
-    private final MRState state;
-
-    public SAPPCounter(MRState state) {
-      this.state = state;
-    }
+    public SAPPCounter(MRState state) {}
 
     @MRMapMethod(input = "mr:///user_sessions/{var:date,date,yyyyMMdd}", output = {"temp:mr:///counter-map"})
     public void map(final String key, final String sub, final CharSequence value, MROutput output) {
@@ -79,6 +77,7 @@ public class MRProcTest {
     }
   }
 
+  @SuppressWarnings("UnusedDeclaration")
   @MRProcessClass(goal = "var:result")
   public static class FailAtRandomMap {
     private final MRState state;
@@ -91,6 +90,7 @@ public class MRProcTest {
 
     @MRMapMethod(input = {"mr:///user_sessions/{var:date,date,yyyyMMdd}", "var:delay"}, output = "temp:mr:///dev-null")
     public void map(final String key, final String sub, final CharSequence value, MROutput output) {
+      //noinspection ConstantConditions
       if (index > state.<Integer>get("var:delay"))
         throw new RuntimeException("Preved s clustera");
       index++;
@@ -103,6 +103,7 @@ public class MRProcTest {
     }
   }
 
+  @SuppressWarnings("UnusedDeclaration")
   @MRProcessClass(goal = "var:result")
   public static class FailAtRandomReduce {
     private final MRState state;
@@ -113,6 +114,7 @@ public class MRProcTest {
       this.state = state;
     }
 
+    @SuppressWarnings("ConstantConditions")
     @MRReduceMethod(input = {"mr:///user_sessions/{var:date,date,yyyyMMdd}", "var:delay"}, output = "temp:mr:///dev-null")
     public void reduce(final String key, final Iterator<Pair<String, CharSequence>> reduce, MROutput output) {
       while (reduce.hasNext()) {
@@ -173,12 +175,14 @@ public class MRProcTest {
     final MRWhiteboard wb = new MRWhiteboardImpl(env, "proc", "none");
     wb.set("var:xxx", "yyy");
     final String resolveString = wb.resolve("{var:xxx}");
+    @SuppressWarnings("UnusedDeclaration")
     final MRTableShard resolveTable = wb.resolve("mr://xxx");
 
     Assert.assertEquals("yyy", resolveString);
 
     wb.set("var:xx1", new Date(2014-1900,7,1));
     Assert.assertEquals("20140801", wb.resolve("{var:xx1,date,yyyyMMdd}"));
+    @SuppressWarnings("UnusedAssignment")
     String path = wb.<MRTableShard>resolve("mr:///sometest/{var:xx1,date,yyyyMMdd}").path();
     path = wb.<MRTableShard>resolve("mr:///sometest/{var:xx1,date,yyyyMMdd}_test").path();
     Assert.assertEquals("sometest/20140801_test",path);
@@ -199,16 +203,14 @@ public class MRProcTest {
   }
 
 
+  @SuppressWarnings("UnusedDeclaration")
   @MRProcessClass(goal = {"temp:mr:///split1_tmp", "temp:mr:///split2_tmp", "temp:mr:///split3_tmp"})
   public static final class SampleSplitter {
-
-    private final MRState state;
     private static final Random rnd = new Random(0xdeadbeef);
 
-    public SampleSplitter(MRState state) {
-      this.state = state;
-    }
+    public SampleSplitter(MRState state){}
 
+    @SuppressWarnings("UnusedDeclaration")
     @MRMapMethod(
             input = "mr:///mobilesearchtest/20141017_655_11",
             output = {

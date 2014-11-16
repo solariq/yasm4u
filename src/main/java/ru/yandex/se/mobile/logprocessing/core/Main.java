@@ -1,8 +1,5 @@
 package ru.yandex.se.mobile.logprocessing.core;
 
-import java.util.Iterator;
-
-
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.Pair;
 import solar.mr.MREnv;
@@ -16,11 +13,15 @@ import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
 import solar.mr.proc.tags.MRReduceMethod;
 
+import java.util.Iterator;
+
 /**
- * Created by inikifor on 05.11.14.
+ * User: inikifor
+ * Date: 05.11.14
+ * Time: 15:11
  */
 public final class Main {
-
+  @SuppressWarnings("UnusedDeclaration")
   @MRProcessClass(goal = "mr:///mobilesearchtest/count_tmp")
   public static final class SampleCounter {
 

@@ -1,12 +1,13 @@
 package solar.mr.proc.impl;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.text.MessageFormat;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
+import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.util.Pair;
 import solar.mr.MREnv;
 import solar.mr.MRRoutine;
@@ -27,21 +28,65 @@ import solar.mr.routines.MRReduce;
 * Time: 13:20
 */
 public class AnnotatedMRProcess extends MRProcessImpl {
-  public AnnotatedMRProcess(final Class<?> processDescription, MREnv env) {
+  public AnnotatedMRProcess(final Class<?> processDescription, final MREnv env) {
+    this(processDescription, env, new Properties());
+  }
+
+  public AnnotatedMRProcess(final Class<?> processDescription, final MREnv env, final Properties initial) {
     super(env, processDescription.getName().replace('$', '.'), processDescription.getAnnotation(MRProcessClass.class).goal());
     final Method[] methods = processDescription.getMethods();
     for (int i = 0; i < methods.length; i++) {
       final Method current = methods[i];
       final MRMapMethod mapAnn = current.getAnnotation(MRMapMethod.class);
       if (mapAnn != null)
-        addJob(new RoutineJoba(mapAnn, current));
+        addJob(new RoutineJoba(resolveNames(mapAnn.input(), initial), resolveNames(mapAnn.output(), initial), current, MapMethod.class));
       final MRReduceMethod reduceAnn = current.getAnnotation(MRReduceMethod.class);
       if (reduceAnn != null)
-        addJob(new RoutineJoba(reduceAnn, current));
+        addJob(new RoutineJoba(resolveNames(reduceAnn.input(), initial), resolveNames(reduceAnn.output(), initial), current, ReduceMethod.class));
       final MRRead readAnn = current.getAnnotation(MRRead.class);
       if (readAnn != null)
-        addJob(new ReadJoba(readAnn, current));
+        addJob(new ReadJoba(resolveNames(new String[]{readAnn.input()}, initial), readAnn.output(), current));
     }
+    for (Map.Entry<Object, Object> entry : initial.entrySet()) {
+      wb().set("var:" + entry.getKey(), entry.getValue());
+    }
+  }
+
+
+  private static final Pattern varPattern = Pattern.compile("\\{([^\\},]+),?(.*)\\}");
+  private String resolveVars(String resource, Properties vars) {
+    final Matcher matcher = varPattern.matcher(resource);
+    final StringBuffer format = new StringBuffer();
+    final Map<String, Integer> namesMap = new HashMap<>();
+    while(matcher.find()) {
+      final String name = matcher.group(1);
+      final int index = namesMap.containsKey(name) ? namesMap.get(name) : namesMap.size();
+      namesMap.put(name, index);
+      matcher.appendReplacement(format, "{" + index + (matcher.groupCount() > 1 && !matcher.group(2).isEmpty()? "," + matcher.group(2) : "") + "}");
+    }
+    matcher.appendTail(format);
+    final Object[] args = new Object[namesMap.size()];
+    for (final Map.Entry<String, Integer> entry : namesMap.entrySet()) {
+      final Object resolution = vars.get("var:" + entry.getKey());
+      if (resolution == null)
+        throw new IllegalArgumentException("Resource needed for name resolution is missing: " + entry.getKey());
+      args[entry.getValue()] = resolution;
+    }
+
+    String resolvedCandidate = MessageFormat.format(format.toString(), args);
+    if (resolvedCandidate.contains("{")) {
+      resolvedCandidate = resolveVars(resolvedCandidate, vars);
+    }
+
+    return resolvedCandidate;
+  }
+
+  private String[] resolveNames(String[] input, Properties wb) {
+    final String[] result = new String[input.length];
+    for(int i = 0; i < result.length; i++) {
+      result[i] = resolveVars(input[i], wb);
+    }
+    return result;
   }
 
   private static class RoutineJoba implements MRJoba {
@@ -50,18 +95,11 @@ public class AnnotatedMRProcess extends MRProcessImpl {
     private String[] out;
     private final Class<? extends MRRoutine> routineClass;
 
-    public RoutineJoba(final MRMapMethod mapAnn, Method method) {
+    public RoutineJoba(final String[] input, final String[] output, final Method method, final Class<? extends MRRoutine> routineClass) {
       this.method = method;
-      routineClass = MapMethod.class;
-      in = mapAnn.input();
-      out = mapAnn.output();
-    }
-
-    public RoutineJoba(final MRReduceMethod reduceAnn, Method method) {
-      this.method = method;
-      routineClass = ReduceMethod.class;
-      in = reduceAnn.input();
-      out = reduceAnn.output();
+      this.routineClass = routineClass;
+      in = input;
+      out = output;
     }
 
     @Override
@@ -69,13 +107,15 @@ public class AnnotatedMRProcess extends MRProcessImpl {
       final List<MRTableShard> inTables = new ArrayList<>();
       final boolean need2sort = MRReduce.class.isAssignableFrom(routineClass);
       for (int i = 0; i < in.length; i++) {
-        final Object resolve = wb.refresh(in[i]);
-        if (resolve instanceof MRTableShard) {
-          MRTableShard shard = (MRTableShard) resolve;
-          if (need2sort)
-            wb.set(in[i], shard = wb.env().sort(shard));
-          inTables.add(shard);
-        }
+        final String resourceName = in[i];
+        wb.processAs(resourceName, new Processor<MRTableShard>() {
+          @Override
+          public void process(MRTableShard shard) {
+            if (need2sort)
+              wb.env().sort(shard);
+            inTables.add(shard);
+          }
+        });
       }
       final MRTableShard[] outTables = new MRTableShard[out.length];
       for (int i = 0; i < out.length; i++) {
@@ -87,40 +127,21 @@ public class AnnotatedMRProcess extends MRProcessImpl {
 
       wb.set(MRRunner.ROUTINES_PROPERTY_NAME, Pair.create(method.getDeclaringClass().getName(), method.getName()));
       try {
-        final MRState state = wb.snapshot();
-        if (!wb.env().execute(routineClass, state, inTables.toArray(new MRTableShard[inTables.size()]), outTables, wb.errorsHandler()))
-          return false;
-        for (int i = 0; i < out.length; i++) {
-          wb.refresh(out[i]);
-        }
+        return wb.env().execute(routineClass, wb.snapshot(), inTables.toArray(new MRTableShard[inTables.size()]), outTables, wb.errorsHandler());
       }
       finally {
         wb.remove(MRRunner.ROUTINES_PROPERTY_NAME);
       }
-      final MRState state = wb.snapshot();
-      for (int i = 0; i < out.length; i++) {
-        if (!state.available(out[i]))
-          return false;
-      }
-      return true;
     }
 
     @Override
-    public String[] consumes(MRWhiteboard wb) {
-      final String[] result = new String[in.length];
-      for (int i = 0; i < result.length; i++) {
-        result[i] = wb.resolveName(in[i]);
-      }
-      return result;
+    public String[] consumes() {
+      return in;
     }
 
     @Override
-    public String[] produces(MRWhiteboard wb) {
-      final String[] result = new String[out.length];
-      for (int i = 0; i < result.length; i++) {
-        result[i] = wb.resolveName(out[i]);
-      }
-      return result;
+    public String[] produces() {
+      return out;
     }
 
     @Override

@@ -1,10 +1,9 @@
 package solar.mr.proc.impl;
 
+import com.spbsu.commons.func.Processor;
 import solar.mr.MRTableShard;
 import solar.mr.proc.MRJoba;
 import solar.mr.proc.MRWhiteboard;
-
-import java.util.List;
 
 /**
  * User: solar
@@ -23,27 +22,26 @@ public class MergeJoba implements MRJoba {
   @Override
   public boolean run(final MRWhiteboard wb) {
     for (String shard : shards) {
-      final Object shardContent = wb.refresh(shard);
-      if (shardContent instanceof MRTableShard) {
-        final MRTableShard result = wb.refresh(this.result);
-        wb.env().copy(((MRTableShard) shardContent), result, true);
+      final MRTableShard result = wb.resolve(this.result);
+      if (!wb.processAs(shard, new Processor<MRTableShard>() {
+        @Override
+        public void process(MRTableShard arg) {
+          wb.env().copy(arg, result, true);
+        }
+      })) {
+        throw new IllegalArgumentException("Unsupported type for merge");
       }
-      else throw new IllegalArgumentException("Unsupported type for merge");
     }
     return true;
   }
 
   @Override
-  public String[] consumes(MRWhiteboard wb) {
-    final String[] result = new String[shards.length];
-    for (int i = 0; i < result.length; i++) {
-      result[i] = wb.resolveName(shards[i]);
-    }
-    return result;
+  public String[] consumes() {
+    return shards;
   }
 
   @Override
-  public String[] produces(MRWhiteboard wb) {
-    return new String[]{wb.resolveName(result)};
+  public String[] produces() {
+    return new String[]{result};
   }
 }

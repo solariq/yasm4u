@@ -11,6 +11,7 @@ import java.lang.annotation.*;
 @Target(ElementType.TYPE)
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
+@SuppressWarnings("UnusedDeclaration")
 public @interface MRProcessClass {
   String[] goal() default {"var:result"};
 }

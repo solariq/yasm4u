@@ -6,7 +6,7 @@ package solar.mr;
 * Date: 15.10.14
 * Time: 11:08
 */
-public final class MRTableShard {
+public class MRTableShard {
   private final String path;
   private final MREnv container;
   private final long metaTS;
@@ -36,7 +36,7 @@ public final class MRTableShard {
     return container;
   }
 
-  public final long metaTS() {
+  public long metaTS() {
     return metaTS;
   }
 
@@ -60,23 +60,13 @@ public final class MRTableShard {
 
   @Override
   public boolean equals(final Object o) {
-    if (this == o) {
+    if (this == o)
       return true;
-    }
-    if (!(o instanceof MRTableShard)) {
+    if (!(o instanceof MRTableShard))
       return false;
-    }
 
     final MRTableShard that = (MRTableShard) o;
-
-    if (!container.name().equals(that.container.name())) {
-      return false;
-    }
-    if (!crc.equals(that.crc)) {
-      return false;
-    }
-    return path.equals(that.path);
-
+    return container.name().equals(that.container.name()) && crc.equals(that.crc) && path.equals(that.path);
   }
 
   @Override

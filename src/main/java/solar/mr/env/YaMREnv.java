@@ -4,8 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -13,12 +12,16 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spbsu.commons.func.Processor;
+import com.spbsu.commons.func.impl.WeakListenerHolderImpl;
 import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.random.FastRandom;
 import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqTools;
+import com.spbsu.commons.util.ArrayTools;
 import com.spbsu.commons.util.JSONTools;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import solar.mr.*;
 import solar.mr.proc.MRState;
 import solar.mr.MRTableShard;
@@ -31,7 +34,7 @@ import solar.mr.routines.MRReduce;
  * Date: 19.09.14
  * Time: 17:08
  */
-public class YaMREnv implements MREnv {
+public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements MREnv {
   private final String user;
 
   private final String master;
@@ -121,6 +124,7 @@ public class YaMREnv implements MREnv {
     options.add(to.path());
     options.add("-copy");
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
+    invoke(new ShardAlter(to));
   }
 
   public void write(final MRTableShard shard, final Reader content) {
@@ -128,6 +132,7 @@ public class YaMREnv implements MREnv {
     options.add("-write");
     options.add(shard.path());
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, content);
+    invoke(new ShardAlter(shard));
   }
 
   @Override
@@ -137,26 +142,29 @@ public class YaMREnv implements MREnv {
     options.add("-dstappend");
     options.add(shard.path());
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, content);
+    invoke(new ShardAlter(shard));
   }
 
-  public void delete(final MRTableShard table) {
+  public void delete(final MRTableShard shard) {
     final List<String> options = defaultOptions();
 
     options.add("-drop");
-    options.add(table.path());
+    options.add(shard.path());
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
+    invoke(new ShardAlter(shard));
   }
 
-  public MRTableShard sort(final MRTableShard table) {
-    if (table.isSorted())
-      return table;
+  public MRTableShard sort(final MRTableShard shard) {
+    if (shard.isSorted())
+      return shard;
     final List<String> options = defaultOptions();
 
     options.add("-sort");
-    options.add(table.path());
+    options.add(shard.path());
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     options.remove(options.size() - 1);
-    return resolve(table.path());
+    invoke(new ShardAlter(shard));
+    return resolve(shard.path());
   }
 
   private void executeCommand(final List<String> options, final Processor<CharSequence> outputProcessor,
@@ -199,42 +207,88 @@ public class YaMREnv implements MREnv {
 
   @Override
   public MRTableShard resolve(final String path) {
-    String shardName = path;
-    final List<String> options = defaultOptions();
-    if (shardName.startsWith("/"))
-      shardName = shardName.substring(1);
-    options.add("-list");
-    options.add("-prefix");
-    options.add(shardName);
-    options.add("-jsonoutput");
-    final CharSeqBuilder builder = new CharSeqBuilder();
-    executeCommand(options, new Processor<CharSequence>() {
-      @Override
-      public void process(final CharSequence arg) {
-        builder.append(arg);
+    return resolveAll(new String[]{path})[0];
+  }
+
+  private static final Set<String> FAT_DIRECTORIES = new HashSet<>(Arrays.asList(
+          "user_sessions",
+          "redir_log",
+          "access_log",
+          "reqans_log"
+  ));
+
+  private static Set<String> findBestPrefixes(Set<String> paths) {
+    if (paths.size() < 2)
+      return paths;
+    final Set<String> result = new HashSet<>();
+    final TObjectIntMap<String> parents = new TObjectIntHashMap<>();
+    for(final String path : paths){
+      int index = path.lastIndexOf('/');
+      if (index < 0 || FAT_DIRECTORIES.contains(path.substring(0, index))) {
+        result.add(path);
+        paths.remove(path);
       }
-    }, defaultErrorsProcessor, null);
-    final CharSeq build = builder.build();
-    try {
-      JsonParser parser = JSONTools.parseJSON(build);
-      ObjectMapper mapper = new ObjectMapper();
-      JsonToken next = parser.nextToken();
-      assert JsonToken.START_ARRAY.equals(next);
-      next = parser.nextToken();
-      while (!JsonToken.END_ARRAY.equals(next)) {
-        final JsonNode metaJSON = mapper.readTree(parser);
-        final JsonNode nameNode = metaJSON.get("name");
-        if (nameNode != null && !nameNode.isMissingNode() && shardName.equals(nameNode.textValue())) {
-          final String size = metaJSON.get("full_size").toString();
-          final String sorted = metaJSON.has("sorted") ? metaJSON.get("sorted").toString() : "0";
-          return new MRTableShard(shardName, this, true, "1".equals(sorted), size);
-        }
-        next = parser.nextToken();
-      }
-      return new MRTableShard(shardName, this, false, false, "");
-    } catch (IOException e) {
-      throw new RuntimeException("Error parsing JSON from server: " + build, e);
+      else parents.adjustOrPutValue(path.substring(0, index), 1, 1);
     }
+    for(final String path : paths) {
+      final String parent = path.substring(0, path.lastIndexOf('/'));
+      if (parents.get(parent) == 1) {
+        result.add(path);
+        parents.remove(parent);
+      }
+    }
+    result.addAll(findBestPrefixes(parents.keySet()));
+    return result;
+  }
+
+  @Override
+  public MRTableShard[] resolveAll(String[] paths) {
+    final MRTableShard[] result = new MRTableShard[paths.length];
+    final Set<String> bestPrefixes = findBestPrefixes(new HashSet<>(Arrays.asList(paths)));
+    for (final String prefix : bestPrefixes) {
+      final List<String> options = defaultOptions();
+      options.add("-list");
+      options.add("-prefix");
+      options.add(prefix);
+      options.add("-jsonoutput");
+      final CharSeqBuilder builder = new CharSeqBuilder();
+      executeCommand(options, new Processor<CharSequence>() {
+        @Override
+        public void process(final CharSequence arg) {
+          builder.append(arg);
+        }
+      }, defaultErrorsProcessor, null);
+      final CharSeq build = builder.build();
+      try {
+        JsonParser parser = JSONTools.parseJSON(build);
+        ObjectMapper mapper = new ObjectMapper();
+        JsonToken next = parser.nextToken();
+        assert JsonToken.START_ARRAY.equals(next);
+        next = parser.nextToken();
+        while (!JsonToken.END_ARRAY.equals(next)) {
+          final JsonNode metaJSON = mapper.readTree(parser);
+          final JsonNode nameNode = metaJSON.get("name");
+          if (nameNode != null && !nameNode.isMissingNode()) {
+            final String name = nameNode.textValue();
+            final int index = ArrayTools.indexOf(name, paths);
+            if (index >= 0) {
+              final String size = metaJSON.get("full_size").toString();
+              final String sorted = metaJSON.has("sorted") ? metaJSON.get("sorted").toString() : "0";
+              result[index] = new MRTableShard(name, this, true, "1".equals(sorted), size);
+            }
+          }
+          next = parser.nextToken();
+        }
+      } catch (IOException e) {
+        throw new RuntimeException("Error parsing JSON from server: " + build, e);
+      }
+    }
+    for(int i = 0; i < result.length; i++) {
+      if (result[i] == null)
+        result[i] = new MRTableShard(paths[i], this, false, false, "");
+      invoke(new ShardAlter(result[i], ShardAlter.AlterType.UPDATED));
+    }
+    return result;
   }
 
   @Override
@@ -256,7 +310,6 @@ public class YaMREnv implements MREnv {
       outputShardsCount++;
     }
     final String errorsShardName = "temp/errors-" + Integer.toHexString(new FastRandom().nextInt());
-    final MRTableShard errorsShard = resolve(errorsShardName);
     options.add("-dst");
     options.add(errorsShardName);
     final File jarFile;
@@ -307,6 +360,7 @@ public class YaMREnv implements MREnv {
         System.err.println(arg);
       }
     }, null);
+    MRTableShard errorsShard = new MRTableShard(errorsShardName, this, true, false, "");
     errorsCount[0] += read(errorsShard, new MRRoutine(new String[]{errorsShardName}, null, state) {
       @Override
       public void invoke(final MRRecord record) {
@@ -318,6 +372,11 @@ public class YaMREnv implements MREnv {
     });
     delete(errorsShard);
 
+    if (errorsCount[0] == 0) {
+      for(int i = 0; i < out.length; i++) {
+        invoke(new ShardAlter(out[i]));
+      }
+    }
     return errorsCount[0] == 0;
   }
 

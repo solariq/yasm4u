@@ -8,6 +8,6 @@ package solar.mr.proc;
 public interface MRJoba {
   boolean run(MRWhiteboard wb);
 
-  String[] consumes(MRWhiteboard wb);
-  String[] produces(MRWhiteboard wb);
+  String[] consumes();
+  String[] produces();
 }

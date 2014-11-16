@@ -7,6 +7,7 @@ import java.util.*;
 
 
 import com.spbsu.commons.func.Processor;
+import com.spbsu.commons.func.impl.WeakListenerHolderImpl;
 import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.random.FastRandom;
 import com.spbsu.commons.seq.CharSeq;
@@ -24,7 +25,7 @@ import solar.mr.routines.MRRecord;
  * Date: 12.10.14
  * Time: 11:34
  */
-public class LocalMREnv implements MREnv {
+public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements MREnv{
   public static final String DEFAULT_HOME = System.getenv("HOME") + "/.MRSamples";
   private final File home;
 
@@ -100,6 +101,10 @@ public class LocalMREnv implements MREnv {
       }
       routine.process(CharSeq.EMPTY);
 
+      for (MRTableShard anOut : out) {
+        invoke(new ShardAlter(anOut));
+      }
+
       mrOutput.interrupt();
       mrOutput.join();
     } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException | IOException e) {
@@ -110,20 +115,30 @@ public class LocalMREnv implements MREnv {
 
   @Override
   public MRTableShard resolve(String path) {
-    if (path.startsWith("/"))
-      path = path.substring(1);
-
+    MRTableShard result = null;
     {
       final File sortedFile = file(path, true);
       if (sortedFile.exists())
-        return new MRTableShard(path, this, true, true, "" + sortedFile.length());
+        result = new MRTableShard(path, this, true, true, "" + sortedFile.length());
     }
-    {
+    if (result == null) {
       final File unsortedFile = file(path, false);
       if (unsortedFile.exists())
-        return new MRTableShard(path, this, true, false, "" + unsortedFile.length());
+        result = new MRTableShard(path, this, true, false, "" + unsortedFile.length());
     }
-    return new MRTableShard(path, this, false, false, "0");
+    if (result == null)
+      result = new MRTableShard(path, this, false, false, "0");
+    invoke(new ShardAlter(result, ShardAlter.AlterType.UPDATED));
+    return result;
+  }
+
+  @Override
+  public MRTableShard[] resolveAll(String[] paths) {
+    final MRTableShard[] result = new MRTableShard[paths.length];
+    for(int i = 0; i < result.length; i++) {
+      result[i] = resolve(paths[i]);
+    }
+    return result;
   }
 
   @Override
@@ -148,11 +163,13 @@ public class LocalMREnv implements MREnv {
   @Override
   public void write(final MRTableShard shard, final Reader content) {
     writeFile(content, shard.path(), false, false);
+    invoke(new ShardAlter(shard));
   }
 
   @Override
   public void append(final MRTableShard shard, final Reader content) {
     writeFile(content, shard.path(), false, true);
+    invoke(new ShardAlter(shard));
   }
 
   private void writeFile(final Reader content, final String path, boolean sorted, final boolean append) {
@@ -188,6 +205,9 @@ public class LocalMREnv implements MREnv {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+    finally {
+      invoke(new ShardAlter(shard));
+    }
   }
 
   @Override
@@ -210,6 +230,7 @@ public class LocalMREnv implements MREnv {
   public void copy(MRTableShard from, MRTableShard to, boolean append) {
     try {
       writeFile(from.isAvailable() ? new FileReader(file(from.path(), false)) : new CharSeqReader(""), to.path(), false, append);
+      invoke(new ShardAlter(to));
     } catch (FileNotFoundException e) {
       throw new RuntimeException(e);
     }
@@ -242,6 +263,7 @@ public class LocalMREnv implements MREnv {
     sorted.add(CharSeqTools.EMPTY);
 
     writeFile(new CharSeqReader(CharSeqTools.concatWithDelimeter("\n", sorted)), shard.path(), true, false);
+    invoke(new ShardAlter(shard));
     return resolve(shard.path());
   }
 
