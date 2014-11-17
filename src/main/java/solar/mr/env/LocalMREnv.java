@@ -97,7 +97,8 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
       final MRRoutine routine = constructor.newInstance(inputNames.toArray(new String[inputNames.size()]), mrOutput, state);
 
       for (final File file : inputFiles) {
-        CharSeqTools.processLines(new FileReader(file), routine);
+        if (file.exists())
+          CharSeqTools.processLines(new FileReader(file), routine);
       }
       routine.process(CharSeq.EMPTY);
 
@@ -118,16 +119,20 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
     MRTableShard result = null;
     {
       final File sortedFile = file(path, true);
-      if (sortedFile.exists())
-        result = new MRTableShard(path, this, true, true, crc(sortedFile));
+      if (sortedFile.exists()) {
+        final long[] recordsAndKeys = countRecordsAndKeys(sortedFile);
+        result = new MRTableShard(path, this, true, true, crc(sortedFile), length(sortedFile), recordsAndKeys[1], recordsAndKeys[0], ts(sortedFile));
+      }
     }
     if (result == null) {
       final File unsortedFile = file(path, false);
-      if (unsortedFile.exists())
-        result = new MRTableShard(path, this, true, false, crc(unsortedFile));
+      if (unsortedFile.exists()) {
+        final long[] recordsAndKeys = countRecordsAndKeys(unsortedFile);
+        result = new MRTableShard(path, this, true, false, crc(unsortedFile), length(unsortedFile), recordsAndKeys[1], recordsAndKeys[0], ts(unsortedFile));
+      }
     }
     if (result == null)
-      result = new MRTableShard(path, this, false, false, "0");
+      result = new MRTableShard(path, this, false, false, "0", 0, 0, 0, System.currentTimeMillis());
     invoke(new ShardAlter(result, ShardAlter.AlterType.UPDATED));
     return result;
   }
@@ -241,10 +246,13 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
       public void process(String path) {
         if (path.startsWith(finalPrefix)) {
           final File file = new File(finalPrefixFile, path);
+
           if (path.endsWith(".txt")) {
-            result.add(new MRTableShard(path.substring(0, ".txt".length()), LocalMREnv.this, true, false, crc(file)));
+            final long[] recordsAndKeys = countRecordsAndKeys(file);
+            result.add(new MRTableShard(path.substring(0, ".txt".length()), LocalMREnv.this, true, false, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], ts(file)));
           } else if (path.endsWith(".txt.sorted")) {
-            result.add(new MRTableShard(path.substring(0, ".txt.sorted".length()), LocalMREnv.this, true, true, crc(file)));
+            final long[] recordsAndKeys = countRecordsAndKeys(file);
+            result.add(new MRTableShard(path.substring(0, ".txt.sorted".length()), LocalMREnv.this, true, true, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], ts(file)));
           }
         }
       }
@@ -298,10 +306,6 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
     return "LocalMR://" + home.getAbsolutePath() + "/";
   }
 
-  private String crc(File file) {
-    return "" + file.length();
-  }
-
   public String home() {
     return home.getAbsolutePath();
   }
@@ -317,5 +321,40 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
     }
 
     return file;
+  }
+
+  private String crc(File file) {
+    return "" + file.length();
+  }
+
+  private long length(File file) {
+    return file.length();
+  }
+
+  private long ts(File sortedFile) {
+    return sortedFile.lastModified();
+  }
+
+  private long[] countRecordsAndKeys(File file) {
+    final long[] recordsAnsKeys = {0, 0};
+    if (!file.exists()) {
+      return recordsAnsKeys;
+    }
+    final Set<String> keys = new HashSet<>();
+    try {
+      StreamTools.readFile(file, new Processor<CharSequence>() {
+        CharSequence[] parts = new CharSequence[2];
+        @Override
+        public void process(CharSequence arg) {
+          parts = CharSeqTools.split(arg, '\t', parts);
+          keys.add(parts[0].toString());
+          recordsAnsKeys[0]++;
+        }
+      });
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    recordsAnsKeys[1] = keys.size();
+    return recordsAnsKeys;
   }
 }

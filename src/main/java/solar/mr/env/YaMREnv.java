@@ -23,8 +23,12 @@ import com.spbsu.commons.util.JSONTools;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import solar.mr.*;
+import solar.mr.env.sample.KeysSampleMap;
 import solar.mr.proc.MRState;
 import solar.mr.MRTableShard;
+import solar.mr.proc.MRWhiteboard;
+import solar.mr.proc.impl.MRStateImpl;
+import solar.mr.proc.impl.MRWhiteboardImpl;
 import solar.mr.routines.MRMap;
 import solar.mr.routines.MRRecord;
 import solar.mr.routines.MRReduce;
@@ -102,6 +106,26 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   }
 
   public void sample(MRTableShard table, final Processor<CharSequence> linesProcessor) {
+//    if (!table.isAvailable())
+//      return;
+//    final MRWhiteboard wb = new MRWhiteboardImpl(this, "sample", user);
+//    wb.set("var:probability", Math.min(1., 1000. / table.keysCount()));
+//    final MRTableShard shard = wb.get("temp:mr:///sample");
+//    wb.remove("temp:mr:///sample");
+//    MRState state = new MRStateImpl(wb);
+//    execute(KeysSampleMap.class, state, new MRTableShard[]{table}, new MRTableShard[]{shard}, new MRErrorsHandler() {
+//      @Override
+//      public void error(String type, String cause, MRRecord record) {
+//        throw new RuntimeException(record.toString() + "\n" + type + "\t" + cause.replace("\\t", "\t").replace("\\n", "\n"));
+//      }
+//      @Override
+//      public void error(Throwable th, MRRecord record) {
+//        throw new RuntimeException(record.toString(), th);
+//      }
+//    });
+//    read(shard, linesProcessor);
+//    delete(shard);
+
     final List<String> options = defaultOptions();
     options.add("-read");
     options.add(table.path());
@@ -142,9 +166,11 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
         final JsonNode nameNode = metaJSON.get("name");
         if (nameNode != null && !nameNode.isMissingNode()) {
           final String name = nameNode.textValue();
-          final String size = metaJSON.get("full_size").toString();
+          final long size = metaJSON.get("full_size").longValue();
           final String sorted = metaJSON.has("sorted") ? metaJSON.get("sorted").toString() : "0";
-          result.add(new MRTableShard(name, this, true, "1".equals(sorted), size));
+          final long ts = metaJSON.has("mod_time") ? metaJSON.get("mod_time").longValue() : System.currentTimeMillis();
+          final long recordsCount = metaJSON.has("records") ? metaJSON.get("records").longValue() : 0;
+          result.add(new MRTableShard(name, this, true, "1".equals(sorted), "" + size, size, recordsCount/10, recordsCount, ts));
         }
         next = parser.nextToken();
       }
@@ -297,7 +323,7 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     }
     for(int i = 0; i < result.length; i++) {
       if (result[i] == null)
-        result[i] = new MRTableShard(paths[i], this, false, false, "");
+        result[i] = new MRTableShard(paths[i], this, false, false, "0", 0, 0, 0, System.currentTimeMillis());
       invoke(new ShardAlter(result[i], ShardAlter.AlterType.UPDATED));
     }
     return result;
@@ -372,7 +398,7 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
         System.err.println(arg);
       }
     }, null);
-    MRTableShard errorsShard = new MRTableShard(errorsShardName, this, true, false, "");
+    final MRTableShard errorsShard = new MRTableShard(errorsShardName, this, true, false, "0", 0, 0, 0, System.currentTimeMillis());
     errorsCount[0] += read(errorsShard, new MRRoutine(new String[]{errorsShardName}, null, state) {
       @Override
       public void invoke(final MRRecord record) {

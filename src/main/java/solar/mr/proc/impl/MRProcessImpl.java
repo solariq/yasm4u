@@ -1,24 +1,22 @@
 package solar.mr.proc.impl;
 
-import java.util.*;
-
-
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqReader;
-import com.spbsu.commons.util.ArrayTools;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import solar.mr.MREnv;
 import solar.mr.MRErrorsHandler;
-import solar.mr.routines.MRRecord;
+import solar.mr.MRTableShard;
 import solar.mr.env.LocalMREnv;
 import solar.mr.env.YaMREnv;
 import solar.mr.proc.MRJoba;
 import solar.mr.proc.MRProcess;
 import solar.mr.proc.MRState;
 import solar.mr.proc.MRWhiteboard;
-import solar.mr.MRTableShard;
+import solar.mr.routines.MRRecord;
+
+import java.util.*;
 
 /**
  * User: solar
@@ -68,9 +66,7 @@ public class MRProcessImpl implements MRProcess {
   @Override
   public MRState execute() {
     final List<MRJoba> unmergedJobs = unmergeJobs(this.jobs);
-    final ArrayDeque<MRJoba> plan = new ArrayDeque<>();
-    if (!generateExecutionPlan(unmergedJobs, new LinkedHashSet<>(Arrays.asList(goals)), plan))
-      throw new RuntimeException("Unable to create execution plan");
+    final List<MRJoba> plan = generateExecutionPlan(unmergedJobs);
     for (MRJoba joba : plan) {
       final MRState prevTestState = test.snapshot();
       if (!joba.run(test))
@@ -99,53 +95,120 @@ public class MRProcessImpl implements MRProcess {
     return prod.snapshot();
   }
 
+
+  private static class State {
+    public final List<MRJoba> plan;
+    public double weight = 0;
+
+    private State(List<MRJoba> plan, double weight) {
+      this.plan = plan;
+      this.weight = weight;
+    }
+
+    public State next(MRJoba job) {
+      final List<MRJoba> nextPlan = new ArrayList<>(plan);
+      nextPlan.add(job);
+      return new State(nextPlan, weight + 1);
+    }
+  }
   /** need to implement Dijkstra's algorithm on state machine in case of several alternative routes
    * @param jobs available moves to make plan */
-  private boolean generateExecutionPlan(final Collection<MRJoba> jobs, final Set<String> state, final Deque<MRJoba> result) {
-    final Iterator<String> iterator = state.iterator();
-    while (iterator.hasNext()) {
-      final String trying2resolve = iterator.next();
-      final List<MRJoba> producers = new ArrayList<>(jobs.size());
+  private List<MRJoba> generateExecutionPlan(final Collection<MRJoba> jobs) {
+    final String[] universe;
+    final TObjectIntMap<String> resourceIndices = new TObjectIntHashMap<>();
+    final Map<BitSet, State> states = new HashMap<>();
+    final TreeSet<BitSet> order = new TreeSet<>(new Comparator<BitSet>() {
+      @Override
+      public int compare(BitSet o1, BitSet o2) {
+        return Double.compare(states.get(o1).weight, states.get(o2).weight);
+      }
+    });
+
+    { // initialize universe and starting state
+      final Set<String> consumes = new HashSet<>();
+      final Set<String> produces = new HashSet<>();
       for (final MRJoba job : jobs) {
-        if (ArrayTools.indexOf(trying2resolve, job.produces()) >= 0)
-          producers.add(job);
+        consumes.addAll(Arrays.asList(job.consumes()));
+        produces.addAll(Arrays.asList(job.produces()));
+      }
+      final Set<String> universeSet = new HashSet<>();
+      universeSet.addAll(produces);
+      universeSet.addAll(consumes);
+      universeSet.addAll(Arrays.asList(goals));
+      universe = universeSet.toArray(new String[universeSet.size()]);
+      for(int i = 0; i < universe.length; i++) {
+        resourceIndices.put(universe[i], i);
       }
 
-      if (producers.isEmpty()) { // need to sample or copy
-        if (!prod.available(trying2resolve))
-          return false;
-        if (!test.available(trying2resolve)) {
-          if (!prod.processAs(trying2resolve, new Processor<MRTableShard>() {
+      final BitSet initialState = new BitSet(universe.length);
+      consumes.removeAll(produces);
+      for (final String consume : consumes) {
+        if (!prod.available(consume))
+          throw new IllegalArgumentException("Can not find " + consume + " at production");
+        if (!test.available(consume)) {
+          if (!prod.processAs(consume, new Processor<MRTableShard>() {
             @Override
             public void process(final MRTableShard prodShard) {
               final CharSeqBuilder builder = new CharSeqBuilder();
-              final MRTableShard table = test.get(trying2resolve);
+              final MRTableShard table = test.get(consume);
               prod.env().sample(prodShard, new Processor<CharSequence>() {
                 @Override
                 public void process(final CharSequence arg) {
                   builder.append(arg).append('\n');
                 }
               });
-              test.env().write(table, new CharSeqReader(builder));
+              test.env().write(table, new CharSeqReader(builder.build()));
             }
           }))
-            test.set(trying2resolve, prod.get(trying2resolve));
+            test.set(consume, prod.get(consume));
         }
-        iterator.remove();
+        initialState.set(resourceIndices.get(consume), true);
       }
-      else {
-        final MRJoba joba = producers.get(0);
-        result.push(joba); // multiple ways of producing the same resource is not supported yet
-        jobs.removeAll(producers);
-        final Set<String> next = new HashSet<>(state);
-        next.removeAll(Arrays.asList(joba.produces()));
-        next.addAll(Arrays.asList(joba.consumes()));
-        if (generateExecutionPlan(jobs, next, result))
-          return true;
-        jobs.addAll(producers);
+      states.put(initialState, new State(new ArrayList<MRJoba>(), 0.));
+      order.add(initialState);
+    }
+
+    BitSet current;
+    State best = null;
+    double bestScore = Double.POSITIVE_INFINITY;
+    while ((current = order.pollFirst()) != null) {
+      final State currentState = states.get(current);
+      if (bestScore <= currentState.weight)
+        continue;
+      boolean isFinal = true;
+      for(int i = 0; isFinal && i < goals.length; i++) {
+        if (!current.get(resourceIndices.get(goals[i])))
+          isFinal = false;
+      }
+      if (isFinal) {
+        bestScore = currentState.weight;
+        best = currentState;
+        continue;
+      }
+
+      for (final MRJoba job : jobs) {
+        boolean available = true;
+        for (final String resource : job.consumes()) {
+          if (!current.get(resourceIndices.get(resource)))
+            available = false;
+        }
+        if (!available)
+          continue;
+        final BitSet next = (BitSet)current.clone();
+        for (final String resource : job.produces()) {
+          next.set(resourceIndices.get(resource), true);
+        }
+        final State nextState = currentState.next(job);
+        final State knownState = states.get(next);
+        if (knownState == null || knownState.weight > nextState.weight) {
+          states.put(next, nextState);
+          order.add(next);
+        }
       }
     }
-    return state.isEmpty();
+    if (best == null)
+      throw new IllegalArgumentException("Unable to create execution plan");
+    return best.plan;
   }
 
   private List<MRJoba> unmergeJobs(final List<MRJoba> jobs) {
@@ -176,6 +239,7 @@ public class MRProcessImpl implements MRProcess {
           @Override
           public boolean run(MRWhiteboard wb) {
             synchronized (joba) {
+              wb.available(joba.produces());
               final Object[] resolved = new Object[outputs.length];
               for(int i = 0; i < outputs.length; i++) {
                 resolved[i] = wb.get(joba.produces()[i]);

@@ -1,7 +1,5 @@
 package solar.mr.io;
 
-import java.net.URI;
-
 
 import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.types.ConversionPack;
@@ -25,6 +23,9 @@ public class MRTableShardConverter implements ConversionPack<MRTableShard,CharSe
           .append("&sorted=").append(from.isSorted());
       if (from.isAvailable()) {
         builder.append("&crc=").append(from.crc());
+        builder.append("&length=").append(from.length());
+        builder.append("&records=").append(from.recordsCount());
+        builder.append("&keys=").append(from.keysCount());
       }
       builder.append("#").append(Long.toString(from.metaTS()));
 
@@ -51,6 +52,9 @@ public class MRTableShardConverter implements ConversionPack<MRTableShard,CharSe
       parts = CharSeqTools.split(parts[1], "#");
       final long ts = CharSeqTools.parseLong(parts[1]);
       parts = CharSeqTools.split(parts[0], "&");
+      long length = 0;
+      long recordsCount = 0;
+      long keysCount = 0;
       boolean available = false;
       boolean sorted = false;
       String crc = "0";
@@ -63,9 +67,15 @@ public class MRTableShardConverter implements ConversionPack<MRTableShard,CharSe
           sorted = kv[1].equals("true");
         if (kv[0].equals("crc"))
           crc = kv[1].toString();
+        if (kv[0].equals("length"))
+          length = CharSeqTools.parseLong(kv[1]);
+        if (kv[0].equals("records"))
+          recordsCount = CharSeqTools.parseLong(kv[1]);
+        if (kv[0].equals("keys"))
+          keysCount = CharSeqTools.parseLong(kv[1]);
       }
 
-      return new MRTableShard(path, wb.env(), available, sorted, crc, ts);
+      return new MRTableShard(path, wb.env(), available, sorted, crc, length, keysCount, recordsCount, ts);
     }
   }
   @Override

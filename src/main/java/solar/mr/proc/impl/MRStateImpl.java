@@ -13,7 +13,6 @@ import solar.mr.proc.MRWhiteboard;
 
 import java.io.*;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -46,12 +45,13 @@ public class MRStateImpl implements MRState, Serializable {
   public boolean available(final String... consumes) {
     final boolean[] holder = new boolean[]{true};
     for (int i = 0; holder[0] && i < consumes.length; i++) {
-      holder[0] &= processAs(consumes[i], new Processor<MRTableShard>() {
+      if (!processAs(consumes[i], new Processor<MRTableShard>() {
         @Override
         public void process(MRTableShard shard) {
-          holder[0] &= !(shard.container() instanceof YaMREnv) || shard.isAvailable();
+          holder[0] &= shard.container() instanceof YaMREnv || shard.isAvailable();
         }
-      }) || keys().contains(consumes[i]);
+      }))
+        holder[0] &= keys().contains(consumes[i]);
     }
     return holder[0];
   }

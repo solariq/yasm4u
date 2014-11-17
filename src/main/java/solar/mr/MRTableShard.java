@@ -9,23 +9,55 @@ package solar.mr;
 public class MRTableShard {
   private final String path;
   private final MREnv container;
+  private final long recordsCount;
   private final long metaTS;
   private final boolean exist;
-  private final String crc;
-  private boolean sorted;
-
-  public MRTableShard(final String path, final MREnv container, final boolean exist, final boolean sorted, final String crc) {
-    this(path, container, exist, sorted, crc, System.currentTimeMillis());
-  }
+  public final String crc;
+  private final boolean sorted;
+  private final long length;
+  private final long keysCount;
 
   public MRTableShard(final String path, final MREnv container, final boolean exist, final boolean sorted, final String crc,
-                      final long ts) {
+                      long length, long keysCount, long recordsCount, final long ts) {
     this.path = path;
     this.container = container;
     this.exist = exist;
     this.crc = crc;
     this.sorted = sorted;
+    this.length = length;
+    this.keysCount = keysCount;
+    this.recordsCount = recordsCount;
     metaTS = ts;
+  }
+
+  public String crc() {
+    if (!isAvailable())
+      throw new IllegalStateException("Resource is not available: " + path() + "!");
+    return crc;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o)
+      return true;
+    if (!(o instanceof MRTableShard))
+      return false;
+
+    final MRTableShard that = (MRTableShard) o;
+    return container().name().equals(that.container().name()) && crc.equals(that.crc) && path().equals(that.path());
+  }
+
+  @Override
+  public int hashCode() {
+    int result = path().hashCode();
+    result = 31 * result + container().name().hashCode();
+    result = 31 * result + crc.hashCode();
+    return result;
+  }
+
+  @Override
+  public String toString() {
+    return container().name() + path();
   }
 
   public String path() {
@@ -34,6 +66,10 @@ public class MRTableShard {
 
   public MREnv container() {
     return container;
+  }
+
+  public long recordsCount() {
+    return recordsCount;
   }
 
   public long metaTS() {
@@ -48,37 +84,11 @@ public class MRTableShard {
     return sorted;
   }
 
-  public String crc() {
-    if (!isAvailable())
-      throw new IllegalStateException("Resource is not available: " + path() + "!");
-    return crc;
+  public long length() {
+    return length;
   }
 
-  public MRTableShard refresh() {
-    return container.resolve(path);
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o)
-      return true;
-    if (!(o instanceof MRTableShard))
-      return false;
-
-    final MRTableShard that = (MRTableShard) o;
-    return container.name().equals(that.container.name()) && crc.equals(that.crc) && path.equals(that.path);
-  }
-
-  @Override
-  public int hashCode() {
-    int result = path.hashCode();
-    result = 31 * result + container.name().hashCode();
-    result = 31 * result + crc.hashCode();
-    return result;
-  }
-
-  @Override
-  public String toString() {
-    return container.name() + path;
+  public long keysCount() {
+    return keysCount;
   }
 }

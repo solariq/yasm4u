@@ -4,6 +4,7 @@ import com.spbsu.commons.func.Processor;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
+import java.util.Set;
 
 
 import com.spbsu.commons.func.types.ConversionRepository;
@@ -23,6 +24,6 @@ public interface MRState extends Serializable {
   <T> T get(String uri);
 
   boolean available(String... consumes);
-  java.util.Set<String> keys();
+  Set<String> keys();
   <T> boolean processAs(String name, Processor<T> processor);
 }

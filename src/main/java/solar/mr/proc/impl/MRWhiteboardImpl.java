@@ -93,7 +93,7 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
 
   @Override
   public Set<String> keys() {
-    final Set<String> keys = new HashSet(state.keySet());
+    final Set<String> keys = new HashSet<>(state.keySet());
     for (Object key : increment.keySet()) {
       keys.add((String) key);
     }
@@ -145,16 +145,6 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
   @Override
   public MRErrorsHandler errorsHandler() {
     return errorsHandler;
-  }
-
-  @Override
-  public void setErrorsHandler(final MRErrorsHandler errorsHandler) {
-    this.errorsHandler = errorsHandler;
-  }
-
-  @Override
-  public SerializationRepository marshaling() {
-    return marshaling;
   }
 
   @Override
@@ -213,7 +203,6 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
   }
 
   @SuppressWarnings("unchecked")
-  @Override
   public void sync() {
     final long currentTime = System.currentTimeMillis();
     final List<String> shards = new ArrayList<>();
@@ -272,16 +261,20 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
     connected = test;
   }
 
+  public void setErrorsHandler(MRErrorsHandler errorsHandler) {
+    this.errorsHandler = errorsHandler;
+  }
+
   private static class LazyTableShard extends MRTableShard {
     MRTableShard realShard;
 
     public LazyTableShard(String path, MREnv env) {
-      super(path, env, false, false, "");
+      super(path, env, false, false, "", 0, 0, 0, 0);
     }
 
     private MRTableShard real() {
       if (realShard == null)
-        realShard = this.container().resolve(path());
+        realShard = container().resolve(path());
       return realShard;
     }
 
@@ -303,6 +296,21 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
     @Override
     public long metaTS() {
       return real().metaTS();
+    }
+
+    @Override
+    public long recordsCount() {
+      return real().recordsCount();
+    }
+
+    @Override
+    public long length() {
+      return real().length();
+    }
+
+    @Override
+    public long keysCount() {
+      return real().keysCount();
     }
   }
 }

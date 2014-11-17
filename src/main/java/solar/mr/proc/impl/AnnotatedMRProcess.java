@@ -48,7 +48,7 @@ public class AnnotatedMRProcess extends MRProcessImpl {
         addJob(new ReadJoba(resolveNames(new String[]{readAnn.input()}, initial), readAnn.output(), current));
     }
     for (Map.Entry<Object, Object> entry : initial.entrySet()) {
-      wb().set("" + entry.getKey(), entry.getValue());
+      wb().set((String)entry.getKey(), entry.getValue());
     }
   }
 
