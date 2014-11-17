@@ -130,8 +130,6 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
 
           set(resource, result);
           return (T)result;
-        case "var":
-          throw new IllegalArgumentException("Unable to find variable " + resource + " at the whiteboard!");
       }
       return null;
     } catch (URISyntaxException e) {

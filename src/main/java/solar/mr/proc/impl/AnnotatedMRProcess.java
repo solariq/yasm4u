@@ -33,7 +33,7 @@ public class AnnotatedMRProcess extends MRProcessImpl {
   }
 
   public AnnotatedMRProcess(final Class<?> processDescription, final MREnv env, final Properties initial) {
-    super(env, processDescription.getName().replace('$', '.'), processDescription.getAnnotation(MRProcessClass.class).goal());
+    super(env, processDescription.getName().replace('$', '.'), resolveNames(processDescription.getAnnotation(MRProcessClass.class).goal(), initial));
     final Method[] methods = processDescription.getMethods();
     for (int i = 0; i < methods.length; i++) {
       final Method current = methods[i];
@@ -48,13 +48,13 @@ public class AnnotatedMRProcess extends MRProcessImpl {
         addJob(new ReadJoba(resolveNames(new String[]{readAnn.input()}, initial), readAnn.output(), current));
     }
     for (Map.Entry<Object, Object> entry : initial.entrySet()) {
-      wb().set("var:" + entry.getKey(), entry.getValue());
+      wb().set("" + entry.getKey(), entry.getValue());
     }
   }
 
 
   private static final Pattern varPattern = Pattern.compile("\\{([^\\},]+),?(.*)\\}");
-  private String resolveVars(String resource, Properties vars) {
+  private static String resolveVars(String resource, Properties vars) {
     final Matcher matcher = varPattern.matcher(resource);
     final StringBuffer format = new StringBuffer();
     final Map<String, Integer> namesMap = new HashMap<>();
@@ -67,7 +67,7 @@ public class AnnotatedMRProcess extends MRProcessImpl {
     matcher.appendTail(format);
     final Object[] args = new Object[namesMap.size()];
     for (final Map.Entry<String, Integer> entry : namesMap.entrySet()) {
-      final Object resolution = vars.get("var:" + entry.getKey());
+      final Object resolution = vars.get(entry.getKey());
       if (resolution == null)
         throw new IllegalArgumentException("Resource needed for name resolution is missing: " + entry.getKey());
       args[entry.getValue()] = resolution;
@@ -81,7 +81,7 @@ public class AnnotatedMRProcess extends MRProcessImpl {
     return resolvedCandidate;
   }
 
-  private String[] resolveNames(String[] input, Properties wb) {
+  private static String[] resolveNames(String[] input, Properties wb) {
     final String[] result = new String[input.length];
     for(int i = 0; i < result.length; i++) {
       result[i] = resolveVars(input[i], wb);
