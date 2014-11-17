@@ -102,7 +102,9 @@ public class MRProcessImpl implements MRProcess {
   /** need to implement Dijkstra's algorithm on state machine in case of several alternative routes
    * @param jobs available moves to make plan */
   private boolean generateExecutionPlan(final Collection<MRJoba> jobs, final Set<String> state, final Deque<MRJoba> result) {
-    for (final String trying2resolve : state) {
+    final Iterator<String> iterator = state.iterator();
+    while (iterator.hasNext()) {
+      final String trying2resolve = iterator.next();
       final List<MRJoba> producers = new ArrayList<>(jobs.size());
       for (final MRJoba job : jobs) {
         if (ArrayTools.indexOf(trying2resolve, job.produces()) >= 0)
@@ -129,7 +131,7 @@ public class MRProcessImpl implements MRProcess {
           }))
             test.set(trying2resolve, prod.get(trying2resolve));
         }
-        state.remove(trying2resolve);
+        iterator.remove();
       }
       else {
         final MRJoba joba = producers.get(0);
