@@ -25,7 +25,7 @@ public interface MREnv extends WeakListenerHolder<MREnv.ShardAlter> {
   void sample(MRTableShard shard, Processor<CharSequence> seq);
 
   MRTableShard[] list(String prefix);
-  void copy(MRTableShard from, MRTableShard to, boolean append);
+  void copy(MRTableShard[] from, MRTableShard to, boolean append);
   void delete(MRTableShard shard);
 
   MRTableShard sort(MRTableShard shard);

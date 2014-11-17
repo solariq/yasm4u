@@ -5,6 +5,9 @@ import solar.mr.MRTableShard;
 import solar.mr.proc.MRJoba;
 import solar.mr.proc.MRWhiteboard;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * User: solar
  * Date: 07.11.14
@@ -21,17 +24,17 @@ public class MergeJoba implements MRJoba {
 
   @Override
   public boolean run(final MRWhiteboard wb) {
-    for (String shard : shards) {
-      final MRTableShard result = wb.get(this.result);
-      if (!wb.processAs(shard, new Processor<MRTableShard>() {
+    final List<MRTableShard> shards = new ArrayList<>();
+
+    for(int i = 0; i < this.shards.length; i++) {
+      wb.processAs(this.shards[i], new Processor<MRTableShard>() {
         @Override
         public void process(MRTableShard arg) {
-          wb.env().copy(arg, result, true);
+          shards.add(arg);
         }
-      })) {
-        throw new IllegalArgumentException("Unsupported type for merge");
-      }
+      });
     }
+    wb.env().copy(shards.toArray(new MRTableShard[shards.size()]), wb.<MRTableShard>get(result), false);
     return true;
   }
 

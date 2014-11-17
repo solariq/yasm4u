@@ -182,10 +182,12 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   }
 
   @Override
-  public void copy(MRTableShard from, MRTableShard to, boolean append) {
+  public void copy(MRTableShard[] from, MRTableShard to, boolean append) {
     final List<String> options = defaultOptions();
-    options.add("-src");
-    options.add(from.path());
+    for(int i = 0; i < from.length; i++) {
+      options.add("-src");
+      options.add(from[i].path());
+    }
     options.add(append ? "-dstappend" : "-dst");
     options.add(to.path());
     options.add("-copy");

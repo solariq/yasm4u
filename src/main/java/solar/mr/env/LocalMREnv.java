@@ -241,7 +241,7 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
     final String finalPrefix = prefix;
     final List<MRTableShard> result = new ArrayList<>();
     final File finalPrefixFile = prefixFile;
-    StreamTools.visitFiles(prefixFile, new Processor<String>(){
+    StreamTools.visitFiles(prefixFile, new Processor<String>() {
       @Override
       public void process(String path) {
         if (path.startsWith(finalPrefix)) {
@@ -261,9 +261,11 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
   }
 
   @Override
-  public void copy(MRTableShard from, MRTableShard to, boolean append) {
+  public void copy(MRTableShard[] from, MRTableShard to, boolean append) {
     try {
-      writeFile(from.isAvailable() ? new FileReader(file(from.path(), false)) : new CharSeqReader(""), to.path(), false, append);
+      for(int i = 0; i < from.length; i++) {
+        writeFile(from[i].isAvailable() ? new FileReader(file(from[i].path(), false)) : new CharSeqReader(""), to.path(), false, append || i > 0);
+      }
       invoke(new ShardAlter(to));
     } catch (FileNotFoundException e) {
       throw new RuntimeException(e);
