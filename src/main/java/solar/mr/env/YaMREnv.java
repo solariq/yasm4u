@@ -299,7 +299,8 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     }
     for(final String path : paths) {
       final String parent = path.substring(0, path.lastIndexOf('/'));
-      if (parents.get(parent) == 1) {
+
+      if (parents.get(parent) == 1 && CharSeqTools.split(parent, '/').length < 2) {
         result.add(path);
         parents.remove(parent);
       }

@@ -126,7 +126,8 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
           final String path = uri.getPath();
           if (resource.endsWith("*"))
             result = env.list(path.substring(1, path.length() - 1));
-          else result = env.resolve(path.substring(1));
+          else
+            result = new LazyTableShard(path.substring(1), env);
 
           set(resource, result);
           return (T)result;
@@ -177,28 +178,30 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
         break;
       case UPDATED:
         hints.remove(path);
-        for (final String resourceName : keys()) {
-          final Object resolve = get(resourceName);
-          if (resolve instanceof MRTableShard) {
-            final MRTableShard shard = (MRTableShard) resolve;
-            if (path.equals(shard.path()))
-              set(resourceName, shardAlter.shard);
-          }
-          else if (resolve instanceof MRTableShard[]) {
-            final MRTableShard[] shards = (MRTableShard[]) resolve;
-            boolean changed = false;
-            for(int i = 0; i < shards.length; i++) {
-              final MRTableShard shard = shards[i];
-              if (path.equals(shard.path())) {
-                shards[i] = shardAlter.shard;
-                changed = true;
-              }
-            }
-            if (changed)
-              set(resourceName, shards);
+        final MRTableShard shd = shardAlter.shard;
+        updateResource(shd);
+        break;
+    }
+  }
+
+  private void updateResource(MRTableShard shd) {
+    final String path = shd.path();
+    for (final String resourceName : keys()) {
+      final Object resolve = get(resourceName);
+      if (resolve instanceof MRTableShard) {
+        final MRTableShard oldShard = (MRTableShard) resolve;
+        if (path.equals(oldShard.path()))
+          set(resourceName, shd);
+      }
+      else if (resolve instanceof MRTableShard[]) {
+        final MRTableShard[] shards = (MRTableShard[]) resolve;
+        for(int i = 0; i < shards.length; i++) {
+          final MRTableShard oldShard = shards[i];
+          if (path.equals(oldShard.path())) {
+            shards[i] = shd;
           }
         }
-        break;
+      }
     }
   }
 
@@ -216,6 +219,7 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
         }
       });
     }
+    // this will update all shards through notification mechanism
     env.resolveAll(shards.toArray(new String[shards.size()]));
 
     final CharSeqBuilder builder = new CharSeqBuilder();

@@ -44,14 +44,16 @@ public class MRTableShard {
       return false;
 
     final MRTableShard that = (MRTableShard) o;
-    return container().name().equals(that.container().name()) && crc.equals(that.crc) && path().equals(that.path());
+    return container().name().equals(that.container().name()) && crc.equals(that.crc) && exist == that.exist && sorted == that.sorted && path().equals(that.path());
   }
 
   @Override
   public int hashCode() {
-    int result = path().hashCode();
-    result = 31 * result + container().name().hashCode();
+    int result = path.hashCode();
+    result = 31 * result + container.hashCode();
+    result = 31 * result + (exist ? 1 : 0);
     result = 31 * result + crc.hashCode();
+    result = 31 * result + (sorted ? 1 : 0);
     return result;
   }
 
@@ -73,7 +75,7 @@ public class MRTableShard {
   }
 
   public long metaTS() {
-    return metaTS;
+    return 0;
   }
 
   public boolean isAvailable() {

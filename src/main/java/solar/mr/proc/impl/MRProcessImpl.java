@@ -239,7 +239,6 @@ public class MRProcessImpl implements MRProcess {
           @Override
           public boolean run(MRWhiteboard wb) {
             synchronized (joba) {
-              wb.available(joba.produces());
               final Object[] resolved = new Object[outputs.length];
               for(int i = 0; i < outputs.length; i++) {
                 resolved[i] = wb.get(joba.produces()[i]);
