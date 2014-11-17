@@ -53,7 +53,7 @@ public class AnnotatedMRProcess extends MRProcessImpl {
   }
 
 
-  private static final Pattern varPattern = Pattern.compile("\\{([^\\},]+),?(.*)\\}");
+  private static final Pattern varPattern = Pattern.compile("\\{([^\\},]+),?([^\\}]*)\\}");
   private static String resolveVars(String resource, Properties vars) {
     final Matcher matcher = varPattern.matcher(resource);
     final StringBuffer format = new StringBuffer();
