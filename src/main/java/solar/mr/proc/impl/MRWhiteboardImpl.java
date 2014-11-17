@@ -299,7 +299,7 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
 
     @Override
     public long metaTS() {
-      return real().metaTS();
+      return 0l;
     }
 
     @Override
