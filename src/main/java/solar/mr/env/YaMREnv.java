@@ -291,7 +291,7 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
       return paths;
     final Set<String> result = new HashSet<>();
     final TObjectIntMap<String> parents = new TObjectIntHashMap<>();
-    for(final String path : paths){
+    for(final String path : paths.toArray(new String[paths.size()])){
       int index = path.lastIndexOf('/');
       if (index < 0 || FAT_DIRECTORIES.contains(path.substring(0, index))) {
         result.add(path);
