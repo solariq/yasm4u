@@ -1,22 +1,22 @@
 package solar.mr.proc.impl;
 
-import org.jetbrains.annotations.Nullable;
-
-import java.io.*;
-import java.text.MessageFormat;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-
 import com.spbsu.commons.filters.ClassFilter;
 import com.spbsu.commons.func.Action;
+import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.func.types.SerializationRepository;
 import com.spbsu.commons.func.types.TypeConverter;
+import org.jetbrains.annotations.Nullable;
+import solar.mr.MRTableShard;
 import solar.mr.env.YaMREnv;
 import solar.mr.proc.MRState;
 import solar.mr.proc.MRWhiteboard;
-import solar.mr.MRTableShard;
+
+import java.io.*;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * User: solar
@@ -30,95 +30,73 @@ public class MRStateImpl implements MRState, Serializable {
   public MRStateImpl() {}
 
   public MRStateImpl(MRState copy) {
-    for (int i = 0; i < copy.available().length; i++) {
-      final String key = copy.available()[i];
+    for (final String key : copy.keys()) {
       state.put(key, copy.get(key));
     }
   }
 
   @Nullable
   @Override
-  public <T> T get(final String uri) {
+  public <T> T get(final String name) {
     //noinspection unchecked
-    return (T)state.get(resolveVars(uri));
-  }
-
-  private static final Pattern varPattern = Pattern.compile("\\{([^\\},]+),?(.*)\\}");
-  String resolveVars(String resource) {
-    final Matcher matcher = varPattern.matcher(resource);
-    final StringBuffer format = new StringBuffer();
-    final Map<String, Integer> namesMap = new HashMap<>();
-    while(matcher.find()) {
-      final String name = matcher.group(1);
-      final int index = namesMap.containsKey(name) ? namesMap.get(name) : namesMap.size();
-      namesMap.put(name, index);
-      matcher.appendReplacement(format, "{" + index + (matcher.groupCount() > 1 && !matcher.group(2).isEmpty()? "," + matcher.group(2) : "") + "}");
-    }
-    matcher.appendTail(format);
-    final Object[] args = new Object[namesMap.size()];
-    for (final Map.Entry<String, Integer> entry : namesMap.entrySet()) {
-      final Object resolution = get(entry.getKey());
-      if (resolution == null)
-        throw new IllegalArgumentException("Resource needed for name resolution is missing: " + entry.getKey());
-      args[entry.getValue()] = resolution;
-    }
-
-    String resolvedCandidate = MessageFormat.format(format.toString(), args);
-    if (resolvedCandidate.contains("{")) {
-      resolvedCandidate = resolveVars(resolvedCandidate);
-    }
-
-    if (resolvedCandidate == null)
-      throw new IllegalArgumentException("Resource needed for name resolution is missing: " + resolvedCandidate);
-
-    return resolvedCandidate;
-  }
-
-  Set<String> resolveDeps(String resource) {
-    final Matcher matcher = varPattern.matcher(resource);
-    final Set<String> names = new HashSet<>();
-    while(matcher.find()) {
-      final String name = matcher.group(1);
-      names.add(name);
-      names.addAll(resolveDeps(name));
-    }
-    return names;
+    return (T)state.get(name);
   }
 
   @Override
   public boolean available(final String... consumes) {
-    for (int i = 0; i < consumes.length; i++) {
-      if (!available(consumes[i]))
-        return false;
+    final boolean[] holder = new boolean[]{true};
+    for (int i = 0; holder[0] && i < consumes.length; i++) {
+      holder[0] &= processAs(consumes[i], new Processor<MRTableShard>() {
+        @Override
+        public void process(MRTableShard shard) {
+          holder[0] &= !(shard.container() instanceof YaMREnv) || shard.isAvailable();
+        }
+      }) || keys().contains(consumes[i]);
     }
-    return true;
-  }
-
-  private boolean available(final String consumes) {
-    final String key = resolveVars(consumes);
-    if (!state.containsKey(key))
-      return false;
-    final Object resource = state.get(key);
-    if (resource instanceof MRTableShard) {
-      final MRTableShard tableShard = (MRTableShard) resource;
-      return tableShard.container() instanceof YaMREnv || tableShard.refresh().isAvailable();
-    }
-    return true;
+    return holder[0];
   }
 
   @Override
-  public String[] available() {
-    final String[] available = new String[state.size()];
-    int index = 0;
-    for (String key : state.keySet()) {
-      available[index++] = key;
+  public Set<String> keys() {
+    return state.keySet();
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public <T> boolean processAs(String name, Processor<T> processor) {
+    Class<?> clz = null;
+    {
+      final Method[] methods = processor.getClass().getMethods();
+      for (int i = 0; i < methods.length; i++) {
+        final Method m = methods[i];
+        if (!m.isSynthetic() && "process".equals(m.getName()) && m.getReturnType() == void.class && m.getParameterTypes().length == 1) {
+          clz = m.getParameterTypes()[0];
+        }
+      }
+      if (clz == null)
+        throw new IllegalArgumentException("Unable to infer type parameter from processor: " + processor.getClass().getName());
     }
-    return available;
+    final Object resolve = get(name);
+
+    if (resolve == null)
+      return false;
+    final Class<?> resolveClass = resolve.getClass();
+    if (resolveClass.isArray() && clz.isAssignableFrom(resolveClass.getComponentType())) {
+      final T[] arr = (T[])resolve;
+      for(int i = 0; i < arr.length; i++) {
+        final T element = arr[i];
+        processor.process(element);
+      }
+    }
+    else if (clz.isAssignableFrom(resolveClass))
+      processor.process((T)resolve);
+    else
+      return false;
+    return true;
   }
 
   private void writeObject(ObjectOutputStream out) throws IOException {
-    for(int i = 0; i < available().length; i++) {
-      final String current = available()[i];
+    for(final String current : keys()) {
       final Object instance = get(current);
       assert instance != null;
       final SerializationRepository<CharSequence> serialization = MRState.SERIALIZATION;

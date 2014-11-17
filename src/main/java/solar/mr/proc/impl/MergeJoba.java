@@ -22,7 +22,7 @@ public class MergeJoba implements MRJoba {
   @Override
   public boolean run(final MRWhiteboard wb) {
     for (String shard : shards) {
-      final MRTableShard result = wb.resolve(this.result);
+      final MRTableShard result = wb.get(this.result);
       if (!wb.processAs(shard, new Processor<MRTableShard>() {
         @Override
         public void process(MRTableShard arg) {

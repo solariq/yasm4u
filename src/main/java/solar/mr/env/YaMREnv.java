@@ -116,6 +116,46 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   }
 
   @Override
+  public MRTableShard[] list(String prefix) {
+    final List<MRTableShard> result = new ArrayList<>();
+    final List<String> options = defaultOptions();
+    options.add("-list");
+    options.add("-prefix");
+    options.add(prefix);
+    options.add("-jsonoutput");
+    final CharSeqBuilder builder = new CharSeqBuilder();
+    executeCommand(options, new Processor<CharSequence>() {
+      @Override
+      public void process(final CharSequence arg) {
+        builder.append(arg);
+      }
+    }, defaultErrorsProcessor, null);
+    final CharSeq build = builder.build();
+    try {
+      JsonParser parser = JSONTools.parseJSON(build);
+      ObjectMapper mapper = new ObjectMapper();
+      JsonToken next = parser.nextToken();
+      assert JsonToken.START_ARRAY.equals(next);
+      next = parser.nextToken();
+      while (!JsonToken.END_ARRAY.equals(next)) {
+        final JsonNode metaJSON = mapper.readTree(parser);
+        final JsonNode nameNode = metaJSON.get("name");
+        if (nameNode != null && !nameNode.isMissingNode()) {
+          final String name = nameNode.textValue();
+          final String size = metaJSON.get("full_size").toString();
+          final String sorted = metaJSON.has("sorted") ? metaJSON.get("sorted").toString() : "0";
+          result.add(new MRTableShard(name, this, true, "1".equals(sorted), size));
+        }
+        next = parser.nextToken();
+      }
+    } catch (IOException e) {
+      throw new RuntimeException("Error parsing JSON from server: " + build, e);
+    }
+
+    return result.toArray(new MRTableShard[result.size()]);
+  }
+
+  @Override
   public void copy(MRTableShard from, MRTableShard to, boolean append) {
     final List<String> options = defaultOptions();
     options.add("-src");
@@ -146,8 +186,9 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   }
 
   public void delete(final MRTableShard shard) {
+    if (!shard.isAvailable())
+      return;
     final List<String> options = defaultOptions();
-
     options.add("-drop");
     options.add(shard.path());
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
@@ -246,41 +287,12 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     final MRTableShard[] result = new MRTableShard[paths.length];
     final Set<String> bestPrefixes = findBestPrefixes(new HashSet<>(Arrays.asList(paths)));
     for (final String prefix : bestPrefixes) {
-      final List<String> options = defaultOptions();
-      options.add("-list");
-      options.add("-prefix");
-      options.add(prefix);
-      options.add("-jsonoutput");
-      final CharSeqBuilder builder = new CharSeqBuilder();
-      executeCommand(options, new Processor<CharSequence>() {
-        @Override
-        public void process(final CharSequence arg) {
-          builder.append(arg);
-        }
-      }, defaultErrorsProcessor, null);
-      final CharSeq build = builder.build();
-      try {
-        JsonParser parser = JSONTools.parseJSON(build);
-        ObjectMapper mapper = new ObjectMapper();
-        JsonToken next = parser.nextToken();
-        assert JsonToken.START_ARRAY.equals(next);
-        next = parser.nextToken();
-        while (!JsonToken.END_ARRAY.equals(next)) {
-          final JsonNode metaJSON = mapper.readTree(parser);
-          final JsonNode nameNode = metaJSON.get("name");
-          if (nameNode != null && !nameNode.isMissingNode()) {
-            final String name = nameNode.textValue();
-            final int index = ArrayTools.indexOf(name, paths);
-            if (index >= 0) {
-              final String size = metaJSON.get("full_size").toString();
-              final String sorted = metaJSON.has("sorted") ? metaJSON.get("sorted").toString() : "0";
-              result[index] = new MRTableShard(name, this, true, "1".equals(sorted), size);
-            }
-          }
-          next = parser.nextToken();
-        }
-      } catch (IOException e) {
-        throw new RuntimeException("Error parsing JSON from server: " + build, e);
+      final MRTableShard[] list = list(prefix);
+      for(int i = 0; i < list.length; i++) {
+        final MRTableShard shard = list[i];
+        final int index = ArrayTools.indexOf(shard.path(), paths);
+        if (index >= 0)
+          result[index] = shard;
       }
     }
     for(int i = 0; i < result.length; i++) {

@@ -1,6 +1,5 @@
 package solar.mr.proc.impl;
 
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -29,11 +28,10 @@ import solar.mr.MRTableShard;
  * Date: 12.10.14
  * Time: 10:23
  */
-public class MRWhiteboardImpl implements MRWhiteboard, Action<MREnv.ShardAlter> {
+public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Action<MREnv.ShardAlter> {
   public static final long FRESHNESS_TIMEOUT = TimeUnit.HOURS.toMillis(1);
   private final MREnv env;
   private final String user;
-  private final MRStateImpl state = new MRStateImpl();
   private final Properties increment = new Properties();
   private final MRTableShard myShard;
   private final Random rng = new FastRandom();
@@ -82,9 +80,9 @@ public class MRWhiteboardImpl implements MRWhiteboard, Action<MREnv.ShardAlter> 
         CharSequence[] parts = CharSeqTools.split(arg, '\t');
         try {
           if (parts[1].length() > 0)
-            state.state.put(parts[0].toString(), marshaling.read(parts[2], Class.forName(parts[1].toString())));
+            state.put(parts[0].toString(), marshaling.read(parts[2], Class.forName(parts[1].toString())));
           else
-            state.state.remove(parts[0].toString());
+            state.remove(parts[0].toString());
         } catch (ClassNotFoundException e) {
           throw new RuntimeException(e);
         }
@@ -93,16 +91,23 @@ public class MRWhiteboardImpl implements MRWhiteboard, Action<MREnv.ShardAlter> 
     env.addListener(this);
   }
 
+  @Override
+  public Set<String> keys() {
+    final Set<String> keys = new HashSet(state.keySet());
+    for (Object key : increment.keySet()) {
+      keys.add((String) key);
+    }
+    return keys;
+  }
+
   @SuppressWarnings("unchecked")
   @Override
-  public <T> T resolve(final String resource) {
+  public <T> T get(final String resource) {
     try {
-      if (resource.indexOf(':') < 0)
-        return (T) resource;
-      else if (state.state.containsKey(resource))
-        return state.get(resource);
-      else if (increment.containsKey(resource))
+      if (increment.containsKey(resource))
         return (T)increment.get(resource);
+      if (state.containsKey(resource))
+        return (T)state.get(resource);
 
       final URI uri = new URI(resource);
       final String scheme = uri.getScheme();
@@ -117,11 +122,16 @@ public class MRWhiteboardImpl implements MRWhiteboard, Action<MREnv.ShardAlter> 
           }
           else throw new UnsupportedOperationException("Unknown schema for temp allocation: " + subProtocol);
         case "mr":
-          final MRTableShard resolve = env.resolve(uri.getPath().substring(1));
-          set(resource, resolve);
-          return (T)resolve;
+          Object result;
+          final String path = uri.getPath();
+          if (resource.endsWith("*"))
+            result = env.list(path.substring(1, path.length() - 1));
+          else result = env.resolve(path.substring(1));
+
+          set(resource, result);
+          return (T)result;
         case "var":
-          return state.get(resource);
+          throw new IllegalArgumentException("Unable to find variable " + resource + " at the whiteboard!");
       }
       return null;
     } catch (URISyntaxException e) {
@@ -144,27 +154,6 @@ public class MRWhiteboardImpl implements MRWhiteboard, Action<MREnv.ShardAlter> 
     this.errorsHandler = errorsHandler;
   }
 
-  @SuppressWarnings("unchecked")
-  @Override
-  public <T> boolean processAs(String name, Processor<T> processor) {
-    final Method[] methods = processor.getClass().getMethods();
-    Class<?> clz = null;
-    for(int i = 0; i < methods.length; i++) {
-      final Method m = methods[i];
-      if (!m.isSynthetic() && "process".equals(m.getName()) && m.getReturnType() == void.class && m.getParameterTypes().length == 1) {
-        clz = m.getParameterTypes()[0];
-      }
-    }
-    if (clz == null)
-      throw new IllegalArgumentException("Unable to infer type parameter from processor: " + processor.getClass().getName());
-    final Object resolve = resolve(name);
-
-    if (!clz.isAssignableFrom(resolve.getClass()))
-      return false;
-    processor.process((T)resolve);
-    return true;
-  }
-
   @Override
   public SerializationRepository marshaling() {
     return marshaling;
@@ -172,7 +161,7 @@ public class MRWhiteboardImpl implements MRWhiteboard, Action<MREnv.ShardAlter> 
 
   @Override
   public <T> void set(final String uri, final T data) {
-    if (data.equals(state.state.get(uri)))
+    if (data.equals(state.get(uri)))
       return;
     increment.put(uri, data);
   }
@@ -186,17 +175,7 @@ public class MRWhiteboardImpl implements MRWhiteboard, Action<MREnv.ShardAlter> 
   @Override
   public MRState snapshot() {
     sync();
-    return new MRStateImpl(state);
-  }
-
-  @Override
-  public boolean check(final String... productName) {
-    for (String resource : productName) {
-      final Object resolve = resolve(resource);
-      if (resolve == null || ((resolve instanceof MRTableShard) && !((MRTableShard) resolve).isAvailable()))
-        return false;
-    }
-    return true;
+    return new MRStateImpl(this);
   }
 
   private final Set<String> hints = new HashSet<>();
@@ -210,13 +189,26 @@ public class MRWhiteboardImpl implements MRWhiteboard, Action<MREnv.ShardAlter> 
         break;
       case UPDATED:
         hints.remove(path);
-        for (Map.Entry<Object, Object> entry : increment.entrySet()) {
-          if (entry.getValue() instanceof MRTableShard && path.equals(((MRTableShard) entry.getValue()).path()))
-            set((String)entry.getKey(), shardAlter.shard);
-        }
-        for (Map.Entry<String, Object> entry : state.state.entrySet()) {
-          if (entry.getValue() instanceof MRTableShard && path.equals(((MRTableShard) entry.getValue()).path()))
-            set(entry.getKey(), shardAlter.shard);
+        for (final String resourceName : keys()) {
+          final Object resolve = get(resourceName);
+          if (resolve instanceof MRTableShard) {
+            final MRTableShard shard = (MRTableShard) resolve;
+            if (path.equals(shard.path()))
+              set(resourceName, shardAlter.shard);
+          }
+          else if (resolve instanceof MRTableShard[]) {
+            final MRTableShard[] shards = (MRTableShard[]) resolve;
+            boolean changed = false;
+            for(int i = 0; i < shards.length; i++) {
+              final MRTableShard shard = shards[i];
+              if (path.equals(shard.path())) {
+                shards[i] = shardAlter.shard;
+                changed = true;
+              }
+            }
+            if (changed)
+              set(resourceName, shards);
+          }
         }
         break;
     }
@@ -227,7 +219,7 @@ public class MRWhiteboardImpl implements MRWhiteboard, Action<MREnv.ShardAlter> 
   public void sync() {
     final long currentTime = System.currentTimeMillis();
     final List<String> shards = new ArrayList<>();
-    for (final String resourceName : state.available()) {
+    for (final String resourceName : keys()) {
       processAs(resourceName, new Processor<MRTableShard>() {
         @Override
         public void process(final MRTableShard shard) {
@@ -247,7 +239,10 @@ public class MRWhiteboardImpl implements MRWhiteboard, Action<MREnv.ShardAlter> 
       builder.append((String)entry.getKey()).append('\t');
       builder.append(typeParameters[0] != null ? typeParameters[0].getName() : dataClass.getName()).append('\t');
       builder.append(converter.convert(entry.getValue())).append('\n');
-      state.state.put((String)entry.getKey(), entry.getValue());
+      if ("".equals(entry.getValue()))
+        state.remove(entry.getKey());
+      else
+        state.put((String) entry.getKey(), entry.getValue());
     }
     if (builder.length() > 0)
       env.write(myShard, new CharSeqReader(builder.build()));
@@ -257,18 +252,20 @@ public class MRWhiteboardImpl implements MRWhiteboard, Action<MREnv.ShardAlter> 
   @Override
   public void wipe() {
     sync();
-    for (String resourceName : state.available()) {
-      final Object resource = state.get(resourceName);
-      if (resourceName.startsWith("temp:")) {
-        if (resource instanceof MRTableShard) {
-          env.delete((MRTableShard) resource);
-        }
-        else {
-          throw new RuntimeException("Unknown temporary resource: " + resourceName);
+    if (!state.isEmpty()) {
+      for (String resourceName : keys()) {
+        if (resourceName.startsWith("temp:")) {
+          if (!processAs(resourceName, new Processor<MRTableShard>() {
+            @Override
+            public void process(MRTableShard arg) {
+              env.delete(arg);
+            }
+          }))
+            throw new RuntimeException("Unknown temporary resource type: " + resourceName);
         }
       }
+      env.delete(myShard);
     }
-    env.delete(myShard);
     if (connected != null)
       connected.wipe();
   }

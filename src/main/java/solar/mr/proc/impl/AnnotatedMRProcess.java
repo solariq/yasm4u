@@ -119,10 +119,14 @@ public class AnnotatedMRProcess extends MRProcessImpl {
       }
       final MRTableShard[] outTables = new MRTableShard[out.length];
       for (int i = 0; i < out.length; i++) {
-        final Object resolve = wb.resolve(out[i]);
-        if (resolve instanceof MRTableShard)
-          outTables[i] = (MRTableShard)resolve;
-        else throw new RuntimeException("MR routine can produce only MR table resources");
+        final int index = i;
+        if (!wb.processAs(out[index], new Processor<MRTableShard>() {
+          @Override
+          public void process(final MRTableShard arg) {
+            outTables[index] = arg;
+          }
+        }))
+          throw new RuntimeException("MR routine can produce only MR table resources");
       }
 
       wb.set(MRRunner.ROUTINES_PROPERTY_NAME, Pair.create(method.getDeclaringClass().getName(), method.getName()));

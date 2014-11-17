@@ -14,12 +14,11 @@ import java.util.Set;
  * Date: 12.10.14
  * Time: 10:23
  */
-public interface MRWhiteboard {
+public interface MRWhiteboard extends MRState {
   /** This method assigns real resource to the resource name and resolves variables inside uri */
-  <T> T resolve(final String uri);
   <T> void set(String var, T data);
   void remove(String var);
-  boolean check(String... productName);
+  boolean available(String... productName);
 
   void sync();
   void wipe();
@@ -30,6 +29,4 @@ public interface MRWhiteboard {
   SerializationRepository marshaling();
   MRErrorsHandler errorsHandler();
   void setErrorsHandler(MRErrorsHandler errorsHandler);
-
-  <T> boolean processAs(String name, Processor<T> processor);
 }

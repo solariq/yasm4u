@@ -31,7 +31,7 @@ public class MRRunner implements Runnable {
   public static final Pair<Integer, CharSequence> STOP = new Pair<Integer, CharSequence>(-1, "");
   public static final String TABLES_RESOURCE_NAME = ".tables";
   public static final String STATE_RESOURCE_NAME = ".state";
-  public static final String ROUTINES_PROPERTY_NAME = ".routines";
+  public static final String ROUTINES_PROPERTY_NAME = "var:routines";
 
   private final Map<AccessType, List<String>> tables = new HashMap<>();
   private final Class<? extends MRRoutine> routine;

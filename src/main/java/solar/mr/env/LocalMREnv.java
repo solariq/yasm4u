@@ -119,12 +119,12 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
     {
       final File sortedFile = file(path, true);
       if (sortedFile.exists())
-        result = new MRTableShard(path, this, true, true, "" + sortedFile.length());
+        result = new MRTableShard(path, this, true, true, crc(sortedFile));
     }
     if (result == null) {
       final File unsortedFile = file(path, false);
       if (unsortedFile.exists())
-        result = new MRTableShard(path, this, true, false, "" + unsortedFile.length());
+        result = new MRTableShard(path, this, true, false, crc(unsortedFile));
     }
     if (result == null)
       result = new MRTableShard(path, this, false, false, "0");
@@ -227,6 +227,32 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
   }
 
   @Override
+  public MRTableShard[] list(String prefix) {
+    File prefixFile = new File(home, prefix);
+    if (!prefixFile.exists()) {
+      prefixFile = prefixFile.getParentFile();
+      prefix = prefix.substring(prefix.length() + 1 + home.getAbsolutePath().length() - prefixFile.getAbsolutePath().length());
+    }
+    final String finalPrefix = prefix;
+    final List<MRTableShard> result = new ArrayList<>();
+    final File finalPrefixFile = prefixFile;
+    StreamTools.visitFiles(prefixFile, new Processor<String>(){
+      @Override
+      public void process(String path) {
+        if (path.startsWith(finalPrefix)) {
+          final File file = new File(finalPrefixFile, path);
+          if (path.endsWith(".txt")) {
+            result.add(new MRTableShard(path.substring(0, ".txt".length()), LocalMREnv.this, true, false, crc(file)));
+          } else if (path.endsWith(".txt.sorted")) {
+            result.add(new MRTableShard(path.substring(0, ".txt.sorted".length()), LocalMREnv.this, true, true, crc(file)));
+          }
+        }
+      }
+    });
+    return result.toArray(new MRTableShard[result.size()]);
+  }
+
+  @Override
   public void copy(MRTableShard from, MRTableShard to, boolean append) {
     try {
       writeFile(from.isAvailable() ? new FileReader(file(from.path(), false)) : new CharSeqReader(""), to.path(), false, append);
@@ -270,6 +296,10 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
   @Override
   public String name() {
     return "LocalMR://" + home.getAbsolutePath() + "/";
+  }
+
+  private String crc(File file) {
+    return "" + file.length();
   }
 
   public String home() {

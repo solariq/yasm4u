@@ -22,14 +22,16 @@ public interface MREnv extends WeakListenerHolder<MREnv.ShardAlter> {
   int read(MRTableShard shard, Processor<CharSequence> seq);
   void write(MRTableShard shard, Reader content);
   void append(MRTableShard shard, Reader content);
-  void delete(MRTableShard shard);
   void sample(MRTableShard shard, Processor<CharSequence> seq);
 
+  MRTableShard[] list(String prefix);
   void copy(MRTableShard from, MRTableShard to, boolean append);
+  void delete(MRTableShard shard);
 
   MRTableShard sort(MRTableShard shard);
 
   String name();
+
 
   class ShardAlter {
     public final MRTableShard shard;

@@ -1,5 +1,6 @@
 package solar.mr.proc;
 
+import com.spbsu.commons.func.Processor;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
@@ -22,5 +23,6 @@ public interface MRState extends Serializable {
   <T> T get(String uri);
 
   boolean available(String... consumes);
-  String[] available();
+  java.util.Set<String> keys();
+  <T> boolean processAs(String name, Processor<T> processor);
 }

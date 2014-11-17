@@ -174,20 +174,20 @@ public class MRProcTest {
     final MREnv env = LocalMREnv.createTemp();
     final MRWhiteboard wb = new MRWhiteboardImpl(env, "proc", "none");
     wb.set("var:xxx", "yyy");
-    final String resolveString = wb.resolve("{var:xxx}");
+    final String resolveString = wb.get("{var:xxx}");
     @SuppressWarnings("UnusedDeclaration")
-    final MRTableShard resolveTable = wb.resolve("mr://xxx");
+    final MRTableShard resolveTable = wb.get("mr://xxx");
 
     Assert.assertEquals("yyy", resolveString);
 
     wb.set("var:xx1", new Date(2014-1900,7,1));
-    Assert.assertEquals("20140801", wb.resolve("{var:xx1,date,yyyyMMdd}"));
+    Assert.assertEquals("20140801", wb.get("{var:xx1,date,yyyyMMdd}"));
     @SuppressWarnings("UnusedAssignment")
-    String path = wb.<MRTableShard>resolve("mr:///sometest/{var:xx1,date,yyyyMMdd}").path();
-    path = wb.<MRTableShard>resolve("mr:///sometest/{var:xx1,date,yyyyMMdd}_test").path();
+    String path = wb.<MRTableShard>get("mr:///sometest/{var:xx1,date,yyyyMMdd}").path();
+    path = wb.<MRTableShard>get("mr:///sometest/{var:xx1,date,yyyyMMdd}_test").path();
     Assert.assertEquals("sometest/20140801_test",path);
     wb.set("var:xx2", "sometest/{var:xx1,date,yyyyMMdd}");
-    path = wb.<MRTableShard>resolve("mr:///{var:xx2}_test").path();
+    path = wb.<MRTableShard>get("mr:///{var:xx2}_test").path();
     Assert.assertEquals("sometest/20140801_test",path);
   }
 
@@ -198,7 +198,7 @@ public class MRProcTest {
 
     wb.set("var:xx1", new Date(2014-1900,7,1));
     wb.set("var:xx2", "sometest/{var:xx1,date,yyyyMMdd}");
-    String path = wb.<MRTableShard>resolve("mr:///{var:xx2}_test").path();
+    String path = wb.<MRTableShard>get("mr:///{var:xx2}_test").path();
     Assert.assertEquals("sometest/20140801_test",path);
   }
 
