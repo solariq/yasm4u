@@ -61,4 +61,12 @@ public class YtTest {
     mrProcess.execute();
   }
 
+  @Test
+  public void testList() {
+    final ProcessRunner runner = new SSHProcessRunner("testing.mobsearch.serp.yandex.ru", "/usr/bin/yt");
+    final MREnv env = new YtMREnv(runner, "minamoto", "plato.yt.yandex.net");
+    env.list("//tmp/minamoto");
+    env.list("//tmp/minamoto/test1");
+  }
+
 }

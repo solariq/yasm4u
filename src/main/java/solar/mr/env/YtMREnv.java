@@ -4,7 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 
@@ -12,6 +15,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.random.FastRandom;
@@ -89,7 +93,7 @@ public class YtMREnv implements MREnv {
     final List<String> options = defaultOptions();
     options.add("read");
     options.add("--format");
-    options.add("yamr");
+    options.add("\"<has_subkey=true>\"yamr");
     options.add(shard.path());
     executeCommand(options, new Processor<CharSequence>() {
       @Override
@@ -116,20 +120,89 @@ public class YtMREnv implements MREnv {
   }
 
   @Override
-  public void copy(MRTableShard from, MRTableShard to, boolean append) {
+  public MRTableShard[] resolveAll(String[] strings) {
+    return new MRTableShard[0];
+  }
+
+  @Override
+  public MRTableShard[] list(String prefix) {
+    final List<MRTableShard> result = new ArrayList<>();
     final List<String> options = defaultOptions();
-    options.add("-src");
-    options.add(from.path());
-    options.add(append ? "-dstappend" : "-dst");
-    options.add(to.path());
-    options.add("-copy");
-    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
+    options.add("list");
+    options.add(prefix);
+    final CharSeqBuilder builder = new CharSeqBuilder();
+    executeCommand(options, new Processor<CharSequence>() {
+      @Override
+      public void process(final CharSequence arg) {
+        builder.append(arg).append(' ');
+      }
+    }, defaultErrorsProcessor, null);
+
+    final CharSequence[] listSeq = CharSeqTools.split(builder.build().trim(), ' ');
+
+    /* uber-for */
+    final int[] index = new int[2];
+    final CharSeqBuilder jsonOutputBuilder = new CharSeqBuilder();
+    SepInLoopProcessor processor = new SepInLoopProcessor(jsonOutputBuilder, index, ',');
+    jsonOutputBuilder.append('[');
+
+    final List<String> defaultOptionsEntity = defaultOptions();
+    defaultOptionsEntity.add("get");
+    defaultOptionsEntity.add("--format");
+    defaultOptionsEntity.add("json");
+    index[1] = listSeq.length;
+    for (index[0] = 0; index[0] < listSeq.length; index[0] += 1) {
+      final List<String> optionsEntity = new ArrayList<>();
+      optionsEntity.addAll(defaultOptionsEntity);
+      optionsEntity.add(prefix + "/" + listSeq[index[0]].toString() + "/@");
+      executeCommand(optionsEntity, processor, defaultErrorsProcessor, null);
+    }
+    jsonOutputBuilder.append(']');
+
+    try {
+      JsonParser parser = JSONTools.parseJSON(jsonOutputBuilder.build());
+      ObjectMapper mapper = new ObjectMapper();
+      JsonToken next = parser.nextToken();
+      Calendar c = Calendar.getInstance();
+      SimpleDateFormat formater = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'");
+
+      assert JsonToken.START_ARRAY.equals(next);
+      next = parser.nextToken();
+      while (!JsonToken.END_ARRAY.equals(next)) {
+        final JsonNode metaJSON = mapper.readTree(parser);
+        final JsonNode typeNode = metaJSON.get("type");
+        if (typeNode != null && !typeNode.isMissingNode() && typeNode.textValue().equals("table"))  {
+          final String name = metaJSON.get("key").asText(); /* it's a name in Yt */
+          final long size = metaJSON.get("uncompressed_data_size").longValue();
+          boolean sorted= metaJSON.has("sorted") ? metaJSON.get("sorted").asBoolean(): false;
+          c.setTime(formater.parse(metaJSON.get("modification_time").asText()));
+          final long ts = c.getTimeInMillis();
+          final long recordsCount = metaJSON.has("row_count") ? metaJSON.get("row_count").longValue() : 0;
+          result.add(new MRTableShard(name, this, true, sorted, "" + size, size, recordsCount/10, recordsCount, ts));
+        }
+        next = parser.nextToken();
+      }
+    } catch (IOException|ParseException e) {
+      throw new RuntimeException("Error parsing JSON from server: " + jsonOutputBuilder, e);
+    }
+
+    return result.toArray(new MRTableShard[result.size()]);
+  }
+
+  @Override
+  public void copy(MRTableShard[] from, MRTableShard to, boolean append) {
+
+  }
+
+  @Override
+  public void addListener(Action<? super ShardAlter> lst) {
+
   }
 
   public void write(final MRTableShard shard, final Reader content) {
     final List<String> options = defaultOptions();
     options.add("-write");
-    options.add(shard.path());
+    options.add("\"<has_subkey=true>\"" + shard.path());
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, content);
   }
 
@@ -151,7 +224,7 @@ public class YtMREnv implements MREnv {
         options.add("map_node");
         options.add(pathBuilder.toString());
         try {
-          executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, content);
+          executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
         }
         catch (RuntimeException ignored) {
           /* It's expected that we go throw errors about already created nodes */
@@ -162,13 +235,13 @@ public class YtMREnv implements MREnv {
       options.add("create");
       options.add("table");
       options.add(pathBuilder.append("/").append(path[length - 1]).toString());
-      executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, content);
+      executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     }
 
     final List<String> options = defaultOptions();
     options.add("write");
     options.add("--format");
-    options.add("yamr");
+    options.add("\"<has_subkey=true>yamr\"");
     options.add("\"<append=true>" + shard.path() + "\"");
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, content);
   }
@@ -238,10 +311,7 @@ public class YtMREnv implements MREnv {
 
   @Override
   public MRTableShard resolve(final String path) {
-    boolean exists = isShardPathSorted(path);
-    boolean sorted = exists && isShardPathSorted(path);
-
-    return new MRTableShard(path, this, exists, sorted, "");
+    return resolveAll(new String[]{path})[0];
   }
 
   @Override
@@ -374,4 +444,23 @@ public class YtMREnv implements MREnv {
     CharSeq jsonBool = builder.build();
     return CharSeqTools.parseBoolean(jsonBool.subSequence(1, jsonBool.length() - 1));
   }
+
+  private static class SepInLoopProcessor implements Processor<CharSequence> {
+    final CharSeqBuilder builder;
+    final int[] indexAndLimit;
+    final char sep;
+
+    SepInLoopProcessor(final CharSeqBuilder builder, final int indexAndLimit[], char sep) {
+      this.builder = builder;
+      this.indexAndLimit = indexAndLimit;
+      this.sep = sep;
+
+    }
+    @Override
+    public void process(CharSequence arg) {
+      builder.append(arg);
+      if (indexAndLimit[0] < indexAndLimit[1] - 1)
+        builder.append(sep);
+    }
+  };
 }
