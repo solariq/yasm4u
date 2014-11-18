@@ -305,6 +305,11 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
   }
 
   @Override
+  public String getTmp() {
+    return "temp/";
+  }
+
+  @Override
   public String name() {
     return "LocalMR://" + home.getAbsolutePath() + "/";
   }

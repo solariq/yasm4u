@@ -123,7 +123,7 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     options.add("-read");
     options.add(table.path());
     options.add("-count");
-    options.add("" + 100000);
+    options.add("" + 100);
     executeCommand(options, new Processor<CharSequence>() {
       @Override
       public void process(final CharSequence arg) {
@@ -243,6 +243,11 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     options.remove(options.size() - 1);
     invoke(new ShardAlter(newShard, ShardAlter.AlterType.UPDATED));
     return newShard;
+  }
+
+  @Override
+  public String getTmp() {
+    return "temp/";
   }
 
   private void executeCommand(final List<String> options, final Processor<CharSequence> outputProcessor,
