@@ -54,39 +54,38 @@ public class AnnotatedMRProcess extends MRProcessImpl {
 
 
   private static final Pattern varPattern = Pattern.compile("\\{([^\\},]+),?([^\\}]*)\\}");
-  private static String resolveVars(String resource, Properties vars) {
+  private static String[] resolveVars(String resource, Properties vars) {
     final Matcher matcher = varPattern.matcher(resource);
-    final StringBuffer format = new StringBuffer();
-    final Map<String, Integer> namesMap = new HashMap<>();
-    while(matcher.find()) {
-      final String name = matcher.group(1);
-      final int index = namesMap.containsKey(name) ? namesMap.get(name) : namesMap.size();
-      namesMap.put(name, index);
-      matcher.appendReplacement(format, "{" + index + (matcher.groupCount() > 1 && !matcher.group(2).isEmpty()? "," + matcher.group(2) : "") + "}");
-    }
-    matcher.appendTail(format);
-    final Object[] args = new Object[namesMap.size()];
-    for (final Map.Entry<String, Integer> entry : namesMap.entrySet()) {
-      final Object resolution = vars.get(entry.getKey());
-      if (resolution == null)
-        throw new IllegalArgumentException("Resource needed for name resolution is missing: " + entry.getKey());
-      args[entry.getValue()] = resolution;
+    if(matcher.find()) {
+      final StringBuffer format = new StringBuffer();
+      String name = matcher.group(1);
+      matcher.appendReplacement(format, "{" + 0 + (matcher.groupCount() > 1 && !matcher.group(2).isEmpty()? "," + matcher.group(2) : "") + "}");
+      matcher.appendTail(format);
+      final List<String> candidates = new ArrayList<>();
+      final Object resolution = vars.get(name);
+      if (resolution.getClass().isArray()) {
+        for (final Object next : (Object[]) resolution) {
+          candidates.add(MessageFormat.format(format.toString(), next));
+        }
+      }
+      else candidates.add(MessageFormat.format(format.toString(), resolution));
+
+      final List<String> results = new ArrayList<>();
+      for (final String candidate : candidates) {
+        results.addAll(Arrays.asList(resolveVars(candidate, vars)));
+      }
+      return results.toArray(new String[results.size()]);
     }
 
-    String resolvedCandidate = MessageFormat.format(format.toString(), args);
-    if (resolvedCandidate.contains("{")) {
-      resolvedCandidate = resolveVars(resolvedCandidate, vars);
-    }
-
-    return resolvedCandidate;
+    return new String[]{resource};
   }
 
   private static String[] resolveNames(String[] input, Properties wb) {
-    final String[] result = new String[input.length];
-    for(int i = 0; i < result.length; i++) {
-      result[i] = resolveVars(input[i], wb);
+    final List<String> result = new ArrayList<>();
+    for(int i = 0; i < input.length; i++) {
+      result.addAll(Arrays.asList(resolveVars(input[i], wb)));
     }
-    return result;
+    return result.toArray(new String[result.size()]);
   }
 
   private static class RoutineJoba implements MRJoba {
