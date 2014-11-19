@@ -1,12 +1,5 @@
 package solar.mr.env;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.util.*;
-
-
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -22,16 +15,20 @@ import com.spbsu.commons.util.ArrayTools;
 import com.spbsu.commons.util.JSONTools;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
-import solar.mr.*;
-import solar.mr.env.sample.KeysSampleMap;
-import solar.mr.proc.MRState;
+import solar.mr.MREnv;
+import solar.mr.MRErrorsHandler;
+import solar.mr.MRRoutine;
 import solar.mr.MRTableShard;
-import solar.mr.proc.MRWhiteboard;
-import solar.mr.proc.impl.MRStateImpl;
-import solar.mr.proc.impl.MRWhiteboardImpl;
+import solar.mr.proc.MRState;
 import solar.mr.routines.MRMap;
 import solar.mr.routines.MRRecord;
 import solar.mr.routines.MRReduce;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.util.*;
 
 /**
  * User: solar
