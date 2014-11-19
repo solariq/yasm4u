@@ -6,9 +6,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
+import java.util.*;
 
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -17,12 +15,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
+import com.spbsu.commons.func.impl.WeakListenerHolderImpl;
 import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.random.FastRandom;
 import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqTools;
+import com.spbsu.commons.util.ArrayTools;
 import com.spbsu.commons.util.JSONTools;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import solar.mr.*;
 import solar.mr.proc.MRState;
 import solar.mr.MRTableShard;
@@ -35,7 +37,7 @@ import solar.mr.routines.MRReduce;
  * Date: 19.09.14
  * Time: 17:08
  */
-public class YtMREnv implements MREnv {
+public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements MREnv {
   private final String tag;
   private final String master;
   protected Processor<CharSequence> defaultErrorsProcessor;
@@ -119,9 +121,57 @@ public class YtMREnv implements MREnv {
     }, defaultErrorsProcessor, null);
   }
 
+  private static final Set<String> FAT_DIRECTORIES = new HashSet<>(Arrays.asList(
+      "//userdata/user_sessions"
+      //"redir_log",
+      //"access_log",
+      //"reqans_log"
+  ));
+
+  private static Set<String> findBestPrefixes(Set<String> paths) {
+    if (paths.size() < 2)
+      return paths;
+    final Set<String> result = new HashSet<>();
+    final TObjectIntMap<String> parents = new TObjectIntHashMap<>();
+    for(final String path : paths.toArray(new String[paths.size()])){
+      int index = path.lastIndexOf('/');
+      if (index < 0 || FAT_DIRECTORIES.contains(path.substring(0, index))) {
+        result.add(path);
+        paths.remove(path);
+      }
+      else parents.adjustOrPutValue(path.substring(0, index), 1, 1);
+    }
+    for(final String path : paths) {
+      final String parent = path.substring(0, path.lastIndexOf('/'));
+
+      if (parents.get(parent) == 1 && CharSeqTools.split(parent, '/').length < 2) {
+        result.add(path);
+        parents.remove(parent);
+      }
+    }
+    result.addAll(findBestPrefixes(parents.keySet()));
+    return result;
+  }
+
   @Override
-  public MRTableShard[] resolveAll(String[] strings) {
-    return new MRTableShard[0];
+  public MRTableShard[] resolveAll(String[] paths) {
+    final MRTableShard[] result = new MRTableShard[paths.length];
+    final Set<String> bestPrefixes = findBestPrefixes(new HashSet<>(Arrays.asList(paths)));
+    for (final String prefix : bestPrefixes) {
+      final MRTableShard[] list = list(prefix);
+      for(int i = 0; i < list.length; i++) {
+        final MRTableShard shard = list[i];
+        final int index = ArrayTools.indexOf(shard.path(), paths);
+        if (index >= 0)
+          result[index] = shard;
+      }
+    }
+    for(int i = 0; i < result.length; i++) {
+      if (result[i] == null)
+        result[i] = new MRTableShard(paths[i], this, false, false, "0", 0, 0, 0, System.currentTimeMillis());
+      invoke(new ShardAlter(result[i], ShardAlter.AlterType.UPDATED));
+    }
+    return result;
   }
 
   @Override
@@ -163,8 +213,8 @@ public class YtMREnv implements MREnv {
       JsonParser parser = JSONTools.parseJSON(jsonOutputBuilder.build());
       ObjectMapper mapper = new ObjectMapper();
       JsonToken next = parser.nextToken();
-      Calendar c = Calendar.getInstance();
-      SimpleDateFormat formater = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'");
+      final Calendar c = Calendar.getInstance();
+      final SimpleDateFormat formater = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'");
 
       assert JsonToken.START_ARRAY.equals(next);
       next = parser.nextToken();
@@ -191,11 +241,6 @@ public class YtMREnv implements MREnv {
 
   @Override
   public void copy(MRTableShard[] from, MRTableShard to, boolean append) {
-
-  }
-
-  @Override
-  public void addListener(Action<? super ShardAlter> lst) {
 
   }
 
