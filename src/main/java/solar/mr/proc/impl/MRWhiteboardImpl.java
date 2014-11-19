@@ -70,7 +70,8 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
     errorsHandler = handler;
     this.env = env;
     this.user = user;
-    myShard = new LazyTableShard("temp/" + user + "/state/" + id, env);
+
+    myShard = new LazyTableShard(env.getTmp() + user + "/state/" + id, env);
     env.read(myShard, new Processor<CharSequence>() {
       @Override
       public void process(final CharSequence arg) {
@@ -117,7 +118,8 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
         case "temp":
           final String subProtocol = uri.getSchemeSpecificPart();
           if (subProtocol.startsWith("mr://")) {
-            final String path = "temp/" + user + subProtocol.substring("mr://".length()) + "-" + (Integer.toHexString(rng.nextInt()));
+
+            final String path = env.getTmp() + user + subProtocol.substring("mr://".length()) + "-" + (Integer.toHexString(rng.nextInt()));
             final MRTableShard resolve = new LazyTableShard(path, env);
             set(resource, resolve);
             return (T)resolve;
@@ -259,6 +261,7 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
       }
       env.delete(myShard);
     }
+
     if (connected != null)
       connected.wipe();
   }
