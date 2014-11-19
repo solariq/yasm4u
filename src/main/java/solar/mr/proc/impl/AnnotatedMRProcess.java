@@ -60,7 +60,7 @@ public class AnnotatedMRProcess extends MRProcessImpl {
       final StringBuffer format = new StringBuffer();
       String name = matcher.group(1);
       matcher.appendReplacement(format, "{" + 0 + (matcher.groupCount() > 1 && !matcher.group(2).isEmpty()? "," + matcher.group(2) : "") + "}");
-      matcher.appendTail(format);
+
       final List<String> candidates = new ArrayList<>();
       final Object resolution = vars.get(name);
       if (resolution.getClass().isArray()) {
@@ -72,7 +72,9 @@ public class AnnotatedMRProcess extends MRProcessImpl {
 
       final List<String> results = new ArrayList<>();
       for (final String candidate : candidates) {
-        results.addAll(Arrays.asList(resolveVars(candidate, vars)));
+        StringBuffer candidateSB = new StringBuffer(candidate);
+        matcher.appendTail(candidateSB);
+        results.addAll(Arrays.asList(resolveVars(candidateSB.toString(), vars)));
       }
       return results.toArray(new String[results.size()]);
     }
