@@ -2,6 +2,7 @@ package yamr;
 
 import java.util.Date;
 import java.util.Iterator;
+import java.util.Properties;
 import java.util.Random;
 
 
@@ -242,5 +243,82 @@ public class MRProcTest {
     final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SampleSplitter.class, env);
     mrProcess.wb().wipe();
     mrProcess.execute();
+  }
+
+  /////////////////////
+  //
+  private static int LIMIT = 3;
+  private static final String GOALS = "mr:///mobilesearchtest/{var:user}/split{var:array1_10}_tmp";
+  @SuppressWarnings("UnusedDeclaration")
+  @MRProcessClass(goal = {GOALS})
+  public static final class SampleSplitter1 {
+    private static final Random rnd = new Random(0xdeadbeef);
+
+    public SampleSplitter1(MRState state){}
+
+    @SuppressWarnings("UnusedDeclaration")
+    @MRMapMethod(
+        input = "mr:///mobilesearchtest/20141017_655_11",
+        output = {
+            GOALS
+        })
+    public void map(final String key, final String sub, final CharSequence value, MROutput output) {
+      int v = rnd.nextInt();
+      int i = Math.abs(v % LIMIT);
+      output.add(i, "" + i, "" + v, "" + v);
+    }
+  }
+
+  @Test
+  public void testArrays1() {
+    final ProcessRunner runner = new SSHProcessRunner("batista", "/Berkanavt/mapreduce/bin/mapreduce-dev");
+    final MREnv env = new YaMREnv(runner, "mobilesearch", "cedar:8013");
+    final Properties vars = new Properties();
+    vars.put("var:user", System.getProperty("user.name"));
+
+    final StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < LIMIT; ++i) {
+      sb.append(i);
+      if (i < LIMIT - 1) sb.append(',');
+    }
+
+    vars.put("var:array1_10", (Object)sb.toString().split(","));
+
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SampleSplitter1.class, env, vars);
+    mrProcess.wb().wipe();
+    mrProcess.execute();
+  }
+
+  //////////////////////
+  ///
+  ///
+  @SuppressWarnings("UnusedDeclaration")
+  @MRProcessClass(goal = {
+      "mr:///mobilesearchtest/{var:user}/split{var:array1_10}_tmp"
+      /*"mr:///mobilesearchtest/@(1..10)",
+      "mr:///mobilesearchtest/{var:user}/split@(1..10)_tmp"/*/})
+  public static final class ArraysTest0 {
+    public ArraysTest0(MRState state){}
+  }
+
+  @Test
+  public void testArrays0() {
+    //final ProcessRunner runner = new SSHProcessRunner("batista", "/Berkanavt/mapreduce/bin/mapreduce-dev");
+    final MREnv env = new LocalMREnv(System.getProperty("user.home"));
+    final Properties vars = new Properties();
+    vars.put("var:user", System.getProperty("user.name"));
+
+    final StringBuilder sb = new StringBuilder();
+    int limit = 3;
+    for (int i = 0; i < limit; ++i) {
+      sb.append(i);
+      if (i < limit - 1) sb.append(',');
+    }
+
+    vars.put("var:array1_10", (Object)sb.toString().split(","));
+
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(ArraysTest0.class, env, vars);
+    mrProcess.wb().wipe();
+    //mrProcess.execute();
   }
 }
