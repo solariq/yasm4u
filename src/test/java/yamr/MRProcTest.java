@@ -248,24 +248,27 @@ public class MRProcTest {
   /////////////////////
   //
   private static int LIMIT = 3;
-  private static final String GOALS = "mr:///mobilesearchtest/{var:user}/split{var:array1_10}_tmp";
+  private static final String GOALS = "mr:///mobilesearchtest/split{var:array1_10}_tmp";
   @SuppressWarnings("UnusedDeclaration")
   @MRProcessClass(goal = {GOALS})
   public static final class SampleSplitter1 {
     private static final Random rnd = new Random(0xdeadbeef);
 
-    public SampleSplitter1(MRState state){}
+    final MRState state;
+    public SampleSplitter1(MRState state){
+      this.state = state;
+      state.get("var:user");
+    }
 
     @SuppressWarnings("UnusedDeclaration")
     @MRMapMethod(
         input = "mr:///mobilesearchtest/20141017_655_11",
-        output = {
-            GOALS
-        })
+        output = {GOALS})
     public void map(final String key, final String sub, final CharSequence value, MROutput output) {
-      int v = rnd.nextInt();
-      int i = Math.abs(v % LIMIT);
-      output.add(i, "" + i, "" + v, "" + v);
+      //int v = rnd.nextInt();
+      //int r = v % LIMIT;
+      //int i = r > 0? r : -r;
+      output.add(0, key, "hello!", value);
     }
   }
 
