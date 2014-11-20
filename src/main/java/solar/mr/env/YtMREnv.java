@@ -112,7 +112,7 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     options.add("read");
     options.add("--format");
     options.add("yamr");
-    options.add(table.path() + "/[:#100]");
+    options.add(table.path() + "[:#100]");
     executeCommand(options, new Processor<CharSequence>() {
       @Override
       public void process(final CharSequence arg) {
@@ -263,8 +263,10 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
 
   public void write(final MRTableShard shard, final Reader content) {
     final List<String> options = defaultOptions();
-    options.add("-write");
-    options.add("\"<has_subkey=true>\"" + shard.path());
+    options.add("write");
+    options.add("--format");
+    options.add("\"<has_subkey=true>yamr\"");
+    options.add(shard.path());
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, content);
   }
 
