@@ -131,7 +131,7 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
           if (resource.endsWith("*"))
             result = env.list(path.substring(1, path.length() - 1));
           else
-            result = new LazyTableShard(path.substring(1), env);
+            result = new LazyTableShard(env instanceof YaMREnv? path.substring(1) : path, env);
 
           set(resource, result);
           return (T)result;
