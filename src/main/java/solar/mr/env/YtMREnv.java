@@ -533,7 +533,7 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
 
     private AppenderProcessor(final String sep, boolean withSeparator) {
       this.sep = sep;
-      withSeparator = withSeparator;
+      this.withSeparator = withSeparator;
       builder = new CharSeqBuilder();
     }
 
@@ -549,7 +549,7 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     public void process(CharSequence arg) {
       builder.append(arg);
       if (withSeparator)
-        builder.append(arg);
+        builder.append(sep);
     }
 
     public CharSequence sequence() {
