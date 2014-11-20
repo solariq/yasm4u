@@ -321,6 +321,5 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
     public long keysCount() {
       return real().keysCount();
     }
-
   }
 }
