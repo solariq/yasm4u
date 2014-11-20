@@ -177,18 +177,34 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   @Override
   public MRTableShard[] list(String prefix) {
     final List<MRTableShard> result = new ArrayList<>();
+    final List<String> defaultOptionsEntity = defaultOptions();
+    defaultOptionsEntity.add("get");
+    defaultOptionsEntity.add("--format");
+    defaultOptionsEntity.add("json");
+
+    final List<String> optionEntity = new ArrayList<>();
+    optionEntity.addAll(defaultOptionsEntity);
+    optionEntity.add(prefix + "/@");
+    final AppenderProcessor getBuilder = new AppenderProcessor();
+    executeCommand(optionEntity, getBuilder, defaultErrorsProcessor, null);
+
+    try {
+      JsonParser getParser = JSONTools.parseJSON(getBuilder.sequence());
+      extractTableFromJson(prefix, result, getParser);
+      if (!result.isEmpty()) {
+        return result.toArray(new MRTableShard[1]);
+      }
+    } catch (IOException| ParseException e) {
+      return new MRTableShard[0];
+    }
+
     final List<String> options = defaultOptions();
     options.add("list");
     options.add(prefix);
-    final CharSeqBuilder builder = new CharSeqBuilder();
-    executeCommand(options, new Processor<CharSequence>() {
-      @Override
-      public void process(final CharSequence arg) {
-        builder.append(arg).append(' ');
-      }
-    }, defaultErrorsProcessor, null);
+    final AppenderProcessor builder = new AppenderProcessor(" ");
+    executeCommand(options, builder, defaultErrorsProcessor, null);
 
-    final CharSequence[] listSeq = CharSeqTools.split(builder.build().trim(), ' ');
+    final CharSequence[] listSeq = CharSeqTools.split(builder.trimmedSequence(), ' ');
 
     /* uber-for */
     final int[] index = new int[2];
@@ -196,10 +212,6 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     SepInLoopProcessor processor = new SepInLoopProcessor(jsonOutputBuilder, index, ',');
     jsonOutputBuilder.append('[');
 
-    final List<String> defaultOptionsEntity = defaultOptions();
-    defaultOptionsEntity.add("get");
-    defaultOptionsEntity.add("--format");
-    defaultOptionsEntity.add("json");
     index[1] = listSeq.length;
     for (index[0] = 0; index[0] < listSeq.length; index[0] += 1) {
       final List<String> optionsEntity = new ArrayList<>();
@@ -211,25 +223,12 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
 
     try {
       JsonParser parser = JSONTools.parseJSON(jsonOutputBuilder.build());
-      ObjectMapper mapper = new ObjectMapper();
       JsonToken next = parser.nextToken();
-      final Calendar c = Calendar.getInstance();
-      final SimpleDateFormat formater = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'");
 
       assert JsonToken.START_ARRAY.equals(next);
       next = parser.nextToken();
       while (!JsonToken.END_ARRAY.equals(next)) {
-        final JsonNode metaJSON = mapper.readTree(parser);
-        final JsonNode typeNode = metaJSON.get("type");
-        if (typeNode != null && !typeNode.isMissingNode() && typeNode.textValue().equals("table"))  {
-          final String name = metaJSON.get("key").asText(); /* it's a name in Yt */
-          final long size = metaJSON.get("uncompressed_data_size").longValue();
-          boolean sorted= metaJSON.has("sorted") ? metaJSON.get("sorted").asBoolean(): false;
-          c.setTime(formater.parse(metaJSON.get("modification_time").asText()));
-          final long ts = c.getTimeInMillis();
-          final long recordsCount = metaJSON.has("row_count") ? metaJSON.get("row_count").longValue() : 0;
-          result.add(new MRTableShard(name, this, true, sorted, "" + size, size, recordsCount/10, recordsCount, ts));
-        }
+        extractTableFromJson(prefix, result, parser);
         next = parser.nextToken();
       }
     } catch (IOException|ParseException e) {
@@ -237,6 +236,24 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     }
 
     return result.toArray(new MRTableShard[result.size()]);
+  }
+
+  private void extractTableFromJson(final String prefix, List<MRTableShard> result, JsonParser parser) throws IOException, ParseException {
+    final Calendar c = Calendar.getInstance();
+    final SimpleDateFormat formater = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'");
+    final ObjectMapper mapper = new ObjectMapper();
+
+    final JsonNode metaJSON = mapper.readTree(parser);
+    final JsonNode typeNode = metaJSON.get("type");
+    if (typeNode != null && !typeNode.isMissingNode() && typeNode.textValue().equals("table"))  {
+      final String name = metaJSON.get("key").asText(); /* it's a name in Yt */
+      final long size = metaJSON.get("uncompressed_data_size").longValue();
+      boolean sorted= metaJSON.has("sorted") ? metaJSON.get("sorted").asBoolean(): false;
+      c.setTime(formater.parse(metaJSON.get("modification_time").asText()));
+      final long ts = c.getTimeInMillis();
+      final long recordsCount = metaJSON.has("row_count") ? metaJSON.get("row_count").longValue() : 0;
+      result.add(new MRTableShard(prefix.endsWith(name)? prefix : prefix + "/" + name, this, true, sorted, "" + size, size, recordsCount/10, recordsCount, ts));
+    }
   }
 
   @Override
@@ -507,5 +524,40 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
       if (indexAndLimit[0] < indexAndLimit[1] - 1)
         builder.append(sep);
     }
-  };
+  }
+
+  private static class AppenderProcessor implements Processor<CharSequence> {
+    private final CharSeqBuilder builder;
+    private final String sep;
+    private boolean withSeparator;
+
+    private AppenderProcessor(final String sep, boolean withSeparator) {
+      this.sep = sep;
+      withSeparator = withSeparator;
+      builder = new CharSeqBuilder();
+    }
+
+    public AppenderProcessor() {
+      this("",false);
+    }
+
+    public AppenderProcessor(final String sep) {
+      this(sep, true);
+    }
+
+    @Override
+    public void process(CharSequence arg) {
+      builder.append(arg);
+      if (withSeparator)
+        builder.append(arg);
+    }
+
+    public CharSequence sequence() {
+      return builder.build();
+    }
+
+    public CharSequence trimmedSequence() {
+      return builder.build().trim();
+    }
+  }
 }
