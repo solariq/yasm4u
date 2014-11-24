@@ -1,9 +1,6 @@
 package solar.mr.env;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -248,11 +245,11 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     if (typeNode != null && !typeNode.isMissingNode() && typeNode.textValue().equals("table"))  {
       final String name = metaJSON.get("key").asText(); /* it's a name in Yt */
       final long size = metaJSON.get("uncompressed_data_size").longValue();
-      boolean sorted= metaJSON.has("sorted") ? metaJSON.get("sorted").asBoolean(): false;
+      boolean sorted= metaJSON.has("sorted");
       c.setTime(formater.parse(metaJSON.get("modification_time").asText()));
       final long ts = c.getTimeInMillis();
       final long recordsCount = metaJSON.has("row_count") ? metaJSON.get("row_count").longValue() : 0;
-      result.add(new MRTableShard(prefix.endsWith(name)? prefix : prefix + "/" + name, this, true, sorted, "" + size, size, recordsCount/10, recordsCount, ts));
+      result.add(new MRTableShard(prefix.endsWith("/" + name)? prefix : prefix + "/" + name, this, true, sorted, "" + size, size, recordsCount/10, recordsCount, ts));
     }
   }
 
@@ -295,11 +292,7 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
         }
       }
 
-      final List<String> options = defaultOptions();
-      options.add("create");
-      options.add("table");
-      options.add(pathBuilder.append("/").append(path[length - 1]).toString());
-      executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
+      createTable(pathBuilder.append("/").append(path[length - 1]).toString());
     }
 
     final List<String> options = defaultOptions();
@@ -308,6 +301,14 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     options.add("\"<has_subkey=true>yamr\"");
     options.add("\"<append=true>" + shard.path() + "\"");
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, content);
+  }
+
+  private void createTable(String tableName) {
+    final List<String> options = defaultOptions();
+    options.add("create");
+    options.add("table");
+    options.add(tableName);
+    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
   }
 
   public void delete(final MRTableShard table) {
@@ -383,23 +384,17 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
                          final MRErrorsHandler errorsHandler)
   {
     final List<String> options = defaultOptions();
+    if (MRMap.class.isAssignableFrom(routineClass))
+      options.add("map");
+    else if (MRReduce.class.isAssignableFrom(routineClass)) {
+      //options.add(inputShardsCount > 1 && inputShardsCount < 10 ? "-reducews" : "-reduce");
+      options.add("reduce");
+    } else
+      throw new RuntimeException("Unknown MR routine type");
 
-    int inputShardsCount = 0;
-    int outputShardsCount = 0;
-    for(int i = 0; i < in.length; i++) {
-      options.add("-src");
-      options.add(in[i].path());
-      inputShardsCount++;
-    }
-    for(int i = 0; i < out.length; i++) {
-      options.add("-dst");
-      options.add(out[i].path());
-      outputShardsCount++;
-    }
-    final String errorsShardName = "temp/errors-" + Integer.toHexString(new FastRandom().nextInt());
-    final MRTableShard errorsShard = resolve(errorsShardName);
-    options.add("-dst");
-    options.add(errorsShardName);
+    options.add("--format");
+    options.add("\"<has_subkey=true>yamr\"");
+
     final File jarFile;
     synchronized (jarBuilder) {
       for(int i = 0; i < in.length; i++) {
@@ -411,18 +406,26 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
       jarBuilder.setRoutine(routineClass);
       jarBuilder.setState(state);
       jarFile = jarBuilder.build();
-      options.add("-file");
+      options.add("--local-file");
       options.add(jarFile.getAbsolutePath());
     }
 
-    if (MRMap.class.isAssignableFrom(routineClass))
-      options.add("-map");
+    options.add("'java -Xmx512M -Xms128M -jar " + jarFile.getName() + " " + routineClass.getName() + " " + out.length + "'");
+    for(int i = 0; i < in.length; i++) {
+      options.add("--src");
+      options.add(in[i].path());
+    }
+    for(int i = 0; i < out.length; i++) {
+      options.add("--dst");
+      options.add(out[i].path());
+    }
 
-    else if (MRReduce.class.isAssignableFrom(routineClass)) {
-      options.add(inputShardsCount > 1 && inputShardsCount < 10 ? "-reducews" : "-reduce");
-    } else
-      throw new RuntimeException("Unknown MR routine type");
-    options.add("java -Xmx1G -Xms1G -jar " + jarFile.getName() + " " + routineClass.getName() + " " + outputShardsCount);
+    final String errorsShardName = "//tmp/errors-" + Integer.toHexString(new FastRandom().nextInt());
+    createTable(errorsShardName);
+    final MRTableShard errorsShard = resolve(errorsShardName);
+    options.add("--dst");
+    options.add(errorsShardName);
+
     final int[] errorsCount = new int[]{0};
     executeCommand(options, defaultOutputProcessor, new Processor<CharSequence>() {
       String table;
@@ -507,6 +510,40 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
 
     CharSeq jsonBool = builder.build();
     return CharSeqTools.parseBoolean(jsonBool.subSequence(1, jsonBool.length() - 1));
+  }
+
+  private String upload(final String from, final String to) {
+
+    final String toPath = "//tmp/" + tag + "/state/files";
+    if (!isShardPathExists(toPath)) {
+      createNode(toPath);
+    }
+
+    final String toRemoteFile = toPath + "/" + to;
+    try {
+      final List<String> options = defaultOptions();
+      options.add("upload");
+      options.add(toRemoteFile);
+      executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, new FileReader(from));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    return toRemoteFile;
+  }
+
+  private void createNode(String toPath) {
+    final List<String> options = defaultOptions();
+    options.add("create");
+    options.add("map_node");
+    options.add(toPath);
+    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
+  }
+
+  private void deleteFile(final String file) {
+    final List<String>  options = defaultOptions();
+    options.add("remove");
+    options.add(file);
+    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
   }
 
   private static class SepInLoopProcessor implements Processor<CharSequence> {
