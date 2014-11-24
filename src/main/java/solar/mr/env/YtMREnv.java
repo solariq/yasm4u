@@ -108,7 +108,7 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     final List<String> options = defaultOptions();
     options.add("read");
     options.add("--format");
-    options.add("yamr");
+    options.add("\"<has_subkey=true>yamr\"");
     options.add(table.path() + "[:#100]");
     executeCommand(options, new Processor<CharSequence>() {
       @Override
