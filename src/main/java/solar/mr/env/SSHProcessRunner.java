@@ -90,15 +90,26 @@ public class SSHProcessRunner implements ProcessRunner {
               command.append(" \'").append(routine).append("\'");
               break;
             case "-file":
+            case "--local-file":
               command.append(" ").append(opt);
               File localResource = new File(options.get(index++));
-              toProxy.append("mktemp --suffix .jar;\n");
-              toProxy.flush();
-              File remoteResource = new File(fromProxy.readLine());
-              toProxy.append("rm -f ").append(remoteResource.getAbsolutePath()).append(";echo Ok;\n");
-              toProxy.flush();
-              fromProxy.readLine();
-              Runtime.getRuntime().exec("scp " + localResource.getAbsolutePath() + " " + proxyHost + ":" + remoteResource.getAbsolutePath()).waitFor();
+              File remoteResource;
+              if (opt.equals("--local-file")) {
+                remoteResource = new File("/tmp/" + localResource.getName());
+              }
+              else {
+                toProxy.append("mktemp --suffix .jar;\n");
+                toProxy.flush();
+                remoteResource = new File(fromProxy.readLine());
+                toProxy.append("rm -f ")
+                  .append(remoteResource.getAbsolutePath())
+                  .append(";echo Ok;\n");
+                toProxy.flush();
+                fromProxy.readLine();
+              }
+              Runtime.getRuntime().exec("scp " + localResource.getAbsolutePath()
+                                        + " " + proxyHost
+                                        + ":" + remoteResource.getAbsolutePath()).waitFor();
               command.append(" ").append(remoteResource.getAbsolutePath());
               localResources.add(localResource);
               remoteResources.add(remoteResource);
