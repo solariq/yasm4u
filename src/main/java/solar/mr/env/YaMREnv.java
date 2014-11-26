@@ -372,7 +372,7 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
       options.add(inputShardsCount > 1 && inputShardsCount < 10 ? "-reducews" : "-reduce");
     } else
       throw new RuntimeException("Unknown MR routine type");
-    options.add("java -Xmx1G -Xms1G -jar " + jarFile.getName() + " " + routineClass.getName() + " " + outputShardsCount);
+    options.add("java -XX:-UsePerfData -Xmx1G -Xms1G -jar " + jarFile.getName() + " " + routineClass.getName() + " " + outputShardsCount);
     final int[] errorsCount = new int[]{0};
     executeCommand(options, defaultOutputProcessor, new Processor<CharSequence>() {
       String table;
