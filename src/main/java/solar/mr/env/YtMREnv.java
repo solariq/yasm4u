@@ -410,7 +410,8 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
       options.add(jarFile.getAbsolutePath());
     }
 
-    options.add("'java -Xmx512M -Xms128M -jar " + jarFile.getName() + " " + routineClass.getName() + " " + out.length + "'");
+    options.add("--memory-limit 2000");
+    options.add("'/usr/local/java8/bin/java -XX:-UsePerfData -Xmx1G -Xms1G -jar" + jarFile.getName() + " " + routineClass.getName() + " " + out.length + "'");
     for(int i = 0; i < in.length; i++) {
       options.add("--src");
       options.add(in[i].path());
