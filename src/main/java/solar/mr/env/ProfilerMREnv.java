@@ -23,6 +23,7 @@ public final class ProfilerMREnv implements MREnv {
 
   private final ProfilableMREnv wrapped;
   private final Map<Operation, Integer> time = new EnumMap<>(Operation.class);
+  private final Map<Operation, Integer> counter = new EnumMap<>(Operation.class);
   private final Map<String, Integer> mapHostsTime = new HashMap<>();
   private final Map<String, Integer> reduceHostsTime = new HashMap<>();
   private int profilingOverhead;
@@ -31,6 +32,7 @@ public final class ProfilerMREnv implements MREnv {
     this.wrapped = wrapped;
     for (Operation operation : Operation.values()) {
       time.put(operation, 0);
+      counter.put(operation, 0);
     }
   }
 
@@ -73,7 +75,7 @@ public final class ProfilerMREnv implements MREnv {
 
       @Override
       public MRTableShard[] profilableList(String prefix) {
-        return ProfilerMREnv.this.list(prefix);
+        return new MRTableShard[0];
       }
     });
     int t = (int) (System.currentTimeMillis() - start) - times[0] - times[1];
@@ -106,11 +108,42 @@ public final class ProfilerMREnv implements MREnv {
 
   @Override
   public MRTableShard[] resolveAll(String[] strings) {
-    return wrapped.resolveAll(strings);
+    return wrapped.resolveAll(strings, new ProfilableMREnv.Profiler() {
+      @Override
+      public boolean isEnabled() {
+        return true;
+      }
+
+      @Override
+      public String getTableName() {
+        return "";
+      }
+
+      @Override
+      public void addExecutionStatistics(Map<String, Integer> timePerHosts) {
+        // empty
+      }
+
+      @Override
+      public int profilableRead(MRTableShard shard, Processor<CharSequence> seq) {
+        return 0;
+      }
+
+      @Override
+      public void profilableDelete(MRTableShard shard) {
+        // empty
+      }
+
+      @Override
+      public MRTableShard[] profilableList(String prefix) {
+        return ProfilerMREnv.this.list(prefix);
+      }
+    });
   }
 
   private void incrementTime(Operation op, int delta) {
     time.put(op, time.get(op) + delta);
+    counter.put(op, counter.get(op) + 1);
   }
 
   @Override
@@ -194,6 +227,10 @@ public final class ProfilerMREnv implements MREnv {
     return Collections.unmodifiableMap(time);
   }
 
+  public Map<Operation, Integer> getExecutionCount() {
+    return Collections.unmodifiableMap(counter);
+  }
+
   public int getProfilingOverhead() {
     return profilingOverhead;
   }
@@ -202,6 +239,7 @@ public final class ProfilerMREnv implements MREnv {
     time.clear();
     for (Operation operation : Operation.values()) {
       time.put(operation, 0);
+      counter.put(operation, 0);
     }
     mapHostsTime.clear();
     reduceHostsTime.clear();
@@ -213,7 +251,7 @@ public final class ProfilerMREnv implements MREnv {
     for(Operation op: Operation.values()) {
       if (!op.isLibraryCall()) {
         int value = time.get(op) / 1000;
-        System.out.printf("%s:\t%d sec%n", op.toString(), value);
+        System.out.printf("%s:\t%d sec per %d calls%n", op.toString(), value, counter.get(op));
         total += value;
       }
     }
@@ -227,7 +265,7 @@ public final class ProfilerMREnv implements MREnv {
     for(Operation op: Operation.values()) {
       if (op.isLibraryCall()) {
         int value = time.get(op) / 1000;
-        System.out.printf("%s:\t%d sec%n", op.toString(), value);
+        System.out.printf("%s:\t%d sec per %d calls%n", op.toString(), value, counter.get(op));
         total += value;
       }
     }
