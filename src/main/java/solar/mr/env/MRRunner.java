@@ -3,6 +3,7 @@ package solar.mr.env;
 import java.io.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.net.InetAddress;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,6 +38,7 @@ public class MRRunner implements Runnable {
   private final Class<? extends MRRoutine> routine;
   private final MRState state;
   private final Reader in;
+  private final boolean profilingMode;
 
   public Class<? extends MRRoutine> routine() {
     return routine;
@@ -51,6 +53,11 @@ public class MRRunner implements Runnable {
   }
 
   public MRRunner(char[] className) {
+    this(className, false);
+  }
+
+  public MRRunner(char[] className, boolean profilingMode) {
+    this.profilingMode = profilingMode;
     this.in = new InputStreamReader(System.in, Charset.forName("UTF-8"));
 
     final String mrClass = new String(className);
@@ -95,8 +102,12 @@ public class MRRunner implements Runnable {
       constructor.setAccessible(true);
       final MRRoutine instance = constructor.newInstance(ArrayTools.toArray(tables.get(AccessType.READ)), out, state);
 
+      long start = System.currentTimeMillis();
       CharSeqTools.processLines(in, instance);
       instance.process(CharSeq.EMPTY);
+      if (profilingMode) {
+        out.hostStatistics(InetAddress.getLocalHost().getHostName(), (int) (System.currentTimeMillis() - start));
+      }
     } catch (RuntimeInterruptedException e) {
       // skip
     } catch (InvocationTargetException | NoSuchMethodException | InstantiationException | IOException | IllegalAccessException e) {
@@ -125,6 +136,6 @@ public class MRRunner implements Runnable {
   }
 
   public static void main(String[] args) {
-    new MRRunner(args[0].toCharArray()).run();
+    new MRRunner(args[0].toCharArray(), Boolean.parseBoolean(args[2].toString())).run();
   }
 }

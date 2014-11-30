@@ -114,7 +114,7 @@ public class SSHProcessRunner implements ProcessRunner {
           remoteOutput = fromProxy.readLine();
 
           finalCommand.append("nohup ").append(command).append(" >").append(remoteOutput).append(" 2>&1 & echo $!\n");
-          System.out.println(finalCommand);
+          println(finalCommand.toString());
           toProxy.append(finalCommand);
           toProxy.flush();
           pid = fromProxy.readLine();
@@ -145,7 +145,7 @@ public class SSHProcessRunner implements ProcessRunner {
           final LineNumberReader fromProxy = new LineNumberReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF-8")));
 
           final String finalCommand = "cat - | " + command + "; echo $?";
-          System.out.println(finalCommand);
+          println(finalCommand);
           toProxy.append(finalCommand).append("\n");
           toProxy.flush();
           StreamTools.transferData(input, toProxy);
@@ -165,4 +165,9 @@ public class SSHProcessRunner implements ProcessRunner {
       throw new RuntimeException(e);
     }
   }
+
+  private static void println(String finalCommand) {
+    System.out.println(System.currentTimeMillis() + ": " + finalCommand);
+  }
+
 }

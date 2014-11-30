@@ -12,6 +12,7 @@ import com.spbsu.commons.util.Pair;
 import org.apache.log4j.Logger;
 import solar.mr.MRErrorsHandler;
 import solar.mr.MROutput;
+import solar.mr.MRProfilerHandler;
 import solar.mr.routines.MRRecord;
 
 /**
@@ -19,7 +20,7 @@ import solar.mr.routines.MRRecord;
 * Date: 17.10.14
 * Time: 10:36
 */
-public class MROutputImpl implements MROutput {
+public class MROutputImpl implements MROutput, MRProfilerHandler {
   private static Logger LOG = Logger.getLogger(MROutputImpl.class);
   private final LinkedTransferQueue<Pair<Integer, CharSequence>> queue = new LinkedTransferQueue<>();
   private final int errorTable;
@@ -149,5 +150,10 @@ public class MROutputImpl implements MROutput {
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Override
+  public void hostStatistics(String host, int time) {
+    push(errorTable + 1, CharSeqTools.concatWithDelimeter("\t", host, "#", "" + time));
   }
 }
