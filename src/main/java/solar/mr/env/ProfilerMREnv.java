@@ -67,7 +67,7 @@ public final class ProfilerMREnv implements MREnv {
 
   @Override
   public MRTableShard resolve(String path) {
-    return wrapped.resolve(path);
+    return wrapped.resolve(path, new ProfilerImpl());
   }
 
   @Override

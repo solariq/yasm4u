@@ -267,10 +267,14 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     }
   }
 
+  @Override
+  public MRTableShard resolve(final String path, Profiler profiler) {
+    return resolveAll(new String[]{path}, profiler)[0];
+  }
 
   @Override
   public MRTableShard resolve(final String path) {
-    return resolveAll(new String[]{path})[0];
+    return resolveAll(new String[]{path}, EMPTY_PROFILER)[0];
   }
 
   private static final Set<String> FAT_DIRECTORIES = new HashSet<>(Arrays.asList(

@@ -38,7 +38,9 @@ public interface ProfilableMREnv extends MREnv {
 
   MRTableShard[] resolveAll(String[] strings, final Profiler profiler);
 
-  public static interface Profiler {
+  MRTableShard resolve(String path, final Profiler profiler);
+
+  interface Profiler {
 
     boolean isEnabled();
 
