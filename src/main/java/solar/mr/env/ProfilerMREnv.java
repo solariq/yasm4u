@@ -27,6 +27,7 @@ public final class ProfilerMREnv implements MREnv {
   private final Map<String, Integer> mapHostsTime = new HashMap<>();
   private final Map<String, Integer> reduceHostsTime = new HashMap<>();
   private int profilingOverhead;
+  private Operation execOperation;
 
   public ProfilerMREnv(ProfilableMREnv wrapped) {
     this.wrapped = wrapped;
@@ -39,55 +40,18 @@ public final class ProfilerMREnv implements MREnv {
   @Override
   public boolean execute(Class<? extends MRRoutine> exec, MRState state, MRTableShard[] in, MRTableShard[] out, MRErrorsHandler errorsHandler) {
     long start = System.currentTimeMillis();
-    final Map<String, Integer> hosts = new HashMap<>();
-    final int[] times = new int[2];
-    boolean result = wrapped.execute(exec, state, in, out, errorsHandler, new ProfilableMREnv.Profiler() {
-
-      @Override
-      public boolean isEnabled() {
-        return true;
-      }
-
-      @Override
-      public String getTableName() {
-        return PROFILE_DATA_TABLE;
-      }
-
-      @Override
-      public void addExecutionStatistics(Map<String, Integer> timePerHosts) {
-        hosts.putAll(timePerHosts);
-      }
-
-      @Override
-      public int profilableRead(MRTableShard shard, Processor<CharSequence> seq) {
-        long start = System.currentTimeMillis();
-        int result = ProfilerMREnv.this.read(shard, seq);
-        times[0] += (int) (System.currentTimeMillis() - start);
-        return result;
-      }
-
-      @Override
-      public void profilableDelete(MRTableShard shard) {
-        long start = System.currentTimeMillis();
-        ProfilerMREnv.this.delete(shard);
-        times[1] += (int) (System.currentTimeMillis() - start);
-      }
-
-      @Override
-      public MRTableShard[] profilableList(String prefix) {
-        return new MRTableShard[0];
-      }
-    });
-    int t = (int) (System.currentTimeMillis() - start) - times[0] - times[1];
+    final ProfilerImpl profiler = new ProfilerImpl();
     if (MRMap.class.isAssignableFrom(exec)) {
-      incrementTime(Operation.MAP, t);
-      mergeMaps(mapHostsTime, hosts);
+      execOperation = Operation.MAP;
     } else if (MRReduce.class.isAssignableFrom(exec)) {
-      incrementTime(Operation.REDUCE, t);
-      mergeMaps(reduceHostsTime, hosts);
+      execOperation = Operation.REDUCE;
     } else {
       throw new RuntimeException("Unexpected routine");
     }
+    boolean result = wrapped.execute(exec, state, in, out, errorsHandler, profiler);
+    int t = (int) (System.currentTimeMillis() - start);
+    incrementTime(execOperation, t);
+    mergeMaps(execOperation == Operation.MAP? mapHostsTime: reduceHostsTime, profiler.hosts);
     return result;
   }
 
@@ -108,37 +72,7 @@ public final class ProfilerMREnv implements MREnv {
 
   @Override
   public MRTableShard[] resolveAll(String[] strings) {
-    return wrapped.resolveAll(strings, new ProfilableMREnv.Profiler() {
-      @Override
-      public boolean isEnabled() {
-        return true;
-      }
-
-      @Override
-      public String getTableName() {
-        return "";
-      }
-
-      @Override
-      public void addExecutionStatistics(Map<String, Integer> timePerHosts) {
-        // empty
-      }
-
-      @Override
-      public int profilableRead(MRTableShard shard, Processor<CharSequence> seq) {
-        return 0;
-      }
-
-      @Override
-      public void profilableDelete(MRTableShard shard) {
-        // empty
-      }
-
-      @Override
-      public MRTableShard[] profilableList(String prefix) {
-        return ProfilerMREnv.this.list(prefix);
-      }
-    });
+    return wrapped.resolveAll(strings, new ProfilerImpl());
   }
 
   private void incrementTime(Operation op, int delta) {
@@ -150,10 +84,15 @@ public final class ProfilerMREnv implements MREnv {
   public int read(MRTableShard shard, Processor<CharSequence> seq) {
     long start = System.currentTimeMillis();
     int result = wrapped.read(shard, seq);
+    int delta = (int) (System.currentTimeMillis() - start);
     if (shard.path().contains(PROFILE_DATA_TABLE)) {
-      profilingOverhead += (int) (System.currentTimeMillis() - start);
+      profilingOverhead += delta;
+      time.put(execOperation, time.get(execOperation) - delta);
     } else {
-      incrementTime(Operation.READ, (int) (System.currentTimeMillis() - start));
+      incrementTime(Operation.READ, delta);
+      if (shard.path().contains("temp/error-")) {
+        time.put(execOperation, time.get(execOperation) - delta);
+      }
     }
     return result;
   }
@@ -198,10 +137,15 @@ public final class ProfilerMREnv implements MREnv {
   public void delete(MRTableShard shard) {
     long start = System.currentTimeMillis();
     wrapped.delete(shard);
+    int delta = (int) (System.currentTimeMillis() - start);
     if (shard.path().contains(PROFILE_DATA_TABLE)) {
-      profilingOverhead += (int) (System.currentTimeMillis() - start);
+      profilingOverhead += delta;
+      time.put(execOperation, time.get(execOperation) - delta);
     } else {
-      incrementTime(Operation.DELETE, (int) (System.currentTimeMillis() - start));
+      incrementTime(Operation.DELETE, delta);
+      if (shard.path().contains("temp/error-")) {
+        time.put(execOperation, time.get(execOperation) - delta);
+      }
     }
   }
 
@@ -255,7 +199,7 @@ public final class ProfilerMREnv implements MREnv {
         total += value;
       }
     }
-    System.out.println("Total: " + total + " sec");
+    System.out.println("Total:\t" + total + " sec");
     System.out.println("\nMap per host:");
     printHostsStatistics(mapHostsTime);
     System.out.println("\nReduce per host:");
@@ -269,7 +213,7 @@ public final class ProfilerMREnv implements MREnv {
         total += value;
       }
     }
-    System.out.println("Total: " + total + " sec");
+    System.out.println("Total:\t" + total + " sec");
     System.out.println();
     System.out.printf("Profiling overhead: %d sec%n", profilingOverhead / 1000);
   }
@@ -278,6 +222,32 @@ public final class ProfilerMREnv implements MREnv {
     for (Map.Entry<String, Integer> hostTime : hostsTime.entrySet()) {
       System.out.printf("\t%s: %d sec%n", hostTime.getKey(), hostTime.getValue() / 1000);
     }
+  }
+
+  private final class ProfilerImpl implements ProfilableMREnv.Profiler {
+
+    private final Map<String, Integer> hosts = new HashMap<>();
+
+    @Override
+    public boolean isEnabled() {
+      return true;
+    }
+
+    @Override
+    public String getTableName() {
+      return PROFILE_DATA_TABLE;
+    }
+
+    @Override
+    public void addExecutionStatistics(Map<String, Integer> timePerHosts) {
+      hosts.putAll(timePerHosts);
+    }
+
+    @Override
+    public MREnv getPofilableEnv() {
+      return ProfilerMREnv.this;
+    }
+
   }
 
   public enum Operation {

@@ -316,7 +316,7 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     for (final String prefix : bestPrefixes) {
       final MRTableShard[] list;
       if (profiler.isEnabled()) {
-        list = profiler.profilableList(prefix);
+        list = profiler.getPofilableEnv().list(prefix);
       } else {
         list = list(prefix);
       }
@@ -422,18 +422,18 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
       errorsCount[0] += read(errorsShard, errorProcessor);
       delete(errorsShard);
     } else {
-      errorsCount[0] += profiler.profilableRead(errorsShard, errorProcessor);
-      profiler.profilableDelete(errorsShard);
+      errorsCount[0] += profiler.getPofilableEnv().read(errorsShard, errorProcessor);
+      profiler.getPofilableEnv().delete(errorsShard);
       final MRTableShard profilerShard = new MRTableShard(profiler.getTableName(), this, true, false, "0", 0, 0, 0, System.currentTimeMillis());
       final Map<String, Integer> stat = new HashMap<>();
-      profiler.profilableRead(profilerShard, new MRRoutine(new String[]{profiler.getTableName()}, null, state) {
+      profiler.getPofilableEnv().read(profilerShard, new MRRoutine(new String[]{profiler.getTableName()}, null, state) {
         @Override
         public void invoke(final MRRecord record) {
           stat.put(record.key, Integer.parseInt(record.value.toString()));
         }
       });
       profiler.addExecutionStatistics(stat);
-      profiler.profilableDelete(profilerShard);
+      profiler.getPofilableEnv().delete(profilerShard);
     }
 
     if (errorsCount[0] == 0) {

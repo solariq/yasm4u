@@ -1,6 +1,5 @@
 package solar.mr;
 
-import com.spbsu.commons.func.Processor;
 import solar.mr.proc.MRState;
 
 import java.util.Map;
@@ -28,20 +27,10 @@ public interface ProfilableMREnv extends MREnv {
     }
 
     @Override
-    public int profilableRead(MRTableShard shard, Processor<CharSequence> seq) {
-      // empty
-      return 0;
+    public MREnv getPofilableEnv() {
+      return null;
     }
 
-    @Override
-    public void profilableDelete(MRTableShard shard) {
-      // empty
-    }
-
-    @Override
-    public MRTableShard[] profilableList(String prefix) {
-      return new MRTableShard[0];
-    }
 
   };
 
@@ -55,13 +44,9 @@ public interface ProfilableMREnv extends MREnv {
 
     String getTableName();
 
-    void addExecutionStatistics(Map<String, Integer> timePerHosts);
+    public void addExecutionStatistics(Map<String, Integer> timePerHosts);
 
-    int profilableRead(MRTableShard shard, Processor<CharSequence> seq);
-
-    void profilableDelete(MRTableShard shard);
-
-    MRTableShard[] profilableList(String prefix);
+    MREnv getPofilableEnv();
 
   }
 
