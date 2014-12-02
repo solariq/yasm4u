@@ -2,7 +2,7 @@ package yamr;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Reader;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +25,7 @@ public class TestProcessRunner implements ProcessRunner {
   private boolean readEnabled;
 
   @Override
-  public Process start(final List<String> mrOptions, final Reader content) {
+  public Process start(final List<String> mrOptions, final InputStream content) {
     try {
       final File input = File.createTempFile("input", ".txt");
       input.deleteOnExit();

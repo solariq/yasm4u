@@ -167,35 +167,36 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
 
   @Override
   public void write(final MRTableShard shard, final Reader content) {
-    writeFile(content, shard.path(), false, false);
-    invoke(new ShardAlter(shard));
+    invoke(new ShardAlter(writeFile(content, shard, false, false), ShardAlter.AlterType.UPDATED));
   }
 
   @Override
   public void append(final MRTableShard shard, final Reader content) {
-    writeFile(content, shard.path(), false, true);
-    invoke(new ShardAlter(shard));
+    invoke(new ShardAlter(writeFile(content, shard, false, true), ShardAlter.AlterType.UPDATED));
   }
 
-  private void writeFile(final Reader content, final String path, boolean sorted, final boolean append) {
-    File file = file(path, sorted);
+  private MRTableShard writeFile(final Reader content, final MRTableShard shard, boolean sorted, final boolean append) {
+    final File file = file(shard.path(), sorted);
     try {
       FileUtils.forceMkdir(file.getParentFile());
     }
     catch (IOException e) {
       throw new RuntimeException(e);
     }
-    try (final Writer out = new FileWriter(file, append)) {
-      StreamTools.transferData(content, out);
-    }
-    catch (IOException e) {
+
+    final MRTools.CounterInputStream cis = append
+            ? new MRTools.CounterInputStream(new LineNumberReader(content), shard.recordsCount(), shard.keysCount(), shard.length())
+            : new MRTools.CounterInputStream(new LineNumberReader(content), 0, 0, 0);
+    try (final OutputStream out = new FileOutputStream(file, append)) {
+      StreamTools.transferData(cis, out);
+    } catch (IOException e) {
       throw new RuntimeException(e);
-    }
-    finally {
+    } finally {
       if (!sorted)
         //noinspection ResultOfMethodCallIgnored
-        file(path, true).delete();
+        file(shard.path(), true).delete();
     }
+    return MRTools.updateTableShard(shard, sorted, cis);
   }
 
   @Override
@@ -211,7 +212,7 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
       throw new RuntimeException(e);
     }
     finally {
-      invoke(new ShardAlter(shard));
+      invoke(new ShardAlter(new MRTableShard(shard.path(), this, false, false, "0", 0, 0, 0, System.currentTimeMillis()), ShardAlter.AlterType.UPDATED));
     }
   }
 
@@ -264,9 +265,10 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
   public void copy(MRTableShard[] from, MRTableShard to, boolean append) {
     try {
       for(int i = 0; i < from.length; i++) {
-        writeFile(from[i].isAvailable() ? new FileReader(file(from[i].path(), false)) : new CharSeqReader(""), to.path(), false, append || i > 0);
+        final Reader content = from[i].isAvailable() ? new FileReader(file(from[i].path(), false)) : new CharSeqReader("");
+        to = writeFile(content, to, false, append || i > 0);
       }
-      invoke(new ShardAlter(to));
+      invoke(new ShardAlter(to, ShardAlter.AlterType.UPDATED));
     } catch (FileNotFoundException e) {
       throw new RuntimeException(e);
     }
@@ -298,8 +300,8 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
     }
     sorted.add(CharSeqTools.EMPTY);
 
-    writeFile(new CharSeqReader(CharSeqTools.concatWithDelimeter("\n", sorted)), shard.path(), true, false);
-    invoke(new ShardAlter(shard));
+    final CharSeqReader content = new CharSeqReader(CharSeqTools.concatWithDelimeter("\n", sorted));
+    invoke(new ShardAlter(writeFile(content, shard, true, false), ShardAlter.AlterType.UPDATED));
     return resolve(shard.path());
   }
 

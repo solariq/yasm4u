@@ -56,7 +56,7 @@ public class SSHProcessRunner implements ProcessRunner {
   }
 
   @Override
-  public Process start(final List<String> options, final Reader input) {
+  public Process start(final List<String> options, final InputStream input) {
     try {
       final String pid;
       final String remoteOutput;
@@ -141,12 +141,13 @@ public class SSHProcessRunner implements ProcessRunner {
         }
         else {
           final Process process = Runtime.getRuntime().exec("ssh " + proxyHost + " bash -s");
-          final Writer toProxy = new OutputStreamWriter(process.getOutputStream(), Charset.forName("UTF-8"));
+          final OutputStream toProxy = process.getOutputStream();
           final LineNumberReader fromProxy = new LineNumberReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF-8")));
 
           final String finalCommand = "cat - | " + command + "; echo $?";
           println(finalCommand);
-          toProxy.append(finalCommand).append("\n");
+          toProxy.write(finalCommand.getBytes(StreamTools.UTF));
+          toProxy.write("\n".getBytes(StreamTools.UTF));
           toProxy.flush();
           StreamTools.transferData(input, toProxy);
           toProxy.close();

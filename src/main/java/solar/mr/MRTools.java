@@ -15,10 +15,12 @@ import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.types.ConversionRepository;
 import com.spbsu.commons.func.types.SerializationRepository;
 import com.spbsu.commons.io.StreamTools;
+import com.spbsu.commons.seq.CharSeqTools;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.bytecode.ConstPool;
 import org.apache.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import sun.net.www.protocol.file.FileURLConnection;
 
 /**
@@ -158,6 +160,82 @@ public class MRTools {
       throw new RuntimeException(e);
     } catch (NoSuchMethodException e) {
       // never happen
+    }
+  }
+
+  public static MRTableShard updateTableShard(MRTableShard shard, boolean sorted, CounterInputStream cis) {
+    return new MRTableShard(shard.path(), shard.container(), true, sorted,
+            "" + cis.totalLength(), cis.totalLength(), cis.keysCount(), cis.recordsCount(),
+            System.currentTimeMillis());
+  }
+
+  public static class CounterInputStream extends InputStream {
+    private final LineNumberReader delegate;
+    private byte[] buffer;
+    private int offset = 0;
+    private long recordsCount;
+    private long keysCount;
+    private long totalLength;
+
+    private final CharSequence[] result = new CharSequence[2];
+    private CharSequence prevKey;
+
+    public CounterInputStream(LineNumberReader delegate, long recordsCount, long keysCount, long totalLength) {
+      this.delegate = delegate;
+      this.recordsCount = recordsCount;
+      this.keysCount = keysCount;
+      this.totalLength = totalLength;
+    }
+
+    @Override
+    public int read(@NotNull byte[] b, int off, int len) throws IOException {
+      if (!readNext())
+        return -1;
+      final int toCopy = Math.min(len, buffer.length - offset);
+      System.arraycopy(buffer, offset, b, off, toCopy);
+      offset += toCopy;
+      return toCopy;
+    }
+
+    @Override
+    public int read() throws IOException {
+      if (!readNext())
+        return -1;
+      return buffer[offset++];
+    }
+
+    public long recordsCount() {
+      return recordsCount;
+    }
+
+    public long keysCount() {
+      return keysCount;
+    }
+
+    public long totalLength() {
+      return totalLength;
+    }
+
+    private boolean readNext() throws IOException {
+      if (buffer != null && offset < buffer.length)
+        return true;
+      final String line = delegate.readLine();
+      if (line == null)
+        return false;
+      CharSeqTools.split(line, '\t', result);
+      if (!result[0].equals(prevKey))
+        keysCount ++;
+      prevKey = result[0];
+      recordsCount++;
+      buffer = (line + "\n").getBytes(StreamTools.UTF);
+      offset = 0;
+      totalLength += buffer.length;
+      return true;
+    }
+
+    @Override
+    public void close() throws IOException {
+      delegate.close();
     }
   }
 }

@@ -21,10 +21,7 @@ import solar.mr.routines.MRMap;
 import solar.mr.routines.MRRecord;
 import solar.mr.routines.MRReduce;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -178,23 +175,32 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   @Override
   public void copy(MRTableShard[] from, MRTableShard to, boolean append) {
     final List<String> options = defaultOptions();
+    long totalLength = append ? to.length() : 0;
+    long recordsCount = append ? to.recordsCount() : 0;
+    long keysCount = append ? to.keysCount() : 0;
     for(int i = 0; i < from.length; i++) {
       options.add("-src");
       options.add(from[i].path());
+      totalLength += from[i].length();
+      recordsCount += from[i].recordsCount();
+      keysCount += from[i].keysCount();
     }
     options.add(append ? "-dstappend" : "-dst");
     options.add(to.path());
     options.add("-copy");
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
-    invoke(new ShardAlter(to));
+    invoke(new ShardAlter(
+            new MRTableShard(to.path(), to.container(), true, false, "" + totalLength, totalLength, keysCount, recordsCount, System.currentTimeMillis()),
+            ShardAlter.AlterType.UPDATED));
   }
 
   public void write(final MRTableShard shard, final Reader content) {
     final List<String> options = defaultOptions();
     options.add("-write");
     options.add(shard.path());
-    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, content);
-    invoke(new ShardAlter(shard));
+    MRTools.CounterInputStream cis = new MRTools.CounterInputStream(new LineNumberReader(content), 0, 0, 0);
+    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, cis);
+    invoke(new ShardAlter(MRTools.updateTableShard(shard, false, cis), ShardAlter.AlterType.UPDATED));
   }
 
   @Override
@@ -203,8 +209,9 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     options.add("-write");
     options.add("-dstappend");
     options.add(shard.path());
-    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, content);
-    invoke(new ShardAlter(shard));
+    MRTools.CounterInputStream cis = new MRTools.CounterInputStream(new LineNumberReader(content), shard.recordsCount(), shard.keysCount(), shard.length());
+    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, cis);
+    invoke(new ShardAlter(MRTools.updateTableShard(shard, false, cis), ShardAlter.AlterType.UPDATED));
   }
 
   public void delete(final MRTableShard shard) {
@@ -214,24 +221,26 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     options.add("-drop");
     options.add(shard.path());
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
-    invoke(new ShardAlter(shard));
+    invoke(new ShardAlter(
+            new MRTableShard(shard.path(), shard.container(), false, false, "0", 0, 0, 0, System.currentTimeMillis()),
+            ShardAlter.AlterType.UPDATED));
   }
 
   public MRTableShard sort(final MRTableShard shard) {
     if (shard.isSorted())
       return shard;
     final List<String> options = defaultOptions();
-
+    final MRTableShard newShard = new MRTableShard(shard.path(), this, true, true, shard.crc(), shard.length(), shard.keysCount(), shard.recordsCount(), System.currentTimeMillis());
     options.add("-sort");
     options.add(shard.path());
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     options.remove(options.size() - 1);
-    invoke(new ShardAlter(shard));
-    return resolve(shard.path());
+    invoke(new ShardAlter(newShard, ShardAlter.AlterType.UPDATED));
+    return newShard;
   }
 
   private void executeCommand(final List<String> options, final Processor<CharSequence> outputProcessor,
-                              final Processor<CharSequence> errorsProcessor, Reader contents) {
+                              final Processor<CharSequence> errorsProcessor, InputStream contents) {
     try {
       final Process exec = runner.start(options, contents);
       if (exec == null)

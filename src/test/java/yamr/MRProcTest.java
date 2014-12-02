@@ -149,10 +149,10 @@ public class MRProcTest {
   public void testExceptionMap() {
     final ProcessRunner runner = new SSHProcessRunner(TEST_SERVER_PROXY, "/Berkanavt/mapreduce/bin/mapreduce-dev");
     final MREnv env = new YaMREnv(runner, TEST_MR_USER, "cedar:8013");
-    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(FailAtRandomReduce.class, env);
-    mrProcess.wb().wipe();
-    mrProcess.wb().set("var:date", new Date(2014-1900, 8, 1));
-    mrProcess.wb().set("var:delay", 10000);
+    final Properties initial = new Properties();
+    initial.put("var:date", new Date(2014-1900, 8, 1));
+    initial.put("var:delay", 10000);
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(FailAtRandomReduce.class, env, initial);
     int count = mrProcess.<Integer>result();
     Assert.assertEquals(0, count);
     mrProcess.wb().wipe();
