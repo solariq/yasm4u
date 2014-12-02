@@ -1,5 +1,7 @@
 package solar.mr.env;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Reader;
 import java.util.List;
 
@@ -9,5 +11,5 @@ import java.util.List;
  * Time: 19:02
  */
 public interface ProcessRunner {
-  Process start(List<String> options, final Reader input);
+  Process start(List<String> options, final InputStream input);
 }

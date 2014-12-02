@@ -1,26 +1,24 @@
 package solar.mr.proc.impl;
 
-import java.lang.reflect.Method;
-import java.text.MessageFormat;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.util.Pair;
 import solar.mr.MREnv;
 import solar.mr.MRRoutine;
+import solar.mr.MRTableShard;
 import solar.mr.env.MRRunner;
 import solar.mr.proc.MRJoba;
-import solar.mr.proc.MRState;
 import solar.mr.proc.MRWhiteboard;
 import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
 import solar.mr.proc.tags.MRRead;
 import solar.mr.proc.tags.MRReduceMethod;
-import solar.mr.MRTableShard;
 import solar.mr.routines.MRReduce;
+
+import java.lang.reflect.Method;
+import java.text.MessageFormat;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
 * User: solar
