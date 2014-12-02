@@ -9,6 +9,7 @@ import solar.mr.MREnv;
 import solar.mr.MRErrorsHandler;
 import solar.mr.MRTableShard;
 import solar.mr.env.LocalMREnv;
+import solar.mr.env.ProfilerMREnv;
 import solar.mr.env.YaMREnv;
 import solar.mr.proc.MRJoba;
 import solar.mr.proc.MRProcess;
@@ -47,8 +48,9 @@ public class MRProcessImpl implements MRProcess {
         cache.append(cache.resolve(rec.source), new CharSeqReader(rec.toString() + "\n"));
       }
     });
-    if (prod.env() instanceof YaMREnv) {
-      ((YaMREnv)prod.env()).getJarBuilder().setLocalEnv(cache);
+    MREnv prodEnv = prod.env() instanceof ProfilerMREnv? ((ProfilerMREnv) prod.env()).getWrapped(): prod.env();
+    if (prodEnv instanceof YaMREnv) {
+      ((YaMREnv)prodEnv).getJarBuilder().setLocalEnv(cache);
     }
 
     prod.connect(test);

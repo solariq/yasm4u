@@ -6,7 +6,9 @@ import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.func.types.SerializationRepository;
 import com.spbsu.commons.func.types.TypeConverter;
 import org.jetbrains.annotations.Nullable;
+import solar.mr.MREnv;
 import solar.mr.MRTableShard;
+import solar.mr.env.ProfilerMREnv;
 import solar.mr.env.YaMREnv;
 import solar.mr.proc.MRState;
 import solar.mr.proc.MRWhiteboard;
@@ -48,7 +50,8 @@ public class MRStateImpl implements MRState, Serializable {
       if (!processAs(consumes[i], new Processor<MRTableShard>() {
         @Override
         public void process(MRTableShard shard) {
-          holder[0] &= shard.container() instanceof YaMREnv || shard.isAvailable();
+          MREnv env = shard.container() instanceof ProfilerMREnv? ((ProfilerMREnv) shard.container()).getWrapped(): shard.container();
+          holder[0] &= env instanceof YaMREnv || shard.isAvailable();
         }
       }))
         holder[0] &= keys().contains(consumes[i]);

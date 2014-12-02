@@ -37,6 +37,10 @@ public final class ProfilerMREnv implements MREnv {
     }
   }
 
+  public MREnv getWrapped() {
+    return wrapped;
+  }
+
   @Override
   public boolean execute(Class<? extends MRRoutine> exec, MRState state, MRTableShard[] in, MRTableShard[] out, MRErrorsHandler errorsHandler) {
     long start = System.currentTimeMillis();
