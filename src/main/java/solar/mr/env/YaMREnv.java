@@ -504,6 +504,9 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     if (e.type == ShardAlter.AlterType.CHANGED) {
       shardsCache.clear(e.shard.path());
     }
+    else if (e.type == ShardAlter.AlterType.UPDATED) {
+      shardsCache.put(e.shard.path(), e.shard);
+    }
     super.invoke(e);
   }
 }
