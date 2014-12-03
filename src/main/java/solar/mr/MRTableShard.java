@@ -27,7 +27,7 @@ public class MRTableShard {
     this.length = length;
     this.keysCount = keysCount;
     this.recordsCount = recordsCount;
-    metaTS = ts;
+    this.metaTS = ts;
   }
 
   public String crc() {
@@ -75,7 +75,7 @@ public class MRTableShard {
   }
 
   public long metaTS() {
-    return 0;
+    return metaTS;
   }
 
   public boolean isAvailable() {
