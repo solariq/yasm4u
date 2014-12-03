@@ -119,7 +119,8 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
           final String subProtocol = uri.getSchemeSpecificPart();
           if (subProtocol.startsWith("mr://")) {
 
-            final String path = env.getTmp() + user + subProtocol.substring("mr://".length()) + "-" + (Integer.toHexString(rng.nextInt()));
+            int offset = subProtocol.startsWith("mr:////") ? 6 : 5; /* Yt's root is // */
+            final String path = env.getTmp() + user + subProtocol.substring(offset) + "-" + (Integer.toHexString(rng.nextInt()));
             final MRTableShard resolve = new LazyTableShard(path, env);
             set(resource, resolve);
             return (T)resolve;
