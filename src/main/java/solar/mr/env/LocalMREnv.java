@@ -121,14 +121,14 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
       final File sortedFile = file(path, true);
       if (sortedFile.exists()) {
         final long[] recordsAndKeys = countRecordsAndKeys(sortedFile);
-        result = new MRTableShard(path, this, true, true, crc(sortedFile), length(sortedFile), recordsAndKeys[1], recordsAndKeys[0], ts(sortedFile));
+        result = new MRTableShard(path, this, true, true, crc(sortedFile), length(sortedFile), recordsAndKeys[1], recordsAndKeys[0], System.currentTimeMillis());
       }
     }
     if (result == null) {
       final File unsortedFile = file(path, false);
       if (unsortedFile.exists()) {
         final long[] recordsAndKeys = countRecordsAndKeys(unsortedFile);
-        result = new MRTableShard(path, this, true, false, crc(unsortedFile), length(unsortedFile), recordsAndKeys[1], recordsAndKeys[0], ts(unsortedFile));
+        result = new MRTableShard(path, this, true, false, crc(unsortedFile), length(unsortedFile), recordsAndKeys[1], recordsAndKeys[0], System.currentTimeMillis());
       }
     }
     if (result == null)
@@ -250,10 +250,10 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
 
           if (path.endsWith(".txt")) {
             final long[] recordsAndKeys = countRecordsAndKeys(file);
-            result.add(new MRTableShard(path.substring(0, ".txt".length()), LocalMREnv.this, true, false, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], ts(file)));
+            result.add(new MRTableShard(path.substring(0, ".txt".length()), LocalMREnv.this, true, false, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], System.currentTimeMillis()));
           } else if (path.endsWith(".txt.sorted")) {
             final long[] recordsAndKeys = countRecordsAndKeys(file);
-            result.add(new MRTableShard(path.substring(0, ".txt.sorted".length()), LocalMREnv.this, true, true, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], ts(file)));
+            result.add(new MRTableShard(path.substring(0, ".txt.sorted".length()), LocalMREnv.this, true, true, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], System.currentTimeMillis()));
           }
         }
       }
@@ -333,10 +333,6 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
 
   private long length(File file) {
     return file.length();
-  }
-
-  private long ts(File sortedFile) {
-    return sortedFile.lastModified();
   }
 
   private long[] countRecordsAndKeys(File file) {

@@ -161,7 +161,7 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
           final String sorted = metaJSON.has("sorted") ? metaJSON.get("sorted").toString() : "0";
           final long ts = metaJSON.has("mod_time") ? metaJSON.get("mod_time").longValue() : System.currentTimeMillis();
           final long recordsCount = metaJSON.has("records") ? metaJSON.get("records").longValue() : 0;
-          result.add(new MRTableShard(name, this, true, "1".equals(sorted), "" + size, size, recordsCount/10, recordsCount, ts));
+          result.add(new MRTableShard(name, this, true, "1".equals(sorted), "" + size, size, recordsCount/10, recordsCount, System.currentTimeMillis()));
         }
         next = parser.nextToken();
       }
