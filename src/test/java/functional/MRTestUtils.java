@@ -47,6 +47,18 @@ public final class MRTestUtils {
     env.delete(pathToShard(env, path));
   }
 
+  public static final Record[] createRecords(int start, int n) {
+    Record[] result = new Record[n];
+    for(int i=start; i<start+n; i++) {
+      result[i-start] = new Record("key" + i, "subkey" + i, "value" + i);
+    }
+    return result;
+  }
+
+  public static final Record[] createRecords(int n) {
+    return createRecords(0, n);
+  }
+
   private static MRTableShard pathToShard(MREnv env, String path) {
     return new MRTableShard(path, env, true, false, "0", 0, 0, 0, System.currentTimeMillis());
   }

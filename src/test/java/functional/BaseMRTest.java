@@ -23,8 +23,9 @@ public class BaseMRTest {
   @Parameterized.Parameters
   public static Collection<Object[]> data() {
     return Arrays.asList(new Object[][]{
-        {LocalMREnv.createTemp()},
-        {new YaMREnv(YAMR_RUNNER, YAMR_USER, YAMR_CLUSTER)}
+        {LocalMREnv.createTemp()}
+        //{new YaMREnv(YAMR_RUNNER, YAMR_USER, YAMR_CLUSTER)},
+        //{new ProfilerMREnv(new YaMREnv(YAMR_RUNNER, YAMR_USER, YAMR_CLUSTER))},
     });
   }
 

@@ -24,11 +24,7 @@ import static functional.MRTestUtils.*;
 @RunWith(Parameterized.class)
 public final class SimpleReadWriteTest extends BaseMRTest {
 
-  private final Record[] RECORDS = {
-      new Record("key1", "sub1", "value1"),
-      new Record("key2", "sub2", "value2"),
-      new Record("key3", "sub3", "value3")
-  };
+  private final Record[] RECORDS = createRecords(3);
 
   private static final String TABLE_NAME = TABLE_NAME_PREFIX + "SimpleReadWriteTest-" + SALT;
   private static final String SEPARATOR = "#";
