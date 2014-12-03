@@ -18,6 +18,7 @@ import com.spbsu.commons.system.RuntimeUtils;
 import solar.mr.MREnv;
 import solar.mr.MRErrorsHandler;
 import solar.mr.MRTools;
+import solar.mr.env.YaMREnv;
 import solar.mr.routines.MRRecord;
 import solar.mr.proc.MRState;
 import solar.mr.proc.MRWhiteboard;
@@ -132,7 +133,7 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
           if (resource.endsWith("*"))
             result = env.list(path.substring(1, path.length() - 1));
           else
-            result = new LazyTableShard(env instanceof YaMREnv? path.substring(1) : path, env);
+            result = new LazyTableShard(env instanceof YaMREnv ? path.substring(1) : path, env);
 
           set(resource, result);
           return (T)result;

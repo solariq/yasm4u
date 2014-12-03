@@ -20,6 +20,8 @@ import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.ArrayTools;
 import com.spbsu.commons.util.JSONTools;
+import com.spbsu.commons.util.cache.CacheStrategy;
+import com.spbsu.commons.util.cache.impl.FixedSizeCache;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import org.apache.commons.lang3.NotImplementedException;
@@ -250,8 +252,9 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     options.add("--format");
     options.add("\"<has_subkey=true>yamr\"");
     options.add(shard.path());
-    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, content);
-    invoke(new ShardAlter(shard));
+    MRTools.CounterInputStream cis = new MRTools.CounterInputStream(new LineNumberReader(content), 0, 0, 0);
+    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, cis);
+    invoke(new ShardAlter(MRTools.updateTableShard(shard, false, cis), ShardAlter.AlterType.UPDATED));
   }
 
   @Override
@@ -262,8 +265,9 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     options.add("--format");
     options.add("\"<has_subkey=true>yamr\"");
     options.add("\"<append=true>" + shard.path() + "\"");
-    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, content);
-    invoke(new ShardAlter(shard));
+    MRTools.CounterInputStream cis = new MRTools.CounterInputStream(new LineNumberReader(content), shard.recordsCount(), shard.keysCount(), shard.length());
+    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, cis);
+    invoke(new ShardAlter(MRTools.updateTableShard(shard, false, cis), ShardAlter.AlterType.UPDATED));
   }
 
   private MRTableShard createTable(final String tableName) {
@@ -306,7 +310,7 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   }
 
   private void executeCommand(final List<String> options, final Processor<CharSequence> outputProcessor,
-                              final Processor<CharSequence> errorsProcessor, Reader contents) {
+                              final Processor<CharSequence> errorsProcessor, InputStream contents) {
     try {
       final Process exec = runner.start(options, contents);
       if (exec == null)
@@ -484,6 +488,19 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     return CharSeqTools.parseBoolean(jsonBool.subSequence(1, jsonBool.length() - 1));
   }
 
+  private final FixedSizeCache<String, MRTableShard> shardsCache = new FixedSizeCache<>(1000, CacheStrategy.Type.LRU);
+
+  @Override
+  protected void invoke(ShardAlter e) {
+    if (e.type == ShardAlter.AlterType.CHANGED) {
+      shardsCache.clear(e.shard.path());
+    }
+    else if (e.type == ShardAlter.AlterType.UPDATED) {
+      shardsCache.put(e.shard.path(), e.shard);
+    }
+    super.invoke(e);
+  }
+
   private String upload(final String from, final String to) {
 
     final String toPath = "//tmp/" + tag + "/state/files";
@@ -496,7 +513,7 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
       final List<String> options = defaultOptions();
       options.add("upload");
       options.add(toRemoteFile);
-      executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, new FileReader(from));
+      executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, new FileInputStream(from));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
