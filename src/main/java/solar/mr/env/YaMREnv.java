@@ -13,6 +13,8 @@ import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.ArrayTools;
 import com.spbsu.commons.util.JSONTools;
+import com.spbsu.commons.util.cache.CacheStrategy;
+import com.spbsu.commons.util.cache.impl.FixedSizeCache;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import solar.mr.*;
@@ -167,6 +169,10 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
       }
     } catch (IOException e) {
       throw new RuntimeException("Error parsing JSON from server: " + build, e);
+    }
+    for (int i = 0; i < result.size(); i++) {
+      final MRTableShard shard = result.get(i);
+      shardsCache.put(shard.path(), shard);
     }
 
     return result.toArray(new MRTableShard[result.size()]);
@@ -325,7 +331,22 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   @Override
   public MRTableShard[] resolveAll(String[] paths, Profiler profiler) {
     final MRTableShard[] result = new MRTableShard[paths.length];
-    final Set<String> bestPrefixes = findBestPrefixes(new HashSet<>(Arrays.asList(paths)));
+    final long time = System.currentTimeMillis();
+    final Set<String> unknown = new HashSet<>();
+    for(int i = 0; i < paths.length; i++) {
+      final String path = paths[i];
+      final MRTableShard shard = shardsCache.get(path);
+      if (shard != null) {
+        if (time - shard.metaTS() < MRTools.FRESHNESS_TIMEOUT) {
+          result[i] = shard;
+          continue;
+        }
+        shardsCache.clear(path);
+      }
+      unknown.add(path);
+    }
+
+    final Set<String> bestPrefixes = findBestPrefixes(unknown);
     for (final String prefix : bestPrefixes) {
       final MRTableShard[] list;
       if (profiler.isEnabled()) {
@@ -342,7 +363,7 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     }
     for(int i = 0; i < result.length; i++) {
       if (result[i] == null)
-        result[i] = new MRTableShard(paths[i], this, false, false, "0", 0, 0, 0, System.currentTimeMillis());
+        result[i] = new MRTableShard(paths[i], this, false, false, "0", 0, 0, 0, time);
       invoke(new ShardAlter(result[i], ShardAlter.AlterType.UPDATED));
     }
     return result;
@@ -474,5 +495,15 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   @Override
   public boolean execute(Class<? extends MRRoutine> exec, MRState state, MRTableShard[] in, MRTableShard[] out, MRErrorsHandler errorsHandler) {
     return execute(exec, state, in, out, errorsHandler, EMPTY_PROFILER);
+  }
+
+  private final FixedSizeCache<String, MRTableShard> shardsCache = new FixedSizeCache<>(1000, CacheStrategy.Type.LRU);
+
+  @Override
+  protected void invoke(ShardAlter e) {
+    if (e.type == ShardAlter.AlterType.CHANGED) {
+      shardsCache.clear(e.shard.path());
+    }
+    super.invoke(e);
   }
 }

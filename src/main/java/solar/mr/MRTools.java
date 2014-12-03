@@ -5,6 +5,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
@@ -29,6 +30,7 @@ import sun.net.www.protocol.file.FileURLConnection;
  * Time: 9:34
  */
 public class MRTools {
+  public static final long FRESHNESS_TIMEOUT = TimeUnit.HOURS.toMillis(1);
   private static Logger LOG = Logger.getLogger(MRTools.class);
   public static final String FORBIDEN = MREnv.class.getName().replace('.', '/');
 

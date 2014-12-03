@@ -3,7 +3,6 @@ package solar.mr.proc.impl;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 
 import com.spbsu.commons.filters.*;
@@ -18,6 +17,7 @@ import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.system.RuntimeUtils;
 import solar.mr.MREnv;
 import solar.mr.MRErrorsHandler;
+import solar.mr.MRTools;
 import solar.mr.routines.MRRecord;
 import solar.mr.proc.MRState;
 import solar.mr.proc.MRWhiteboard;
@@ -29,7 +29,6 @@ import solar.mr.MRTableShard;
  * Time: 10:23
  */
 public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Action<MREnv.ShardAlter> {
-  public static final long FRESHNESS_TIMEOUT = TimeUnit.HOURS.toMillis(1);
   private final MREnv env;
   private final String user;
   private final Properties increment = new Properties();
@@ -216,7 +215,7 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
       processAs(resourceName, new Processor<MRTableShard>() {
         @Override
         public void process(final MRTableShard shard) {
-          if (hints.contains(shard.path()) || currentTime - shard.metaTS() > FRESHNESS_TIMEOUT) {
+          if (hints.contains(shard.path()) || currentTime - shard.metaTS() > MRTools.FRESHNESS_TIMEOUT) {
             shards.add(shard.path());
           }
         }
