@@ -275,7 +275,7 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
     this.errorsHandler = errorsHandler;
   }
 
-  private static class LazyTableShard extends MRTableShard {
+  public static class LazyTableShard extends MRTableShard {
     MRTableShard realShard;
 
     public LazyTableShard(String path, MREnv env) {
