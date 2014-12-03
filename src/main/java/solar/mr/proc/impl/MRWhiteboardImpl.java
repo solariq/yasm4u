@@ -111,6 +111,9 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
 
       final URI uri = new URI(resource);
       final String scheme = uri.getScheme();
+      if (scheme == null) {
+        throw new RuntimeException("Schema is null");
+      }
       switch(scheme) {
         case "temp":
           final String subProtocol = uri.getSchemeSpecificPart();

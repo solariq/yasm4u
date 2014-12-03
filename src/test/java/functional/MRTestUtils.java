@@ -8,7 +8,9 @@ import solar.mr.MRTableShard;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Created by inikifor on 02.12.14.
@@ -81,22 +83,13 @@ public final class MRTestUtils {
     public boolean equals(Object o) {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
-
       Record record = (Record) o;
-
-      if (!key.equals(record.key)) return false;
-      if (!subkey.equals(record.subkey)) return false;
-      if (!value.equals(record.value)) return false;
-
-      return true;
+      return Arrays.equals(new String[] {key, subkey, value}, new String[] {record.key, record.subkey, record.value});
     }
 
     @Override
     public int hashCode() {
-      int result = key.hashCode();
-      result = 31 * result + subkey.hashCode();
-      result = 31 * result + value.hashCode();
-      return result;
+      return Objects.hash(key, subkey, value);
     }
   }
 
