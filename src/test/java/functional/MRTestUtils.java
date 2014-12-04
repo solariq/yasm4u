@@ -47,6 +47,18 @@ public final class MRTestUtils {
     env.delete(pathToShard(env, path));
   }
 
+  public static final Record[] createRecordsWithKeys(int kn, String... keys) {
+    Record[] result = new Record[kn * keys.length];
+    int k = 0;
+    for(String key: keys) {
+      for(int i=0; i<kn; i++) {
+        result[k * keys.length + i] = new Record(key, "subkey" + i, "value" + i);
+      }
+      k++;
+    }
+    return result;
+  }
+
   public static final Record[] createRecords(int start, int n) {
     Record[] result = new Record[n];
     for(int i=start; i<start+n; i++) {
