@@ -111,7 +111,7 @@ public class AnnotatedMRProcess extends MRProcessImpl {
           @Override
           public void process(MRTableShard shard) {
             if (need2sort)
-              wb.env().sort(shard);
+              shard = wb.env().sort(shard);
             inTables.add(shard);
           }
         });
