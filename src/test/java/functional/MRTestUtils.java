@@ -48,11 +48,15 @@ public final class MRTestUtils {
   }
 
   public static final Record[] createRecordsWithKeys(int kn, String... keys) {
+    return createRecordsWithKeys(kn, 0, keys);
+  }
+
+  public static final Record[] createRecordsWithKeys(int kn, int start, String... keys) {
     Record[] result = new Record[kn * keys.length];
     int k = 0;
     for(String key: keys) {
-      for(int i=0; i<kn; i++) {
-        result[k * keys.length + i] = new Record(key, "subkey" + i, "value" + i);
+      for(int i=start; i<start+kn; i++) {
+        result[k * kn + i - start] = new Record(key, "subkey" + i, "value" + i);
       }
       k++;
     }

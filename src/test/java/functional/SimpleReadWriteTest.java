@@ -54,10 +54,10 @@ public final class SimpleReadWriteTest extends BaseMRTest {
     }
 
     @MRRead(input = SCHEMA + TABLE_NAME, output = RESULT)
-    public String count(Iterator<CharSequence> line) {
+    public String read(Iterator<CharSequence> lines) {
       StringBuilder sb = new StringBuilder();
-      while(line.hasNext()) {
-        sb.append(new Record(line.next()));
+      while(lines.hasNext()) {
+        sb.append(new Record(lines.next()));
         sb.append(SEPARATOR);
       }
       return sb.toString();

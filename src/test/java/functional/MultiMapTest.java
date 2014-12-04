@@ -122,7 +122,6 @@ public final class MultiMapTest extends BaseMRTest {
     assertTrue(recordsSet2.containsAll(records2));
   }
 
-
   @MRProcessClass(goal = {
       SCHEMA + OUT_TABLE_NAME_1,
       SCHEMA + OUT_TABLE_NAME_2
