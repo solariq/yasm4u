@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public final class MapReduceTest extends BaseMRTest {
 
-  private final MRTestUtils.Record[] RECORDS = createRecords(50); // should be add
+  private final MRTestUtils.Record[] RECORDS = createRecords(50); // should be odd
 
   private static final String IN_TABLE_NAME = TABLE_NAME_PREFIX + "MapReduceTest-1-" + SALT;
   private static final String TEMP_TABLE_NAME = "MapReduceTest-1-" + SALT;

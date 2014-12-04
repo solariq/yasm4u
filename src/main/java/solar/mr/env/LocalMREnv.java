@@ -223,8 +223,7 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
       CharSeqTools.processLines(new FileReader(file(shard.path(), shard.isSorted())), new Processor<CharSequence>() {
         @Override
         public void process(final CharSequence arg) {
-          if (rng.nextDouble() > 0.9)
-            seq.process(arg);
+          seq.process(arg);
         }
       });
     } catch (IOException e) {
