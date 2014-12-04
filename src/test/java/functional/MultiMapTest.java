@@ -31,10 +31,10 @@ public final class MultiMapTest extends BaseMRTest {
   private final MRTestUtils.Record[] RECORDS_1 = createRecords(10, 9);
   private final MRTestUtils.Record[] RECORDS_2 = createRecords(20, 7);
 
-  private static final String IN_TABLE_NAME_1 = TABLE_NAME_PREFIX + "SimpleMapTest-in-1-" + SALT;
-  private static final String IN_TABLE_NAME_2 = TABLE_NAME_PREFIX + "SimpleMapTest-in-2-" + SALT;
-  private static final String OUT_TABLE_NAME_1 = TABLE_NAME_PREFIX + "SimpleMapTest-out-1-" + SALT;
-  private static final String OUT_TABLE_NAME_2 = TABLE_NAME_PREFIX + "SimpleMapTest-out-2-" + SALT;
+  private static final String IN_TABLE_NAME_1 = TABLE_NAME_PREFIX + "MultiMapTest-in-1-" + SALT;
+  private static final String IN_TABLE_NAME_2 = TABLE_NAME_PREFIX + "MultiMapTest-in-2-" + SALT;
+  private static final String OUT_TABLE_NAME_1 = TABLE_NAME_PREFIX + "MultiMapTest-out-1-" + SALT;
+  private static final String OUT_TABLE_NAME_2 = TABLE_NAME_PREFIX + "MultiMapTest-out-2-" + SALT;
 
 
   @Before
@@ -120,6 +120,52 @@ public final class MultiMapTest extends BaseMRTest {
     assertTrue(recordsSet1.containsAll(records1));
     Set<MRTestUtils.Record> recordsSet2 = new HashSet<>(Arrays.asList(RECORDS_2));
     assertTrue(recordsSet2.containsAll(records2));
+  }
+
+
+  @MRProcessClass(goal = {
+      SCHEMA + OUT_TABLE_NAME_1,
+      SCHEMA + OUT_TABLE_NAME_2
+  })
+  public static final class Map1in2 {
+
+    public Map1in2(MRState state) {
+    }
+
+    @MRMapMethod(
+        input = {
+            SCHEMA + IN_TABLE_NAME_1
+        },
+        output = {
+            SCHEMA + OUT_TABLE_NAME_1,
+            SCHEMA + OUT_TABLE_NAME_2
+        })
+    public void map(final String key, final String sub, final CharSequence value, MROutput output) {
+      if (key.equals("key10") || key.equals("key11") || key.equals("key12")) {
+        output.add(0, key, sub, value);
+      } else {
+        output.add(1, key, sub, value);
+      }
+    }
+
+  }
+
+  @Test
+  public void mapOneInputToTwoOutputs() {
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(Map1in2.class, env);
+    mrProcess.wb().wipe();
+    mrProcess.execute();
+    mrProcess.wb().wipe();
+    List<MRTestUtils.Record> records1 = readRecords(env, OUT_TABLE_NAME_1);
+    List<MRTestUtils.Record> records2 = readRecords(env, OUT_TABLE_NAME_2);
+    assertEquals(3, records1.size());
+    assertEquals(RECORDS_1.length - 3, records2.size());
+    for(Record record: records1) {
+      if (record.key.equals("key10") || record.key.equals("key11") || record.key.equals("key12")) {
+        continue;
+      }
+      assertTrue(false);
+    }
   }
 
   @After
