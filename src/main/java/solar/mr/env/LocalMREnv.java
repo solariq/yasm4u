@@ -244,16 +244,14 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
     StreamTools.visitFiles(prefixFile, new Processor<String>() {
       @Override
       public void process(String path) {
-        if (path.startsWith(finalPrefix)) {
-          final File file = new File(finalPrefixFile, path);
+        final File file = new File(finalPrefixFile, path);
 
-          if (path.endsWith(".txt")) {
-            final long[] recordsAndKeys = countRecordsAndKeys(file);
-            result.add(new MRTableShard(path.substring(0, ".txt".length()), LocalMREnv.this, true, false, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], System.currentTimeMillis()));
-          } else if (path.endsWith(".txt.sorted")) {
-            final long[] recordsAndKeys = countRecordsAndKeys(file);
-            result.add(new MRTableShard(path.substring(0, ".txt.sorted".length()), LocalMREnv.this, true, true, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], System.currentTimeMillis()));
-          }
+        if (path.endsWith(".txt")) {
+          final long[] recordsAndKeys = countRecordsAndKeys(file);
+          result.add(new MRTableShard(finalPrefix + path.substring(0, path.indexOf(".txt")), LocalMREnv.this, true, false, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], System.currentTimeMillis()));
+        } else if (path.endsWith(".txt.sorted")) {
+          final long[] recordsAndKeys = countRecordsAndKeys(file);
+          result.add(new MRTableShard(finalPrefix + path.substring(0, path.indexOf(".txt.sorted")), LocalMREnv.this, true, true, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], System.currentTimeMillis()));
         }
       }
     });
