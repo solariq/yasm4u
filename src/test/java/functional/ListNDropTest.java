@@ -16,7 +16,7 @@ import static org.junit.Assert.assertEquals;
  * Created by inikifor on 04.12.14.
  */
 @RunWith(Parameterized.class)
-public final class ListTest extends BaseMRTest {
+public final class ListNDropTest extends BaseMRTest {
 
   private final MRTestUtils.Record[] RECORDS_1 = createRecords(1);
   private final MRTestUtils.Record[] RECORDS_2 = createRecords(1);
@@ -37,6 +37,15 @@ public final class ListTest extends BaseMRTest {
   public void listShouldWork() {
     MRTableShard[] result = env.list(TABLE_NAME_PREFIX);
     assertEquals(3, result.length);
+  }
+
+  @Test
+  public void dropShouldWork() {
+    MRTableShard[] result = env.list(TABLE_NAME_PREFIX);
+    assertEquals(3, result.length);
+    dropMRTable(env, IN_TABLE_NAME_1);
+    result = env.list(TABLE_NAME_PREFIX);
+    assertEquals(2, result.length);
   }
 
   @After
