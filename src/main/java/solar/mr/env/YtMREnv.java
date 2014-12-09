@@ -246,7 +246,16 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
 
   @Override
   public void copy(MRTableShard[] from, MRTableShard to, boolean append) {
-     throw new NotImplementedException("YtMRenv::copy");
+    final List<String> options = defaultOptions();
+    int startIndex = 0;
+    if (!append) {
+      delete(to); /* Yt requires that destination shouldn't exists */
+      options.add("copy");
+      options.add(from[0].path());
+      startIndex = 1;
+    }
+    if (from.length > 1)
+      throw new NotImplementedException("Yt: from several source to one destination!!!");
   }
 
   public void write(final MRTableShard shard, final Reader content) {
