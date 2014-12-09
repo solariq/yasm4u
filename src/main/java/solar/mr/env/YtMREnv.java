@@ -38,7 +38,7 @@ import solar.mr.routines.MRReduce;
  * Date: 19.09.14
  * Time: 17:08
  */
-public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements MREnv {
+public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements ProfilableMREnv {
   private final String tag;
   private final String master;
   protected Processor<CharSequence> defaultErrorsProcessor;
@@ -156,7 +156,12 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   }
 
   @Override
-  public MRTableShard[] resolveAll(String[] paths) {
+  public boolean execute(Class<? extends MRRoutine> exec, MRState state, MRTableShard[] in, MRTableShard[] out, MRErrorsHandler errorsHandler) {
+    return execute(exec, state, in, out, errorsHandler, EMPTY_PROFILER);
+  }
+
+  @Override
+  public MRTableShard[] resolveAll(String[] paths, final Profiler profiler) {
     final MRTableShard[] result = new MRTableShard[paths.length];
     final Set<String> bestPrefixes = findBestPrefixes(new HashSet<>(Arrays.asList(paths)));
     for (final String prefix : bestPrefixes) {
@@ -346,15 +351,24 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     }
   }
 
+  @Override
+  public MRTableShard resolve(final String path, Profiler profiler) {
+    return resolveAll(new String[]{path}, profiler)[0];
+  }
 
   @Override
   public MRTableShard resolve(final String path) {
-    return resolveAll(new String[]{path})[0];
+    return resolveAll(new String[]{path}, EMPTY_PROFILER)[0];
+  }
+
+  @Override
+  public MRTableShard[] resolveAll(String[] strings) {
+    return new MRTableShard[0];
   }
 
   @Override
   public boolean execute(final Class<? extends MRRoutine> routineClass, final MRState state, final MRTableShard[] in, final MRTableShard[] out,
-                         final MRErrorsHandler errorsHandler)
+                         final MRErrorsHandler errorsHandler, Profiler profiler)
   {
     final List<String> options = defaultOptions();
     if (MRMap.class.isAssignableFrom(routineClass))
@@ -391,7 +405,7 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     }
 
     options.add("--memory-limit 2000");
-    options.add("'/usr/local/java8/bin/java -XX:-UsePerfData -Xmx1G -Xms1G -jar " + jarFile.getName() + " " + routineClass.getName() + " " + out.length + "'");
+    options.add("'/usr/local/java8/bin/java -XX:-UsePerfData -Xmx1G -Xms1G -jar " + jarFile.getName() + " " + routineClass.getName() + " " + out.length + "" + profiler.isEnabled() + "'");
     for(int i = 0; i < in.length; i++) {
       options.add("--src");
       options.add(in[i].path());
