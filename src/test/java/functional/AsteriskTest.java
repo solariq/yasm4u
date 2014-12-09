@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
+import solar.mr.MRUtils;
 import solar.mr.proc.MRState;
 import solar.mr.proc.impl.AnnotatedMRProcess;
 import solar.mr.proc.tags.MRMapMethod;
@@ -16,7 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static functional.MRTestUtils.*;
+import static solar.mr.MRUtils.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -26,9 +27,9 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public final class AsteriskTest extends BaseMRTest {
 
-  private final MRTestUtils.Record[] RECORDS_1 = createRecords(10, 3);
-  private final MRTestUtils.Record[] RECORDS_2 = createRecords(20, 3);
-  private final MRTestUtils.Record[] RECORDS_3 = createRecords(30, 3);
+  private final MRUtils.Record[] RECORDS_1 = createRecords(10, 3);
+  private final MRUtils.Record[] RECORDS_2 = createRecords(20, 3);
+  private final MRUtils.Record[] RECORDS_3 = createRecords(30, 3);
 
   private static final String IN_TABLES = TABLE_NAME_PREFIX + "AsteriskTest/";
   private static final String IN_TABLE_NAME_1 = IN_TABLES + "AsteriskTest-1-1-" + SALT;
@@ -62,7 +63,7 @@ public final class AsteriskTest extends BaseMRTest {
     mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
-    List<MRTestUtils.Record> records = readRecords(env, OUT_TABLE_NAME);
+    List<MRUtils.Record> records = readRecords(env, OUT_TABLE_NAME);
     assertEquals(RECORDS_1.length + RECORDS_2.length + RECORDS_3.length, records.size());
     Set<Record> recordsSet = new HashSet<>(Arrays.asList(RECORDS_1));
     recordsSet.addAll(Arrays.asList(RECORDS_2));
