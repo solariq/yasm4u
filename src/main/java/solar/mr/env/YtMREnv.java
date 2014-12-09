@@ -45,7 +45,6 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   protected Processor<CharSequence> defaultOutputProcessor;
   private final ProcessRunner runner;
   private final ClosureJarBuilder jarBuilder;
-  private final Set<String> dirCache = new HashSet<>();
 
   public YtMREnv(final ProcessRunner runner, final String tag, final String master) {
     this(runner, tag, master,
@@ -276,19 +275,9 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   }
 
   private MRTableShard createTable(final String tableName) {
-    final String[] path = tableName.split("/");
-    final StringBuilder sb = new StringBuilder("/");
-    for (int i = 0; i < path.length - 1; ++i) {
-      if (path[i].isEmpty())
-        continue;
-      final String strPath = sb.append("/").append(path[i]).toString();
-      if (!dirCache.contains(strPath)) {
-        createNode(strPath);
-        dirCache.add(strPath);
-      }
-    }
     final List<String> options = defaultOptions();
     options.add("create");
+    options.add("-r");
     options.add("table");
     options.add(tableName);
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
@@ -301,7 +290,6 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     options.add("remove");
     options.add(table.path());
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
-    dirCache.remove(table.path());
     invoke(new ShardAlter(table));
   }
 
