@@ -101,6 +101,10 @@ public class MRProcessImpl implements MRProcess {
     return prod.snapshot();
   }
 
+  @Override
+  public String[] goals() {
+    return Arrays.copyOf(goals, goals.length);
+  }
 
   private static class State {
     public final List<MRJoba> plan;

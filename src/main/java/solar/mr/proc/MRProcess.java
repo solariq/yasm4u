@@ -16,5 +16,8 @@ public interface MRProcess {
 
   MRWhiteboard wb();
   MRState execute();
+
+  String[] goals();
+
   <T> T result();
 }
