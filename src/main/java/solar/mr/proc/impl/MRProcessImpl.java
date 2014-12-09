@@ -11,6 +11,7 @@ import solar.mr.MRTableShard;
 import solar.mr.env.LocalMREnv;
 import solar.mr.env.ProfilerMREnv;
 import solar.mr.env.YaMREnv;
+import solar.mr.env.YtMREnv;
 import solar.mr.proc.MRJoba;
 import solar.mr.proc.MRProcess;
 import solar.mr.proc.MRState;
@@ -48,9 +49,12 @@ public class MRProcessImpl implements MRProcess {
         cache.append(cache.resolve(rec.source), new CharSeqReader(rec.toString() + "\n"));
       }
     });
-    MREnv prodEnv = prod.env() instanceof ProfilerMREnv? ((ProfilerMREnv) prod.env()).getWrapped(): prod.env();
+    final MREnv prodEnv = prod.env() instanceof ProfilerMREnv? ((ProfilerMREnv) prod.env()).getWrapped(): prod.env();
     if (prodEnv instanceof YaMREnv) {
       ((YaMREnv)prodEnv).getJarBuilder().setLocalEnv(cache);
+    }
+    else if (prodEnv instanceof YtMREnv) {
+      ((YtMREnv)prodEnv).getJarBuilder().setLocalEnv(cache);
     }
 
     prod.connect(test);
@@ -97,6 +101,10 @@ public class MRProcessImpl implements MRProcess {
     return prod.snapshot();
   }
 
+  @Override
+  public String[] goals() {
+    return Arrays.copyOf(goals, goals.length);
+  }
 
   private static class State {
     public final List<MRJoba> plan;

@@ -10,6 +10,7 @@ import solar.mr.MREnv;
 import solar.mr.MRTableShard;
 import solar.mr.env.ProfilerMREnv;
 import solar.mr.env.YaMREnv;
+import solar.mr.env.YtMREnv;
 import solar.mr.proc.MRState;
 import solar.mr.proc.MRWhiteboard;
 
@@ -50,8 +51,9 @@ public class MRStateImpl implements MRState, Serializable {
       if (!processAs(consumes[i], new Processor<MRTableShard>() {
         @Override
         public void process(MRTableShard shard) {
-          MREnv env = shard.container() instanceof ProfilerMREnv? ((ProfilerMREnv) shard.container()).getWrapped(): shard.container();
-          holder[0] &= env instanceof YaMREnv || shard.isAvailable();
+
+          final MREnv env = shard.container() instanceof ProfilerMREnv? ((ProfilerMREnv) shard.container()).getWrapped(): shard.container();
+          holder[0] &= env instanceof YaMREnv || env instanceof YtMREnv|| shard.isAvailable();
         }
       }))
         holder[0] &= keys().contains(consumes[i]);

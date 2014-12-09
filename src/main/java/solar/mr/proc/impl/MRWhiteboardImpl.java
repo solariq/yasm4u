@@ -18,6 +18,7 @@ import com.spbsu.commons.system.RuntimeUtils;
 import solar.mr.MREnv;
 import solar.mr.MRErrorsHandler;
 import solar.mr.MRTools;
+import solar.mr.env.YaMREnv;
 import solar.mr.routines.MRRecord;
 import solar.mr.proc.MRState;
 import solar.mr.proc.MRWhiteboard;
@@ -70,7 +71,8 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
     errorsHandler = handler;
     this.env = env;
     this.user = user;
-    myShard = new LazyTableShard("temp/" + user + "/state/" + id, env);
+
+    myShard = new LazyTableShard(env.getTmp() + user + "/state/" + id, env);
     env.read(myShard, new Processor<CharSequence>() {
       @Override
       public void process(final CharSequence arg) {
@@ -117,7 +119,9 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
         case "temp":
           final String subProtocol = uri.getSchemeSpecificPart();
           if (subProtocol.startsWith("mr://")) {
-            final String path = "temp/" + user + subProtocol.substring("mr://".length()) + "-" + (Integer.toHexString(rng.nextInt()));
+
+            int offset = subProtocol.startsWith("mr:////") ? 6 : 5; /* Yt's root is // */
+            final String path = env.getTmp() + user + subProtocol.substring(offset) + "-" + (Integer.toHexString(rng.nextInt()));
             final MRTableShard resolve = new LazyTableShard(path, env);
             set(resource, resolve);
             return (T)resolve;
@@ -129,7 +133,7 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
           if (resource.endsWith("*"))
             result = env.list(path.substring(1, path.length() - 1));
           else
-            result = new LazyTableShard(path.substring(1), env);
+            result = new LazyTableShard(env instanceof YaMREnv ? path.substring(1) : path, env);
 
           set(resource, result);
           return (T)result;
@@ -259,6 +263,7 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
       }
       env.delete(myShard);
     }
+
     if (connected != null)
       connected.wipe();
   }
@@ -271,7 +276,7 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
     this.errorsHandler = errorsHandler;
   }
 
-  private static class LazyTableShard extends MRTableShard {
+  public static class LazyTableShard extends MRTableShard {
     MRTableShard realShard;
 
     public LazyTableShard(String path, MREnv env) {
@@ -318,6 +323,5 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
     public long keysCount() {
       return real().keysCount();
     }
-
   }
 }

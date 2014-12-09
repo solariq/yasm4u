@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
+import solar.mr.MRUtils;
 import solar.mr.proc.MRState;
 import solar.mr.proc.impl.AnnotatedMRProcess;
 import solar.mr.proc.tags.MRProcessClass;
@@ -14,7 +15,7 @@ import solar.mr.routines.MRRecord;
 
 import java.util.*;
 
-import static functional.MRTestUtils.*;
+import static solar.mr.MRUtils.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -24,8 +25,8 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public final class MultiReduceTest extends BaseMRTest {
 
-  private final MRTestUtils.Record[] RECORDS_1 = createRecordsWithKeys(9, 10, "key1", "key2", "key3");
-  private final MRTestUtils.Record[] RECORDS_2 = createRecordsWithKeys(7, 20, "key3", "key4", "key5");
+  private final MRUtils.Record[] RECORDS_1 = createRecordsWithKeys(9, 10, "key1", "key2", "key3");
+  private final MRUtils.Record[] RECORDS_2 = createRecordsWithKeys(7, 20, "key3", "key4", "key5");
 
   private static final String IN_TABLE_NAME_1 = TABLE_NAME_PREFIX + "MultiReduceTest-in-1-" + SALT;
   private static final String IN_TABLE_NAME_2 = TABLE_NAME_PREFIX + "MultiReduceTest-in-2-" + SALT;
@@ -70,7 +71,7 @@ public final class MultiReduceTest extends BaseMRTest {
     mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
-    List<MRTestUtils.Record> records = readRecords(env, OUT_TABLE_NAME_1);
+    List<MRUtils.Record> records = readRecords(env, OUT_TABLE_NAME_1);
     assertEquals(RECORDS_1.length + RECORDS_2.length, records.size());
     Set<Record> recordsSet = new HashSet<>(Arrays.asList(RECORDS_1));
     recordsSet.addAll(Arrays.asList(RECORDS_2));
@@ -116,13 +117,13 @@ public final class MultiReduceTest extends BaseMRTest {
     mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
-    List<MRTestUtils.Record> records1 = readRecords(env, OUT_TABLE_NAME_1);
-    List<MRTestUtils.Record> records2 = readRecords(env, OUT_TABLE_NAME_2);
+    List<MRUtils.Record> records1 = readRecords(env, OUT_TABLE_NAME_1);
+    List<MRUtils.Record> records2 = readRecords(env, OUT_TABLE_NAME_2);
     assertEquals(RECORDS_1.length, records1.size());
     assertEquals(RECORDS_2.length, records2.size());
-    Set<MRTestUtils.Record> recordsSet1 = new HashSet<>(Arrays.asList(RECORDS_1));
+    Set<MRUtils.Record> recordsSet1 = new HashSet<>(Arrays.asList(RECORDS_1));
     assertTrue(recordsSet1.containsAll(records1));
-    Set<MRTestUtils.Record> recordsSet2 = new HashSet<>(Arrays.asList(RECORDS_2));
+    Set<MRUtils.Record> recordsSet2 = new HashSet<>(Arrays.asList(RECORDS_2));
     assertTrue(recordsSet2.containsAll(records2));
   }
 
@@ -162,8 +163,8 @@ public final class MultiReduceTest extends BaseMRTest {
     mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
-    List<MRTestUtils.Record> records1 = readRecords(env, OUT_TABLE_NAME_1);
-    List<MRTestUtils.Record> records2 = readRecords(env, OUT_TABLE_NAME_2);
+    List<MRUtils.Record> records1 = readRecords(env, OUT_TABLE_NAME_1);
+    List<MRUtils.Record> records2 = readRecords(env, OUT_TABLE_NAME_2);
     assertEquals(9, records1.size());
     assertEquals(RECORDS_1.length - 9, records2.size());
     for(Record record: records1) {
