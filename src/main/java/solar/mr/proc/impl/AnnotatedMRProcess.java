@@ -31,19 +31,19 @@ public class AnnotatedMRProcess extends CompositeJobaImpl {
   }
 
   public AnnotatedMRProcess(final Class<?> processDescription, final MREnv env, final Properties initial) {
-    super(env, processDescription.getName().replace('$', '.'), resolveNames(processDescription.getAnnotation(MRProcessClass.class).goal(), initial));
+    super(env, processDescription.getName().replace('$', '.'), resolveNames(processDescription.getAnnotation(MRProcessClass.class).goal(), initial, env));
     final Method[] methods = processDescription.getMethods();
     for (int i = 0; i < methods.length; i++) {
       final Method current = methods[i];
       final MRMapMethod mapAnn = current.getAnnotation(MRMapMethod.class);
       if (mapAnn != null)
-        addJob(new RoutineJoba(resolveNames(mapAnn.input(), initial), resolveNames(mapAnn.output(), initial), current, MapMethod.class));
+        addJob(new RoutineJoba(resolveNames(mapAnn.input(), initial, env), resolveNames(mapAnn.output(), initial, env), current, MapMethod.class));
       final MRReduceMethod reduceAnn = current.getAnnotation(MRReduceMethod.class);
       if (reduceAnn != null)
-        addJob(new RoutineJoba(resolveNames(reduceAnn.input(), initial), resolveNames(reduceAnn.output(), initial), current, ReduceMethod.class));
+        addJob(new RoutineJoba(resolveNames(reduceAnn.input(), initial, env), resolveNames(reduceAnn.output(), initial, env), current, ReduceMethod.class));
       final MRRead readAnn = current.getAnnotation(MRRead.class);
       if (readAnn != null)
-        addJob(new ReadJoba(resolveNames(new String[]{readAnn.input()}, initial), readAnn.output(), current));
+        addJob(new ReadJoba(resolveNames(new String[]{readAnn.input()}, initial, env), readAnn.output(), current));
     }
     for (Map.Entry<Object, Object> entry : initial.entrySet()) {
       wb().set((String)entry.getKey(), entry.getValue());
@@ -80,7 +80,11 @@ public class AnnotatedMRProcess extends CompositeJobaImpl {
     return new String[]{resource};
   }
 
-  private static String[] resolveNames(String[] input, Properties wb) {
+  private static String[]  resolveNames(String[] input, Properties wb, final MREnv env) {
+    wb.putAll(VARS);
+    wb.put("var:tmp", env.getEnvTmp());
+    wb.put("var:root", env.getEnvTmp());
+    wb.put("var:env", env.getEnvName());
     final List<String> result = new ArrayList<>();
     for(int i = 0; i < input.length; i++) {
       result.addAll(Arrays.asList(resolveVars(input[i], wb)));
