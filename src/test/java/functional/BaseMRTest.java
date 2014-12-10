@@ -12,17 +12,17 @@ import java.util.Collection;
  */
 public class BaseMRTest {
 
-  public static final String TABLE_NAME_PREFIX = "/tmp/yasm4u-tests/";
-  public static final String SALT = "_inikifor"; // Don't know how to implement this better yet
+  public static final String TABLE_NAME_PREFIX = "{var:tmp}/yasm4u-tests/";
+  public static final String SALT = "_{var:user}"; // Don't know how to implement this better yet
 
   public static final String SCHEMA = "mr://";
-  public static final String TMP_SCHEMA = "temp:mr:///";
+  public static final String TMP_SCHEMA = "temp:mr://";
 
   public static final ProcessRunner YAMR_RUNNER = new SSHProcessRunner("batista", "/Berkanavt/mapreduce/bin/mapreduce-dev");
   public static final String YAMR_USER = "mobilesearch";
   public static final String YAMR_CLUSTER = "cedar:8013";
   public static final ProcessRunner YTMR_RUNNER = new SSHProcessRunner("testing.mobsearch.serp.yandex.ru", "/usr/bin/yt");
-  public static final String YTMR_USER = "minamoto";
+  public static final String YTMR_USER = "{var:user}";
   public static final String YTMR_CLUSTER = "plato.yt.yandex.net";
 
   @Parameterized.Parameters
@@ -31,7 +31,7 @@ public class BaseMRTest {
         {LocalMREnv.createTemp()},
         {new YaMREnv(YAMR_RUNNER, YAMR_USER, YAMR_CLUSTER)},
         //{new ProfilerMREnv(new YaMREnv(YAMR_RUNNER, YAMR_USER, YAMR_CLUSTER))},
-        //{new YtMREnv(YTMR_RUNNER, YTMR_USER, YTMR_CLUSTER)}
+        {new YtMREnv(YTMR_RUNNER, YTMR_USER, YTMR_CLUSTER)}
     });
   }
 
