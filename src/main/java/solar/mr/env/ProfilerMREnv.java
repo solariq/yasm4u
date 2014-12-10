@@ -158,7 +158,11 @@ public final class ProfilerMREnv implements MREnv {
   }
 
   private String localPath(MRTableShard shard) {
-    return shard.path().substring(1);
+    //TODO @salavat here the localPath() method of wrapped MREnv should be called
+    if (shard.path().length() > 0 && shard.path().startsWith("/")) {
+      return shard.path().substring(1);
+    }
+    return shard.path();
   }
 
   @Override

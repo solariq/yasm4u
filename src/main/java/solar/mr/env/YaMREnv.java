@@ -221,7 +221,10 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   }
 
   private String localPath(MRTableShard shard) {
-    return shard.path().substring(1);
+    if (shard.path().length() > 0 && shard.path().startsWith("/")) {
+      return shard.path().substring(1);
+    }
+    return shard.path();
   }
 
   public void delete(final MRTableShard shard) {
