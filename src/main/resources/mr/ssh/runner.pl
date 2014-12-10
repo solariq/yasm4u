@@ -31,11 +31,10 @@ elsif ($mode eq "run") {
     `rm -rf $file`;
     `mkdir -p $file`;
     print STDOUT "$$\t$file\n";
-    push @ARGV, "2>&1";
-
-    print STDERR "Run $$ $file ".join(" ", @ARGV)."\n";
     my $bin = shift @ARGV;
-    open MR, "$bin '".join("' '", @ARGV)."'|";
+    my $command = "$bin '".join("' '", @ARGV)."' 2>&1 |";
+    open MR, $command;
+    print STDERR "Run $$ $file $command\n";
     $index = 0;
     while(<MR>) {
       my $modIndex = $index % $LINES_PER_CHUNK;

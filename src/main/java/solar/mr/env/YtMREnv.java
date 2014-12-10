@@ -97,7 +97,7 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     options.add("read");
     options.add("--format");
     options.add("\"<has_subkey=true>\"yamr");
-    options.add(shard.path());
+    options.add(localPath(shard));
     executeCommand(options, new Processor<CharSequence>() {
       @Override
       public void process(final CharSequence arg) {
@@ -113,7 +113,7 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     options.add("read");
     options.add("--format");
     options.add("\"<has_subkey=true>yamr\"");
-    options.add(table.path() + "[:#100]");
+    options.add(localPath(table) + "[:#100]");
     executeCommand(options, new Processor<CharSequence>() {
       @Override
       public void process(final CharSequence arg) {
@@ -167,7 +167,7 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
       final MRTableShard[] list = list(prefix);
       for(int i = 0; i < list.length; i++) {
         final MRTableShard shard = list[i];
-        final int index = ArrayTools.indexOf(shard.path(), paths);
+        final int index = ArrayTools.indexOf(localPath(shard), paths);
         if (index >= 0)
           result[index] = shard;
       }
@@ -251,7 +251,7 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     if (!append) {
       delete(to); /* Yt requires that destination shouldn't exists */
       options.add("copy");
-      options.add(from[0].path());
+      options.add(localPath(from[0]));
       startIndex = 1;
     }
     if (from.length > 1)
@@ -259,12 +259,12 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   }
 
   public void write(final MRTableShard shard, final Reader content) {
-    createTable(shard.path());
+    createTable(localPath(shard));
     final List<String> options = defaultOptions();
     options.add("write");
     options.add("--format");
     options.add("\"<has_subkey=true>yamr\"");
-    options.add(shard.path());
+    options.add(localPath(shard));
     MRTools.CounterInputStream cis = new MRTools.CounterInputStream(new LineNumberReader(content), 0, 0, 0);
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, cis);
     invoke(new ShardAlter(MRTools.updateTableShard(shard, false, cis), ShardAlter.AlterType.UPDATED));
@@ -272,12 +272,12 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
 
   @Override
   public void append(final MRTableShard shard, final Reader content) {
-    createTable(shard.path());
+    createTable(localPath(shard));
     final List<String> options = defaultOptions();
     options.add("write");
     options.add("--format");
     options.add("\"<has_subkey=true>yamr\"");
-    options.add("\"<append=true>" + shard.path() + "\"");
+    options.add("\"<append=true>" + localPath(shard) + "\"");
     MRTools.CounterInputStream cis = new MRTools.CounterInputStream(new LineNumberReader(content), shard.recordsCount(), shard.keysCount(), shard.length());
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, cis);
     invoke(new ShardAlter(MRTools.updateTableShard(shard, false, cis), ShardAlter.AlterType.UPDATED));
@@ -297,7 +297,7 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     final List<String> options = defaultOptions();
 
     options.add("remove");
-    options.add(table.path());
+    options.add(localPath(table));
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     invoke(new ShardAlter(table));
   }
@@ -382,8 +382,8 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     final MRTableShard[] realOut = new MRTableShard[out.length];
     for(int i = 0; i < out.length; i++) {
       options.add("--dst");
-      options.add(out[i].path());
-      realOut[i] = createTable(out[i].path()); /* lazy materialization */
+      options.add(localPath(out[i]));
+      realOut[i] = createTable(localPath(out[i])); /* lazy materialization */
     }
 
     final File jarFile;
@@ -405,7 +405,7 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     options.add("'/usr/local/java8/bin/java -XX:-UsePerfData -Xmx1G -Xms1G -jar " + jarFile.getName() + " " + routineClass.getName() + " " + out.length + "" + profiler.isEnabled() + "'");
     for(int i = 0; i < in.length; i++) {
       options.add("--src");
-      options.add(in[i].path());
+      options.add(localPath(in[i]));
     }
 
     final String errorsShardName = "//tmp/errors-" + Integer.toHexString(new FastRandom().nextInt());
@@ -504,10 +504,10 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   @Override
   protected void invoke(ShardAlter e) {
     if (e.type == ShardAlter.AlterType.CHANGED) {
-      shardsCache.clear(e.shard.path());
+      shardsCache.clear(localPath(e.shard));
     }
     else if (e.type == ShardAlter.AlterType.UPDATED) {
-      shardsCache.put(e.shard.path(), e.shard);
+      shardsCache.put(localPath(e.shard), e.shard);
     }
     super.invoke(e);
   }
@@ -563,6 +563,10 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
       if (indexAndLimit[0] < indexAndLimit[1] - 1)
         builder.append(sep);
     }
+  }
+
+  private String localPath(MRTableShard shard) {
+    return shard.path();
   }
 
   private static class AppenderProcessor implements Processor<CharSequence> {

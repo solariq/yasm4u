@@ -93,12 +93,12 @@ public final class ProfilerMREnv implements MREnv {
     long start = System.currentTimeMillis();
     int result = wrapped.read(shard, seq);
     int delta = (int) (System.currentTimeMillis() - start);
-    if (shard.path().contains(PROFILE_DATA_TABLE)) {
+    if (localPath(shard).contains(PROFILE_DATA_TABLE)) {
       profilingOverhead += delta;
       time.put(execOperation, time.get(execOperation) - delta);
     } else {
       incrementTime(Operation.READ, delta);
-      if (shard.path().contains("temp/error-")) {
+      if (localPath(shard).contains("temp/error-")) {
         time.put(execOperation, time.get(execOperation) - delta);
       }
     }
@@ -146,15 +146,19 @@ public final class ProfilerMREnv implements MREnv {
     long start = System.currentTimeMillis();
     wrapped.delete(shard);
     int delta = (int) (System.currentTimeMillis() - start);
-    if (shard.path().contains(PROFILE_DATA_TABLE)) {
+    if (localPath(shard).contains(PROFILE_DATA_TABLE)) {
       profilingOverhead += delta;
       time.put(execOperation, time.get(execOperation) - delta);
     } else {
       incrementTime(Operation.DELETE, delta);
-      if (shard.path().contains("temp/error-")) {
+      if (localPath(shard).contains("temp/error-")) {
         time.put(execOperation, time.get(execOperation) - delta);
       }
     }
+  }
+
+  private String localPath(MRTableShard shard) {
+    return shard.path().substring(1);
   }
 
   @Override
