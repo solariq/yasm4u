@@ -87,7 +87,7 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     final int[] recordsCount = new int[]{0};
     final List<String> options = defaultOptions();
     options.add("-read");
-    options.add(shard.path());
+    options.add(localPath(shard));
     executeCommand(options, new Processor<CharSequence>() {
       @Override
       public void process(final CharSequence arg) {
@@ -121,7 +121,7 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
 
     final List<String> options = defaultOptions();
     options.add("-read");
-    options.add(table.path());
+    options.add(localPath(table));
     options.add("-count");
     options.add("" + 100);
     executeCommand(options, new Processor<CharSequence>() {
@@ -172,7 +172,7 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     }
     for (int i = 0; i < result.size(); i++) {
       final MRTableShard shard = result.get(i);
-      shardsCache.put(shard.path(), shard);
+      shardsCache.put(localPath(shard), shard);
     }
 
     return result.toArray(new MRTableShard[result.size()]);
@@ -186,24 +186,24 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     long keysCount = append ? to.keysCount() : 0;
     for(int i = 0; i < from.length; i++) {
       options.add("-src");
-      options.add(from[i].path());
+      options.add(localPath(from[i]));
       totalLength += from[i].length();
       recordsCount += from[i].recordsCount();
       keysCount += from[i].keysCount();
     }
     options.add(append ? "-dstappend" : "-dst");
-    options.add(to.path());
+    options.add(localPath(to));
     options.add("-copy");
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     invoke(new ShardAlter(
-            new MRTableShard(to.path(), to.container(), true, false, "" + totalLength, totalLength, keysCount, recordsCount, System.currentTimeMillis()),
+            new MRTableShard(localPath(to), to.container(), true, false, "" + totalLength, totalLength, keysCount, recordsCount, System.currentTimeMillis()),
             ShardAlter.AlterType.UPDATED));
   }
 
   public void write(final MRTableShard shard, final Reader content) {
     final List<String> options = defaultOptions();
     options.add("-write");
-    options.add(shard.path());
+    options.add(localPath(shard));
     MRTools.CounterInputStream cis = new MRTools.CounterInputStream(new LineNumberReader(content), 0, 0, 0);
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, cis);
     invoke(new ShardAlter(MRTools.updateTableShard(shard, false, cis), ShardAlter.AlterType.UPDATED));
@@ -214,10 +214,17 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     final List<String> options = defaultOptions();
     options.add("-write");
     options.add("-dstappend");
-    options.add(shard.path());
+    options.add(localPath(shard));
     MRTools.CounterInputStream cis = new MRTools.CounterInputStream(new LineNumberReader(content), shard.recordsCount(), shard.keysCount(), shard.length());
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, cis);
     invoke(new ShardAlter(MRTools.updateTableShard(shard, false, cis), ShardAlter.AlterType.UPDATED));
+  }
+
+  private String localPath(MRTableShard shard) {
+    if (shard.path().length() > 0 && shard.path().startsWith("/")) {
+      return shard.path().substring(1);
+    }
+    return shard.path();
   }
 
   public void delete(final MRTableShard shard) {
@@ -225,10 +232,10 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
       return;
     final List<String> options = defaultOptions();
     options.add("-drop");
-    options.add(shard.path());
+    options.add(localPath(shard));
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     invoke(new ShardAlter(
-            new MRTableShard(shard.path(), shard.container(), false, false, "0", 0, 0, 0, System.currentTimeMillis()),
+            new MRTableShard(localPath(shard), shard.container(), false, false, "0", 0, 0, 0, System.currentTimeMillis()),
             ShardAlter.AlterType.UPDATED));
   }
 
@@ -236,9 +243,9 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     if (shard.isSorted())
       return shard;
     final List<String> options = defaultOptions();
-    final MRTableShard newShard = new MRTableShard(shard.path(), this, true, true, shard.crc(), shard.length(), shard.keysCount(), shard.recordsCount(), System.currentTimeMillis());
+    final MRTableShard newShard = new MRTableShard(localPath(shard), this, true, true, shard.crc(), shard.length(), shard.keysCount(), shard.recordsCount(), System.currentTimeMillis());
     options.add("-sort");
-    options.add(shard.path());
+    options.add(localPath(shard));
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     options.remove(options.size() - 1);
     invoke(new ShardAlter(newShard, ShardAlter.AlterType.UPDATED));
@@ -361,7 +368,7 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
       }
       for(int i = 0; i < list.length; i++) {
         final MRTableShard shard = list[i];
-        final int index = ArrayTools.indexOf(shard.path(), paths);
+        final int index = ArrayTools.indexOf(localPath(shard), paths);
         if (index >= 0)
           result[index] = shard;
       }
@@ -384,12 +391,12 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     int outputShardsCount = 0;
     for(int i = 0; i < in.length; i++) {
       options.add("-src");
-      options.add(in[i].path());
+      options.add(localPath(in[i]));
       inputShardsCount++;
     }
     for(int i = 0; i < out.length; i++) {
       options.add("-dst");
-      options.add(out[i].path());
+      options.add(localPath(out[i]));
       outputShardsCount++;
     }
     final String errorsShardName = "temp/errors-" + Integer.toHexString(new FastRandom().nextInt());
@@ -507,10 +514,10 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   @Override
   protected void invoke(ShardAlter e) {
     if (e.type == ShardAlter.AlterType.CHANGED) {
-      shardsCache.clear(e.shard.path());
+      shardsCache.clear(localPath(e.shard));
     }
     else if (e.type == ShardAlter.AlterType.UPDATED) {
-      shardsCache.put(e.shard.path(), e.shard);
+      shardsCache.put(localPath(e.shard), e.shard);
     }
     super.invoke(e);
   }
