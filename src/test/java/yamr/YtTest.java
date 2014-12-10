@@ -34,7 +34,7 @@ public class YtTest {
     }
 
     @MRMapMethod(
-        input = "mr:////tmp/minamoto/test2",
+        input = "mr://{var:tmp}/minamoto/test2",
         output = {GOALS})
     public void map(final String key, final String sub, final CharSequence value, MROutput output) {
       int v = rnd.nextInt();
