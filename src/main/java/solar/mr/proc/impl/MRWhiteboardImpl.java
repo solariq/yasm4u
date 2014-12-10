@@ -18,9 +18,10 @@ import com.spbsu.commons.system.RuntimeUtils;
 import solar.mr.MREnv;
 import solar.mr.MRErrorsHandler;
 import solar.mr.MRTools;
-import solar.mr.proc.State;
-import solar.mr.proc.Whiteboard;
+import solar.mr.env.YaMREnv;
 import solar.mr.routines.MRRecord;
+import solar.mr.proc.MRState;
+import solar.mr.proc.MRWhiteboard;
 import solar.mr.MRTableShard;
 
 /**
@@ -28,7 +29,7 @@ import solar.mr.MRTableShard;
  * Date: 12.10.14
  * Time: 10:23
  */
-public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREnv.ShardAlter> {
+public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Action<MREnv.ShardAlter> {
   private final MREnv env;
   private final String user;
   private final Properties increment = new Properties();
@@ -36,9 +37,9 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
   private final Random rng = new FastRandom();
   private MRErrorsHandler errorsHandler;
   private SerializationRepository<CharSequence> marshaling;
-  private Whiteboard connected;
+  private MRWhiteboard connected;
 
-  public WhiteboardImpl(final MREnv env, final String id, final String user) {
+  public MRWhiteboardImpl(final MREnv env, final String id, final String user) {
     this(env, id, user, new MRErrorsHandler() {
       @Override
       public void error(final String type, final String cause, final MRRecord rec) {
@@ -55,14 +56,14 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
     });
   }
 
-  public WhiteboardImpl(final MREnv env, final String id, final String user, MRErrorsHandler handler) {
-    marshaling = new SerializationRepository<>(State.SERIALIZATION).customize(
+  public MRWhiteboardImpl(final MREnv env, final String id, final String user, MRErrorsHandler handler) {
+    marshaling = new SerializationRepository<>(MRState.SERIALIZATION).customize(
         new OrFilter<>(
-            new AndFilter<TypeConverter>(new ClassFilter<TypeConverter>(Action.class, Whiteboard.class), new Filter<TypeConverter>() {
+            new AndFilter<TypeConverter>(new ClassFilter<TypeConverter>(Action.class, MRWhiteboard.class), new Filter<TypeConverter>() {
       @Override
       public boolean accept(final TypeConverter converter) {
         //noinspection unchecked
-        ((Action<Whiteboard>) converter).invoke(WhiteboardImpl.this);
+        ((Action<MRWhiteboard>) converter).invoke(MRWhiteboardImpl.this);
         return true;
       }
     }), new TrueFilter<TypeConverter>()));
@@ -71,7 +72,7 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
     this.env = env;
     this.user = user;
 
-    myShard = new LazyTableShard(env.getEnvTmp() + "/" + user + "/state/" + id, env);
+    myShard = new LazyTableShard(env.getTmp() + "/" + user + "/state/" + id, env);
     env.read(myShard, new Processor<CharSequence>() {
       @Override
       public void process(final CharSequence arg) {
@@ -119,8 +120,7 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
           final String subProtocol = uri.getSchemeSpecificPart();
           if (subProtocol.startsWith("mr://")) {
 
-            int offset = ("mr://" + env.getEnvRoot()).length();
-            final String path = env.getEnvTmp() + user + subProtocol.substring(offset) + "-" + (Integer.toHexString(rng.nextInt()));
+            final String path = env.getTmp() + user + subProtocol.substring("mr://".length()) + "-" + (Integer.toHexString(rng.nextInt()));
             final MRTableShard resolve = new LazyTableShard(path, env);
             set(resource, resolve);
             return (T)resolve;
@@ -130,7 +130,7 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
           Object result;
           final String path = uri.getPath();
           if (resource.endsWith("*"))
-            result = env.list(path.substring(1, path.length() - 1));
+            result = env.list(path.substring(0, path.length() - 1));
           else {
             result = new LazyTableShard(path, env);
           }
@@ -167,9 +167,9 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
   }
 
   @Override
-  public State snapshot() {
+  public MRState snapshot() {
     sync();
-    return new StateImpl(this);
+    return new MRStateImpl(this);
   }
 
   private final Set<String> hints = new HashSet<>();
@@ -267,7 +267,7 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
       connected.wipe();
   }
 
-  public void connect(final Whiteboard test) {
+  public void connect(final MRWhiteboard test) {
     connected = test;
   }
 
