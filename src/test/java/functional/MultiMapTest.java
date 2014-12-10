@@ -6,7 +6,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
-import solar.mr.MRUtils;
 import solar.mr.proc.MRState;
 import solar.mr.proc.impl.AnnotatedMRProcess;
 import solar.mr.proc.tags.MRMapMethod;
@@ -18,8 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static solar.mr.MRUtils.*;
-import static solar.mr.MRUtils.dropMRTable;
+import static solar.mr.MRTestUtils.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -29,8 +27,8 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public final class MultiMapTest extends BaseMRTest {
 
-  private final MRUtils.Record[] RECORDS_1 = createRecords(10, 9);
-  private final MRUtils.Record[] RECORDS_2 = createRecords(20, 7);
+  private final Record[] RECORDS_1 = createRecords(10, 9);
+  private final Record[] RECORDS_2 = createRecords(20, 7);
 
   private static final String IN_TABLE_NAME_1 = TABLE_NAME_PREFIX + "MultiMapTest-in-1-" + SALT;
   private static final String IN_TABLE_NAME_2 = TABLE_NAME_PREFIX + "MultiMapTest-in-2-" + SALT;
@@ -70,9 +68,9 @@ public final class MultiMapTest extends BaseMRTest {
     mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
-    List<MRUtils.Record> records = readRecords(env, OUT_TABLE_NAME_1);
+    List<Record> records = readRecords(env, OUT_TABLE_NAME_1);
     assertEquals(RECORDS_1.length + RECORDS_2.length, records.size());
-    Set<MRUtils.Record> recordsSet = new HashSet<>(Arrays.asList(RECORDS_1));
+    Set<Record> recordsSet = new HashSet<>(Arrays.asList(RECORDS_1));
     recordsSet.addAll(Arrays.asList(RECORDS_2));
     assertTrue(recordsSet.containsAll(records));
   }
@@ -113,13 +111,13 @@ public final class MultiMapTest extends BaseMRTest {
     mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
-    List<MRUtils.Record> records1 = readRecords(env, OUT_TABLE_NAME_1);
-    List<MRUtils.Record> records2 = readRecords(env, OUT_TABLE_NAME_2);
+    List<Record> records1 = readRecords(env, OUT_TABLE_NAME_1);
+    List<Record> records2 = readRecords(env, OUT_TABLE_NAME_2);
     assertEquals(RECORDS_1.length, records1.size());
     assertEquals(RECORDS_2.length, records2.size());
-    Set<MRUtils.Record> recordsSet1 = new HashSet<>(Arrays.asList(RECORDS_1));
+    Set<Record> recordsSet1 = new HashSet<>(Arrays.asList(RECORDS_1));
     assertTrue(recordsSet1.containsAll(records1));
-    Set<MRUtils.Record> recordsSet2 = new HashSet<>(Arrays.asList(RECORDS_2));
+    Set<Record> recordsSet2 = new HashSet<>(Arrays.asList(RECORDS_2));
     assertTrue(recordsSet2.containsAll(records2));
   }
 
@@ -156,8 +154,8 @@ public final class MultiMapTest extends BaseMRTest {
     mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
-    List<MRUtils.Record> records1 = readRecords(env, OUT_TABLE_NAME_1);
-    List<MRUtils.Record> records2 = readRecords(env, OUT_TABLE_NAME_2);
+    List<Record> records1 = readRecords(env, OUT_TABLE_NAME_1);
+    List<Record> records2 = readRecords(env, OUT_TABLE_NAME_2);
     assertEquals(3, records1.size());
     assertEquals(RECORDS_1.length - 3, records2.size());
     for(Record record: records1) {

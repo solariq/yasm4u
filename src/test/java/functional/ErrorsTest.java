@@ -6,7 +6,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
-import solar.mr.MRUtils;
 import solar.mr.proc.MRState;
 import solar.mr.proc.impl.AnnotatedMRProcess;
 import solar.mr.proc.tags.MRMapMethod;
@@ -16,9 +15,7 @@ import solar.mr.routines.MRRecord;
 
 import java.util.Iterator;
 
-import static solar.mr.MRUtils.createRecords;
-import static solar.mr.MRUtils.dropMRTable;
-import static solar.mr.MRUtils.writeRecords;
+import static solar.mr.MRTestUtils.*;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -27,7 +24,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public final class ErrorsTest extends BaseMRTest {
 
-  private final MRUtils.Record[] RECORDS = createRecords(1);
+  private final Record[] RECORDS = createRecords(1);
 
   private static final String IN_TABLE_NAME = TABLE_NAME_PREFIX + "ErrorsTest-1-" + SALT;
   private static final String OUT_TABLE_NAME = TABLE_NAME_PREFIX + "ErrorsTest-2-" + SALT;

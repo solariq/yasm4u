@@ -6,10 +6,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import solar.mr.MRTableShard;
+import solar.mr.MRTestUtils;
 
-import static functional.MRTestUtils.createRecords;
-import static functional.MRTestUtils.dropMRTable;
-import static functional.MRTestUtils.writeRecords;
+import static solar.mr.MRTestUtils.*;
 import static org.junit.Assert.assertEquals;
 
 /**

@@ -16,7 +16,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static solar.mr.MRUtils.*;
+import static solar.mr.MRTestUtils.*;
 
 /**
  * Created by inikifor on 02.12.14.

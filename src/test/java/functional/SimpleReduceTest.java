@@ -6,7 +6,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
-import solar.mr.MRUtils;
 import solar.mr.proc.MRState;
 import solar.mr.proc.impl.AnnotatedMRProcess;
 import solar.mr.proc.tags.MRProcessClass;
@@ -16,10 +15,8 @@ import solar.mr.routines.MRRecord;
 import java.util.Iterator;
 import java.util.List;
 
-import static solar.mr.MRUtils.writeRecords;
-
 import static org.junit.Assert.assertEquals;
-import static solar.mr.MRUtils.*;
+import static solar.mr.MRTestUtils.*;
 
 /**
  * Created by inikifor on 04.12.14.
@@ -27,7 +24,7 @@ import static solar.mr.MRUtils.*;
 @RunWith(Parameterized.class)
 public final class SimpleReduceTest extends BaseMRTest {
 
-  private final MRUtils.Record[] RECORDS = createRecordsWithKeys(3, "key1", "key2", "key3");
+  private final Record[] RECORDS = createRecordsWithKeys(3, "key1", "key2", "key3");
 
   private static final String IN_TABLE_NAME = TABLE_NAME_PREFIX + "SimpleReduceTest-1-" + SALT;
   private static final String OUT_TABLE_NAME = TABLE_NAME_PREFIX + "SimpleReduceTest-2-" + SALT;

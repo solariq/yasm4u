@@ -6,7 +6,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
-import solar.mr.MRUtils;
 import solar.mr.proc.MRState;
 import solar.mr.proc.impl.AnnotatedMRProcess;
 import solar.mr.proc.tags.MRMapMethod;
@@ -19,7 +18,7 @@ import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static solar.mr.MRUtils.*;
+import static solar.mr.MRTestUtils.*;
 
 /**
  * Created by inikifor on 03.12.14.
@@ -27,7 +26,7 @@ import static solar.mr.MRUtils.*;
 @RunWith(Parameterized.class)
 public final class SimpleMapTest extends BaseMRTest {
 
-  private final MRUtils.Record[] RECORDS = createRecords(10); // should be odd
+  private final Record[] RECORDS = createRecords(10); // should be odd
 
   private static final String IN_TABLE_NAME = TABLE_NAME_PREFIX + "SimpleMapTest-1-" + SALT;
   private static final String OUT_TABLE_NAME = TABLE_NAME_PREFIX + "SimpleMapTest-2-" + SALT;

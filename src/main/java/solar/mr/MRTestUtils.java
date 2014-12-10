@@ -1,4 +1,4 @@
-package functional;
+package solar.mr;
 
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.seq.CharSeqTools;
@@ -30,6 +30,22 @@ public final class MRTestUtils {
     } catch (UnsupportedEncodingException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  /**
+   * List tables(paths) that have specified prefix
+   *
+   * @param env MREnv instance
+   * @param pathPrefix pathPrefix
+   * @return List of table paths, empty list of no tables with specified prefix
+   */
+  public static List<String> listTables(MREnv env, String pathPrefix) {
+    final MRTableShard[] list = env.list(pathPrefix);
+    List<String> result = new ArrayList<>();
+    for (MRTableShard mrTableShard : list) {
+      result.add(mrTableShard.path());
+    }
+    return result;
   }
 
   public static List<Record> readRecords(MREnv env, final String path) {

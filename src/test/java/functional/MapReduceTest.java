@@ -6,7 +6,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
-import solar.mr.MRUtils;
 import solar.mr.proc.MRState;
 import solar.mr.proc.impl.AnnotatedMRProcess;
 import solar.mr.proc.tags.MRMapMethod;
@@ -17,8 +16,7 @@ import solar.mr.routines.MRRecord;
 import java.util.Iterator;
 import java.util.List;
 
-import static solar.mr.MRUtils.*;
-import static solar.mr.MRUtils.dropMRTable;
+import static solar.mr.MRTestUtils.*;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -27,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public final class MapReduceTest extends BaseMRTest {
 
-  private final MRUtils.Record[] RECORDS = createRecords(50); // should be odd
+  private final Record[] RECORDS = createRecords(50); // should be odd
 
   private static final String IN_TABLE_NAME = TABLE_NAME_PREFIX + "MapReduceTest-1-" + SALT;
   private static final String TEMP_TABLE_NAME = "MapReduceTest-1-" + SALT;
@@ -74,7 +72,7 @@ public final class MapReduceTest extends BaseMRTest {
     mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
-    List<MRUtils.Record> records = readRecords(env, OUT_TABLE_NAME);
+    List<Record> records = readRecords(env, OUT_TABLE_NAME);
     assertEquals(2, records.size());
     assertEquals("" + RECORDS.length / 2, records.get(0).value);
     assertEquals("" + RECORDS.length / 2, records.get(1).value);

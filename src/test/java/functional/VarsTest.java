@@ -4,7 +4,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
-import solar.mr.MRUtils;
 import solar.mr.proc.MRState;
 import solar.mr.proc.impl.AnnotatedMRProcess;
 import solar.mr.proc.tags.MRMapMethod;
@@ -13,7 +12,7 @@ import solar.mr.proc.tags.MRProcessClass;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import static solar.mr.MRUtils.*;
+import static solar.mr.MRTestUtils.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -23,7 +22,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public final class VarsTest extends BaseMRTest {
 
-  private final MRUtils.Record[] RECORDS = createRecords(3);
+  private final Record[] RECORDS = createRecords(3);
 
   private static final String IN_TABLE_NAME_1 = TABLE_NAME_PREFIX + "VarsTest-1-1-" + SALT;
   private static final String OUT_TABLE_NAME_1 = TABLE_NAME_PREFIX + "VarsTest-1-2-" + SALT;
@@ -79,7 +78,7 @@ public final class VarsTest extends BaseMRTest {
     mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
-    List<MRUtils.Record> records = readRecords(env, OUT_TABLE_NAME_1);
+    List<Record> records = readRecords(env, OUT_TABLE_NAME_1);
     assertEquals(RECORDS.length, records.size());
     for(Record record: records) {
       assertEquals(STRING_VAL + INT_VAL, record.value);
@@ -118,7 +117,7 @@ public final class VarsTest extends BaseMRTest {
     mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
-    List<MRUtils.Record> records = readRecords(env, REAL_OUT_TABLE_NAME_2);
+    List<Record> records = readRecords(env, REAL_OUT_TABLE_NAME_2);
     assertEquals(RECORDS.length, records.size());
     Set<Record> recordsSet = new HashSet<>(Arrays.asList(RECORDS));
     assertTrue(recordsSet.containsAll(records));
@@ -152,7 +151,7 @@ public final class VarsTest extends BaseMRTest {
     mrProcess.wb().wipe();
     for(String i: ARRAY_VALS) {
       final String table = OUT_TABLE_NAME_3.replace("{" + ARRAY_VAR + "}", i);
-      List<MRUtils.Record> records = readRecords(env, table);
+      List<Record> records = readRecords(env, table);
       assertEquals(RECORDS.length, records.size());
       Set<Record> recordsSet = new HashSet<>(Arrays.asList(RECORDS));
       assertTrue(recordsSet.containsAll(records));
