@@ -36,42 +36,17 @@ import solar.mr.routines.MRReduce;
  * Date: 19.09.14
  * Time: 17:08
  */
-public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements ProfilableMREnv {
-  private final String tag;
-  private final String master;
-  protected Processor<CharSequence> defaultErrorsProcessor;
-  protected Processor<CharSequence> defaultOutputProcessor;
-  private final ProcessRunner runner;
-  private final ClosureJarBuilder jarBuilder;
+public class YtMREnv extends BaseEnv implements ProfilableMREnv {
 
   public YtMREnv(final ProcessRunner runner, final String tag, final String master) {
-    this(runner, tag, master,
-        new Processor<CharSequence>() {
-          @Override
-          public void process(final CharSequence arg) {
-            System.err.println(arg);
-          }
-        },
-        new Processor<CharSequence>() {
-          @Override
-          public void process(final CharSequence arg) {
-            System.out.println(arg);
-          }
-        },
-        new ClosureJarBuilder(LocalMREnv.DEFAULT_HOME)
-    );
+    super(runner, tag, master);
   }
 
-  protected YtMREnv(final ProcessRunner runner, final String tag, final String master,
+  protected YtMREnv(final ProcessRunner runner, final String user, final String master,
                     final Processor<CharSequence> errorsProc,
                     final Processor<CharSequence> outputProc,
                     ClosureJarBuilder jarBuilder) {
-    this.runner = runner;
-    this.tag = tag;
-    this.master = master;
-    this.defaultErrorsProcessor = errorsProc;
-    this.defaultOutputProcessor = outputProc;
-    this.jarBuilder = jarBuilder;
+    super(runner, user, master, errorsProc, outputProc, jarBuilder);
   }
 
   protected List<String> defaultOptions() {
@@ -314,43 +289,6 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     return "//tmp/";
   }
 
-  private void executeCommand(final List<String> options, final Processor<CharSequence> outputProcessor,
-                              final Processor<CharSequence> errorsProcessor, InputStream contents) {
-    try {
-      final Process exec = runner.start(options, contents);
-      if (exec == null)
-        return;
-      final Thread outThread = new Thread(new Runnable() {
-        @Override
-        public void run() {
-          try {
-            CharSeqTools.processLines(new InputStreamReader(exec.getInputStream(), StreamTools.UTF), outputProcessor);
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
-        }
-      });
-      final Thread errThread = new Thread(new Runnable() {
-        @Override
-        public void run() {
-          try {
-            CharSeqTools.processLines(new InputStreamReader(exec.getErrorStream(), StreamTools.UTF), errorsProcessor);
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
-        }
-      });
-      exec.getOutputStream().close();
-      outThread.start();
-      errThread.start();
-      exec.waitFor();
-      outThread.join();
-      errThread.join();
-    } catch (InterruptedException | IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   @Override
   public MRTableShard resolve(final String path, Profiler profiler) {
     return resolveAll(new String[]{path}, profiler)[0];
@@ -462,7 +400,7 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
 
   @Override
   public String toString() {
-    return "YaMR://" + tag + "@" + master + "/";
+    return "YaMR://" + user + "@" + master + "/";
   }
 
   public ClosureJarBuilder getJarBuilder() {
@@ -517,7 +455,7 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
 
   private String upload(final String from, final String to) {
 
-    final String toPath = "//tmp/" + tag + "/state/files";
+    final String toPath = "//tmp/" + user + "/state/files";
     if (!isShardPathExists(toPath)) {
       createNode(toPath);
     }

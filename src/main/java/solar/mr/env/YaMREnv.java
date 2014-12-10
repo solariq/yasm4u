@@ -33,43 +33,17 @@ import java.util.*;
  * Date: 19.09.14
  * Time: 17:08
  */
-public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements MREnv {
-  private final String user;
-
-  private final String master;
-  protected Processor<CharSequence> defaultErrorsProcessor;
-  protected Processor<CharSequence> defaultOutputProcessor;
-  private final ProcessRunner runner;
-  private final ClosureJarBuilder jarBuilder;
+public class YaMREnv extends BaseEnv implements MREnv {
 
   public YaMREnv(final ProcessRunner runner, final String user, final String master) {
-    this(runner, user, master,
-        new Processor<CharSequence>() {
-          @Override
-          public void process(final CharSequence arg) {
-            System.err.println(arg);
-          }
-        },
-        new Processor<CharSequence>() {
-          @Override
-          public void process(final CharSequence arg) {
-            System.out.println(arg);
-          }
-        },
-        new ClosureJarBuilder(LocalMREnv.DEFAULT_HOME)
-    );
+    super(runner, user, master);
   }
 
   protected YaMREnv(final ProcessRunner runner, final String user, final String master,
                     final Processor<CharSequence> errorsProc,
                     final Processor<CharSequence> outputProc,
                     ClosureJarBuilder jarBuilder) {
-    this.runner = runner;
-    this.user = user;
-    this.master = master;
-    this.defaultErrorsProcessor = errorsProc;
-    this.defaultOutputProcessor = outputProc;
-    this.jarBuilder = jarBuilder;
+    super(runner, user, master, errorsProc, outputProc, jarBuilder);
   }
 
   protected List<String> defaultOptions() {
@@ -271,65 +245,6 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   @Override
   public String getEnvName() {
     return "MR";
-  }
-
-  private void executeCommand(final List<String> options, final Processor<CharSequence> outputProcessor,
-                              final Processor<CharSequence> errorsProcessor, InputStream contents) {
-    try {
-      final Process exec = runner.start(options, contents);
-      if (exec == null)
-        return;
-      final boolean[] outputDone = new boolean[1];
-      final Holder<Exception> exceptionHolder = new Holder<>();
-      final Thread outThread = new Thread(new Runnable() {
-        @Override
-        public void run() {
-          try {
-            CharSeqTools.processLines(new InputStreamReader(exec.getInputStream(), StreamTools.UTF), outputProcessor);
-          } catch (Exception e) {
-            exceptionHolder.setValue(e);
-          }
-          synchronized (outputDone) {
-            outputDone[0] = true;
-            outputDone.notify();
-          }
-        }
-      });
-      final Thread errThread = new Thread(new Runnable() {
-        @Override
-        public void run() {
-          try {
-            CharSeqTools.processLines(new InputStreamReader(exec.getErrorStream(), StreamTools.UTF), errorsProcessor);
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
-        }
-      });
-      exec.getOutputStream().close();
-      outThread.start();
-      errThread.start();
-      //noinspection SynchronizationOnLocalVariableOrMethodParameter
-      synchronized (outputDone) {
-        while (!outputDone[0]) {
-          outputDone.wait();
-        }
-      }
-      if (exceptionHolder.filled()) {
-        exec.destroy();
-        outThread.interrupt();
-        errThread.interrupt();
-      }
-      exec.waitFor();
-      outThread.join();
-      errThread.join();
-      if (exceptionHolder.filled()) {
-        throw exceptionHolder.getValue();
-      }
-    } catch (Exception e) {
-      if (e instanceof RuntimeException)
-        throw (RuntimeException) e;
-      throw new RuntimeException(e);
-    }
   }
 
   @Override
