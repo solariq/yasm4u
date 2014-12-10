@@ -69,8 +69,11 @@ public abstract class MRReduce extends MRRoutine {
             try {
               reduce(key, reduceIterator);
             } catch (Exception e) {
-              if (lastRetrieved != null)
+              if (lastRetrieved != null) {
                 output.error(e, lastRetrieved);
+              } else {
+                output.error(e, new MRRecord("No records were processed", "unknown", "unknown", "unknown"));
+              }
               interrupt();
               break;
             }
