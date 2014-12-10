@@ -153,8 +153,8 @@ public class MRProcessImpl implements MRProcess {
       final BitSet initialState = new BitSet(universe.length);
       consumes.removeAll(produces);
       for (final String consume : consumes) {
-        if (!prod.available(consume))
-          throw new IllegalArgumentException("Can not find " + consume + " at production");
+        // TODO: fix availability concept
+        prod.available(consume); // running this function because of it's side effects from lazy tables
         if (!test.available(consume)) {
           if (!prod.processAs(consume, new Processor<MRTableShard>() {
             @Override
