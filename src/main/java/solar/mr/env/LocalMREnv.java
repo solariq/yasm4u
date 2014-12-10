@@ -218,16 +218,18 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
 
   @Override
   public void sample(final MRTableShard shard, final Processor<CharSequence> seq) {
-    final Random rng = new FastRandom(shard.crc().hashCode());
-    try {
-      CharSeqTools.processLines(new FileReader(file(shard.path(), shard.isSorted())), new Processor<CharSequence>() {
-        @Override
-        public void process(final CharSequence arg) {
-          seq.process(arg);
-        }
-      });
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    // the table could be empty, so no sample for such a table
+    if (shard.isAvailable()) {
+      try {
+        CharSeqTools.processLines(new FileReader(file(shard.path(), shard.isSorted())), new Processor<CharSequence>() {
+          @Override
+          public void process(final CharSequence arg) {
+            seq.process(arg);
+          }
+        });
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 
