@@ -259,8 +259,18 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   }
 
   @Override
-  public String tempPrefix() {
-    return "temp/";
+  public String getEnvTmp() {
+    return "/temp";
+  }
+
+  @Override
+  public String getEnvRoot() {
+    return "/";
+  }
+
+  @Override
+  public String getEnvName() {
+    return "MR";
   }
 
   private void executeCommand(final List<String> options, final Processor<CharSequence> outputProcessor,

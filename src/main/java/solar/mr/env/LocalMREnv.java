@@ -313,8 +313,8 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
   }
 
   @Override
-  public String tempPrefix() {
-    return "temp/";
+  public String getEnvTmp() {
+    return "temp";
   }
 
   @Override

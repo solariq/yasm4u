@@ -119,8 +119,8 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
           final String subProtocol = uri.getSchemeSpecificPart();
           if (subProtocol.startsWith("mr://")) {
 
-            int offset = subProtocol.startsWith("mr:////") ? 6 : 5; /* Yt's root is // */
-            final String path = env.tempPrefix() + user + subProtocol.substring(offset) + "-" + (Integer.toHexString(rng.nextInt()));
+            int offset = ("mr://" + env.getEnvRoot()).length();
+            final String path = env.getEnvTmp() + user + subProtocol.substring(offset) + "-" + (Integer.toHexString(rng.nextInt()));
             final MRTableShard resolve = new LazyTableShard(path, env);
             set(resource, resolve);
             return (T)resolve;
