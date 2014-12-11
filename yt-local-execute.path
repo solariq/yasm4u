@@ -1,0 +1,18 @@
+diff --git a/src/main/java/solar/mr/env/LocalMREnv.java b/src/main/java/solar/mr/env/LocalMREnv.java
+index 52339a8..b4d8682 100644
+--- a/src/main/java/solar/mr/env/LocalMREnv.java
++++ b/src/main/java/solar/mr/env/LocalMREnv.java
+@@ -75,10 +75,10 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
+         inputNames.add(anIn.path());
+         inputFiles.add(file(anIn.path(), anIn.isSorted()));
+       }
+-      for (MRTableShard anOut : out) {
+-        outputs.add(new FileWriter(file(anOut.path(), false)));
++      for (int i = 3; i < 3 + out.length ; ++i) {
++        outputs.add(new FileWriter(file("/proc/self/fd/" + i, false)));
+         //noinspection ResultOfMethodCallIgnored
+-        file(anOut.path(), true).delete();
++        file("/proc/self/fd/" + 3, true).delete();
+       }
+ 
+       final MROutputImpl mrOutput = new MROutputImpl(outputs.toArray(new Writer[outputs.size()]), new MRErrorsHandler() {
