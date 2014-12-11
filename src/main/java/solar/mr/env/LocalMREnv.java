@@ -238,7 +238,7 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
 
   @Override
   public MRTableShard[] list(String prefix) {
-    File prefixFile = new File(home, prefix);
+    File prefixFile = path(prefix);
     if (!prefixFile.exists()) {
       prefixFile = prefixFile.getParentFile();
       prefix = prefix.substring(prefix.length() + 1 + home.getAbsolutePath().length() - prefixFile.getAbsolutePath().length());
@@ -337,6 +337,20 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
     }
 
     return file;
+  }
+
+  private File path(final String path) {
+    final File node = new File(home, path);
+    if (node.isDirectory()) {
+      return node;
+    }
+    else {
+      final File sorted = new File(home, path + ".txt.sorted");
+      if (sorted.exists())
+        return sorted;
+      else
+        return new File(home, path + ".txt");
+    }
   }
 
   private String crc(File file) {
