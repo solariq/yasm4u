@@ -72,7 +72,7 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
     this.env = env;
     this.user = user;
 
-    myShard = new LazyTableShard(env.getTmp() + "/" + user + "/state/" + id, env);
+    myShard = new LazyTableShard(env.getEnvTmp() + user + "/state/" + id, env);
     env.read(myShard, new Processor<CharSequence>() {
       @Override
       public void process(final CharSequence arg) {
