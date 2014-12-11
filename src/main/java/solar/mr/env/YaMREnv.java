@@ -234,7 +234,7 @@ public class YaMREnv extends BaseEnv implements MREnv {
 
   @Override
   public String getEnvTmp() {
-    return "/temp";
+    return "temp";
   }
 
   @Override
