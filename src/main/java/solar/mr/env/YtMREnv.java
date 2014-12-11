@@ -285,7 +285,7 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
   }
 
   @Override
-  public String tempPrefix() {
+  public String getTmp() {
     return "//tmp/";
   }
 

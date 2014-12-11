@@ -233,18 +233,8 @@ public class YaMREnv extends BaseEnv implements MREnv {
   }
 
   @Override
-  public String getEnvTmp() {
-    return "temp";
-  }
-
-  @Override
-  public String getEnvRoot() {
-    return "/";
-  }
-
-  @Override
-  public String getEnvName() {
-    return "MR";
+  public String getTmp() {
+    return "temp/";
   }
 
   @Override

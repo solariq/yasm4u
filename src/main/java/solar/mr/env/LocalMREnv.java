@@ -313,18 +313,8 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
   }
 
   @Override
-  public String getEnvTmp() {
+  public String getTmp() {
     return "temp/";
-  }
-
-  @Override
-  public String getEnvRoot() {
-    return home();
-  }
-
-  @Override
-  public String getEnvName() {
-    return name();
   }
 
   @Override

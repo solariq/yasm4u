@@ -72,7 +72,7 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
     this.env = env;
     this.user = user;
 
-    myShard = new LazyTableShard(env.getEnvTmp() + user + "/state/" + id, env);
+    myShard = new LazyTableShard(env.getTmp() + user + "/state/" + id, env);
     env.read(myShard, new Processor<CharSequence>() {
       @Override
       public void process(final CharSequence arg) {
@@ -121,7 +121,7 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
           if (subProtocol.startsWith("mr://")) {
 
             int offset = subProtocol.startsWith("mr:////") ? 6 : 5; /* Yt's root is // */
-            final String path = env.getEnvTmp() + user + subProtocol.substring(offset) + "-" + (Integer.toHexString(rng.nextInt()));
+            final String path = env.getTmp() + user + subProtocol.substring(offset) + "-" + (Integer.toHexString(rng.nextInt()));
             final MRTableShard resolve = new LazyTableShard(path, env);
             set(resource, resolve);
             return (T)resolve;

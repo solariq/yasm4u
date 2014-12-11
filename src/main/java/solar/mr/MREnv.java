@@ -49,4 +49,7 @@ public interface MREnv extends WeakListenerHolder<MREnv.ShardAlter> {
       CHANGED, UPDATED
     }
   }
+
+  /* loacation of temporal resources */
+  String getTmp();
 }
