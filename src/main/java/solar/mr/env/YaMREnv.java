@@ -12,6 +12,7 @@ import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.ArrayTools;
+import com.spbsu.commons.util.Holder;
 import com.spbsu.commons.util.JSONTools;
 import com.spbsu.commons.util.cache.CacheStrategy;
 import com.spbsu.commons.util.cache.impl.FixedSizeCache;
@@ -264,13 +265,19 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
       final Process exec = runner.start(options, contents);
       if (exec == null)
         return;
+      final boolean[] outputDone = new boolean[1];
+      final Holder<Exception> exceptionHolder = new Holder<>();
       final Thread outThread = new Thread(new Runnable() {
         @Override
         public void run() {
           try {
             CharSeqTools.processLines(new InputStreamReader(exec.getInputStream(), StreamTools.UTF), outputProcessor);
-          } catch (IOException e) {
-            throw new RuntimeException(e);
+          } catch (Exception e) {
+            exceptionHolder.setValue(e);
+          }
+          synchronized (outputDone) {
+            outputDone[0] = true;
+            outputDone.notify();
           }
         }
       });
@@ -287,10 +294,26 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
       exec.getOutputStream().close();
       outThread.start();
       errThread.start();
+      //noinspection SynchronizationOnLocalVariableOrMethodParameter
+      synchronized (outputDone) {
+        while (!outputDone[0]) {
+          outputDone.wait();
+        }
+      }
+      if (exceptionHolder.filled()) {
+        exec.destroy();
+        outThread.interrupt();
+        errThread.interrupt();
+      }
       exec.waitFor();
       outThread.join();
       errThread.join();
-    } catch (InterruptedException | IOException e) {
+      if (exceptionHolder.filled()) {
+        throw exceptionHolder.getValue();
+      }
+    } catch (Exception e) {
+      if (e instanceof RuntimeException)
+        throw (RuntimeException) e;
       throw new RuntimeException(e);
     }
   }

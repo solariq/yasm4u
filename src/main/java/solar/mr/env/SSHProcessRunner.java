@@ -44,7 +44,7 @@ public class SSHProcessRunner implements ProcessRunner {
       }
 
       process = Runtime.getRuntime().exec("ssh " + proxyHost + " bash -s");
-      new Thread() {
+      final Thread thread = new Thread() {
         @Override
         public void run() {
           try {
@@ -53,7 +53,9 @@ public class SSHProcessRunner implements ProcessRunner {
             e.printStackTrace();
           }
         }
-      }.start();
+      };
+      thread.setDaemon(true);
+      thread.start();
       toProxy = new OutputStreamWriter(process.getOutputStream(), Charset.forName("UTF-8"));
       fromProxy = new LineNumberReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF-8")));
     } catch (IOException e) {
