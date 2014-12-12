@@ -148,7 +148,7 @@ public class YaMREnv extends BaseEnv implements MREnv {
     }
     for (int i = 0; i < result.size(); i++) {
       final MRTableShard shard = result.get(i);
-      shardsCache.put(localPath(shard), shard);
+      shardsCache.put(shard.path(), shard);
     }
 
     return result.toArray(new MRTableShard[result.size()]);
@@ -419,10 +419,10 @@ public class YaMREnv extends BaseEnv implements MREnv {
   @Override
   protected void invoke(ShardAlter e) {
     if (e.type == ShardAlter.AlterType.CHANGED) {
-      shardsCache.clear(localPath(e.shard));
+      shardsCache.clear(e.shard.path());
     }
     else if (e.type == ShardAlter.AlterType.UPDATED) {
-      shardsCache.put(localPath(e.shard), e.shard);
+      shardsCache.put(e.shard.path(), e.shard);
     }
     super.invoke(e);
   }
