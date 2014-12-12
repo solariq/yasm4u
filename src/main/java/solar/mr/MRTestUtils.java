@@ -5,6 +5,7 @@ import com.spbsu.commons.seq.CharSeqTools;
 import org.jetbrains.annotations.NotNull;
 import solar.mr.MREnv;
 import solar.mr.MRTableShard;
+import solar.mr.proc.impl.MRWhiteboardImpl;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -92,7 +93,9 @@ public final class MRTestUtils {
   }
 
   private static MRTableShard pathToShard(MREnv env, String path) {
-    return new MRTableShard(path, env, true, false, "0", 0, 0, 0, System.currentTimeMillis());
+    //return env.resolve(path);
+    return new MRWhiteboardImpl.LazyTableShard(path, env);
+    //return new MRTableShard(path, env, true, false, "0", 0, 0, 0, System.currentTimeMillis());
   }
 
   public static final class Record {
