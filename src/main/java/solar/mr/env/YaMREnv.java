@@ -19,6 +19,7 @@ import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import solar.mr.*;
 import solar.mr.proc.MRState;
+import solar.mr.proc.impl.MRWhiteboardImpl;
 import solar.mr.routines.MRMap;
 import solar.mr.routines.MRRecord;
 import solar.mr.routines.MRReduce;
@@ -138,7 +139,7 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     final List<String> options = defaultOptions();
     options.add("-list");
     options.add("-prefix");
-    options.add(prefix);
+    options.add(localPath(new MRWhiteboardImpl.LazyTableShard(prefix,this)));
     options.add("-jsonoutput");
     final CharSeqBuilder builder = new CharSeqBuilder();
     executeCommand(options, new Processor<CharSequence>() {

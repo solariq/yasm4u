@@ -15,7 +15,7 @@ public class BaseMRTest {
   public static final String TABLE_NAME_PREFIX = "/tmp/yasm4u-tests/";
   public static final String SALT = "_inikifor"; // Don't know how to implement this better yet
 
-  public static final String SCHEMA = "mr:///";
+  public static final String SCHEMA = "mr://";
   public static final String TMP_SCHEMA = "temp:mr:///";
 
   public static final ProcessRunner YAMR_RUNNER = new SSHProcessRunner("batista", "/Berkanavt/mapreduce/bin/mapreduce-dev");
