@@ -6,7 +6,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
-import solar.mr.proc.MRState;
+import solar.mr.MRUtils;
+import solar.mr.proc.State;
 import solar.mr.proc.impl.AnnotatedMRProcess;
 import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
@@ -16,7 +17,7 @@ import solar.mr.routines.MRRecord;
 import java.util.Iterator;
 import java.util.List;
 
-import static solar.mr.MRTestUtils.*;
+import static solar.mr.MRUtils.*;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -41,7 +42,7 @@ public final class MapReduceTest extends BaseMRTest {
 
     private int counter;
 
-    public MapReduce(MRState state) {
+    public MapReduce(State state) {
     }
 
     @MRMapMethod(input = SCHEMA + IN_TABLE_NAME, output = TMP_SCHEMA + TEMP_TABLE_NAME)

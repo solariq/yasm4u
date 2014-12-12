@@ -17,10 +17,10 @@ import solar.mr.env.LocalMREnv;
 import solar.mr.env.ProcessRunner;
 import solar.mr.env.SSHProcessRunner;
 import solar.mr.env.YaMREnv;
-import solar.mr.proc.MRState;
-import solar.mr.proc.MRWhiteboard;
+import solar.mr.proc.State;
+import solar.mr.proc.Whiteboard;
 import solar.mr.proc.impl.AnnotatedMRProcess;
-import solar.mr.proc.impl.MRWhiteboardImpl;
+import solar.mr.proc.impl.WhiteboardImpl;
 import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
 import solar.mr.proc.tags.MRRead;
@@ -41,7 +41,7 @@ public class MRProcTest {
   @SuppressWarnings("UnusedDeclaration")
   @MRProcessClass(goal = "var:result")
   public static class SAPPCounter {
-    public SAPPCounter(MRState state) {}
+    public SAPPCounter(State state) {}
 
     @MRMapMethod(input = "mr:///user_sessions/{var:date,date,yyyyMMdd}", output = {"temp:mr:///counter-map"})
     public void map(final String key, final String sub, final CharSequence value, MROutput output) {
@@ -81,11 +81,11 @@ public class MRProcTest {
   @SuppressWarnings("UnusedDeclaration")
   @MRProcessClass(goal = "var:result")
   public static class FailAtRandomMap {
-    private final MRState state;
+    private final State state;
     private final Random rng = new FastRandom();
     int index = 0;
 
-    public FailAtRandomMap(MRState state) {
+    public FailAtRandomMap(State state) {
       this.state = state;
     }
 
@@ -107,11 +107,11 @@ public class MRProcTest {
   @SuppressWarnings("UnusedDeclaration")
   @MRProcessClass(goal = "var:result")
   public static class FailAtRandomReduce {
-    private final MRState state;
+    private final State state;
     private final Random rng = new FastRandom();
     int index = 0;
 
-    public FailAtRandomReduce(MRState state) {
+    public FailAtRandomReduce(State state) {
       this.state = state;
     }
 
@@ -173,7 +173,7 @@ public class MRProcTest {
   @Test
   public void testResolve() {
     final MREnv env = LocalMREnv.createTemp();
-    final MRWhiteboard wb = new MRWhiteboardImpl(env, "proc", "none");
+    final Whiteboard wb = new WhiteboardImpl(env, "proc", "none");
     wb.set("var:xxx", "yyy");
     final String resolveString = wb.get("{var:xxx}");
     @SuppressWarnings("UnusedDeclaration")
@@ -195,7 +195,7 @@ public class MRProcTest {
   @Test
   public void testResolve2() {
     final MREnv env = LocalMREnv.createTemp();
-    final MRWhiteboard wb = new MRWhiteboardImpl(env, "proc", "none");
+    final Whiteboard wb = new WhiteboardImpl(env, "proc", "none");
 
     wb.set("var:xx1", new Date(2014-1900,7,1));
     wb.set("var:xx2", "sometest/{var:xx1,date,yyyyMMdd}");
@@ -209,7 +209,7 @@ public class MRProcTest {
   public static final class SampleSplitter {
     private static final Random rnd = new Random(0xdeadbeef);
 
-    public SampleSplitter(MRState state){}
+    public SampleSplitter(State state){}
 
     @SuppressWarnings("UnusedDeclaration")
     @MRMapMethod(
@@ -254,8 +254,8 @@ public class MRProcTest {
   public static final class SampleSplitter1 {
     private static final Random rnd = new Random(0xdeadbeef);
 
-    final MRState state;
-    public SampleSplitter1(MRState state){
+    final State state;
+    public SampleSplitter1(State state){
       this.state = state;
       state.get("var:user");
     }
@@ -301,7 +301,7 @@ public class MRProcTest {
       /*"mr:///mobilesearchtest/@(1..10)",
       "mr:///mobilesearchtest/{var:user}/split@(1..10)_tmp"/*/})
   public static final class ArraysTest0 {
-    public ArraysTest0(MRState state){}
+    public ArraysTest0(State state){}
   }
 
   @Test

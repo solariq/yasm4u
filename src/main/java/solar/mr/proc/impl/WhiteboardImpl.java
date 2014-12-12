@@ -18,10 +18,9 @@ import com.spbsu.commons.system.RuntimeUtils;
 import solar.mr.MREnv;
 import solar.mr.MRErrorsHandler;
 import solar.mr.MRTools;
-import solar.mr.env.YaMREnv;
+import solar.mr.proc.State;
+import solar.mr.proc.Whiteboard;
 import solar.mr.routines.MRRecord;
-import solar.mr.proc.MRState;
-import solar.mr.proc.MRWhiteboard;
 import solar.mr.MRTableShard;
 
 /**
@@ -29,7 +28,7 @@ import solar.mr.MRTableShard;
  * Date: 12.10.14
  * Time: 10:23
  */
-public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Action<MREnv.ShardAlter> {
+public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREnv.ShardAlter> {
   private final MREnv env;
   private final String user;
   private final Properties increment = new Properties();
@@ -37,9 +36,9 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
   private final Random rng = new FastRandom();
   private MRErrorsHandler errorsHandler;
   private SerializationRepository<CharSequence> marshaling;
-  private MRWhiteboard connected;
+  private Whiteboard connected;
 
-  public MRWhiteboardImpl(final MREnv env, final String id, final String user) {
+  public WhiteboardImpl(final MREnv env, final String id, final String user) {
     this(env, id, user, new MRErrorsHandler() {
       @Override
       public void error(final String type, final String cause, final MRRecord rec) {
@@ -56,14 +55,14 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
     });
   }
 
-  public MRWhiteboardImpl(final MREnv env, final String id, final String user, MRErrorsHandler handler) {
-    marshaling = new SerializationRepository<>(MRState.SERIALIZATION).customize(
+  public WhiteboardImpl(final MREnv env, final String id, final String user, MRErrorsHandler handler) {
+    marshaling = new SerializationRepository<>(State.SERIALIZATION).customize(
         new OrFilter<>(
-            new AndFilter<TypeConverter>(new ClassFilter<TypeConverter>(Action.class, MRWhiteboard.class), new Filter<TypeConverter>() {
+            new AndFilter<TypeConverter>(new ClassFilter<TypeConverter>(Action.class, Whiteboard.class), new Filter<TypeConverter>() {
       @Override
       public boolean accept(final TypeConverter converter) {
         //noinspection unchecked
-        ((Action<MRWhiteboard>) converter).invoke(MRWhiteboardImpl.this);
+        ((Action<Whiteboard>) converter).invoke(WhiteboardImpl.this);
         return true;
       }
     }), new TrueFilter<TypeConverter>()));
@@ -72,7 +71,7 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
     this.env = env;
     this.user = user;
 
-    myShard = new LazyTableShard(env.getTmp() + user + "/state/" + id, env);
+    myShard = new LazyTableShard(env.tempPrefix() + user + "/state/" + id, env);
     env.read(myShard, new Processor<CharSequence>() {
       @Override
       public void process(final CharSequence arg) {
@@ -121,7 +120,7 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
           if (subProtocol.startsWith("mr://")) {
 
             int offset = subProtocol.startsWith("mr:////") ? 6 : 5; /* Yt's root is // */
-            final String path = env.getTmp() + user + subProtocol.substring(offset) + "-" + (Integer.toHexString(rng.nextInt()));
+            final String path = env.tempPrefix() + user + subProtocol.substring(offset) + "-" + (Integer.toHexString(rng.nextInt()));
             final MRTableShard resolve = new LazyTableShard(path, env);
             set(resource, resolve);
             return (T)resolve;
@@ -168,9 +167,9 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
   }
 
   @Override
-  public MRState snapshot() {
+  public State snapshot() {
     sync();
-    return new MRStateImpl(this);
+    return new StateImpl(this);
   }
 
   private final Set<String> hints = new HashSet<>();
@@ -268,7 +267,7 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
       connected.wipe();
   }
 
-  public void connect(final MRWhiteboard test) {
+  public void connect(final Whiteboard test) {
     connected = test;
   }
 

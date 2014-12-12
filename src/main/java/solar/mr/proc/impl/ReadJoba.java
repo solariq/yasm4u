@@ -3,6 +3,7 @@ package solar.mr.proc.impl;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -10,9 +11,9 @@ import java.util.concurrent.ArrayBlockingQueue;
 
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.seq.CharSeqTools;
-import solar.mr.proc.MRJoba;
-import solar.mr.proc.MRState;
-import solar.mr.proc.MRWhiteboard;
+import solar.mr.proc.Joba;
+import solar.mr.proc.State;
+import solar.mr.proc.Whiteboard;
 import solar.mr.MRTableShard;
 
 /**
@@ -20,7 +21,7 @@ import solar.mr.MRTableShard;
 * Date: 13.10.14
 * Time: 8:04
 */
-class ReadJoba implements MRJoba {
+class ReadJoba implements Joba {
   private final String[] input;
   private final String output;
   private final Method method;
@@ -32,8 +33,18 @@ class ReadJoba implements MRJoba {
   }
 
   @Override
-  public boolean run(final MRWhiteboard wb) {
-    final MRState state = wb.snapshot();
+  public String name() {
+    return toString();
+  }
+
+  @Override
+  public String toString() {
+    return "Read " + Arrays.toString(input) + " -> " + method.toString() + " -> " + output;
+  }
+
+  @Override
+  public boolean run(final Whiteboard wb) {
+    final State state = wb.snapshot();
     final MRTableShard shard = state.get(input[0]);
     final ArrayBlockingQueue<CharSequence> seqs = new ArrayBlockingQueue<>(1000);
     final Thread readTh = new Thread(){
@@ -63,7 +74,7 @@ class ReadJoba implements MRJoba {
     };
     readTh.start();
     try {
-      final Constructor<?> constructor = method.getDeclaringClass().getConstructor(MRState.class);
+      final Constructor<?> constructor = method.getDeclaringClass().getConstructor(State.class);
       wb.set(output, method.invoke(constructor.newInstance(state), new Iterator<CharSequence>() {
         CharSequence next = null;
         boolean needs2wait = true;

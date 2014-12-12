@@ -6,8 +6,8 @@ import solar.mr.MREnv;
 import solar.mr.MRRoutine;
 import solar.mr.MRTableShard;
 import solar.mr.env.MRRunner;
-import solar.mr.proc.MRJoba;
-import solar.mr.proc.MRWhiteboard;
+import solar.mr.proc.Joba;
+import solar.mr.proc.Whiteboard;
 import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
 import solar.mr.proc.tags.MRRead;
@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
 * Date: 12.10.14
 * Time: 13:20
 */
-public class AnnotatedMRProcess extends MRProcessImpl {
+public class AnnotatedMRProcess extends CompositeJobaImpl {
   public AnnotatedMRProcess(final Class<?> processDescription, final MREnv env) {
     this(processDescription, env, new Properties());
   }
@@ -88,7 +88,7 @@ public class AnnotatedMRProcess extends MRProcessImpl {
     return result.toArray(new String[result.size()]);
   }
 
-  private static class RoutineJoba implements MRJoba {
+  private static class RoutineJoba implements Joba {
     private final Method method;
     private String[] in;
     private String[] out;
@@ -102,7 +102,12 @@ public class AnnotatedMRProcess extends MRProcessImpl {
     }
 
     @Override
-    public boolean run(final MRWhiteboard wb) {
+    public String name() {
+      return toString();
+    }
+
+    @Override
+    public boolean run(final Whiteboard wb) {
       final List<MRTableShard> inTables = new ArrayList<>();
       final boolean need2sort = MRReduce.class.isAssignableFrom(routineClass);
       for (int i = 0; i < in.length; i++) {

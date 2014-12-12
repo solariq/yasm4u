@@ -5,7 +5,7 @@ import com.spbsu.commons.func.types.ConversionPack;
 import com.spbsu.commons.func.types.TypeConverter;
 import com.spbsu.commons.seq.CharSeqTools;
 import solar.mr.MRTableShard;
-import solar.mr.proc.MRWhiteboard;
+import solar.mr.proc.Whiteboard;
 
 import java.util.ArrayList;
 
@@ -29,12 +29,12 @@ public class MRTableShardArrayConverter implements ConversionPack<MRTableShard[]
     }
   }
 
-  public static class FromArray implements TypeConverter<CharSequence, MRTableShard[]>, Action<MRWhiteboard> {
+  public static class FromArray implements TypeConverter<CharSequence, MRTableShard[]>, Action<Whiteboard> {
 
     private final MRTableShardConverter.From SINGLE_FROM = new MRTableShardConverter.From();
 
     @Override
-    public void invoke(final MRWhiteboard wb) {
+    public void invoke(final Whiteboard wb) {
       SINGLE_FROM.invoke(wb);
     }
 

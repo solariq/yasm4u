@@ -2,9 +2,9 @@ package yamr;
 
 
 import com.spbsu.commons.seq.CharSeqTools;
+import solar.mr.proc.State;
 import solar.mr.routines.MRMap;
 import solar.mr.MROutput;
-import solar.mr.proc.MRState;
 
 /**
 * User: solar
@@ -12,7 +12,7 @@ import solar.mr.proc.MRState;
 * Time: 23:56
 */
 public class SAPPCounterMap extends MRMap {
-  public SAPPCounterMap(final String[] inputTables, final MROutput output, final MRState state) {
+  public SAPPCounterMap(final String[] inputTables, final MROutput output, final State state) {
     super(inputTables, output, state);
   }
 

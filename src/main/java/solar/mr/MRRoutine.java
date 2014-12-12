@@ -4,7 +4,7 @@ import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqTools;
-import solar.mr.proc.MRState;
+import solar.mr.proc.State;
 import solar.mr.routines.MRRecord;
 
 /**
@@ -14,12 +14,12 @@ import solar.mr.routines.MRRecord;
 */
 public abstract class MRRoutine implements Processor<CharSequence>, Action<MRRecord> {
   protected final MROutput output;
-  private final MRState state;
+  private final State state;
   private final String[] inputTables;
   private int currentInputIndex = 0;
   private boolean interrupted = false;
 
-  public MRRoutine(String[] inputTables, MROutput output, MRState state) {
+  public MRRoutine(String[] inputTables, MROutput output, State state) {
     this.inputTables = inputTables;
     this.output = output;
     this.state = state;
@@ -59,7 +59,7 @@ public abstract class MRRoutine implements Processor<CharSequence>, Action<MRRec
     return inputTables[currentInputIndex];
   }
 
-  public MRState state() {
+  public State state() {
     return state;
   }
 

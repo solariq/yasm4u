@@ -6,7 +6,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
-import solar.mr.proc.MRState;
+import solar.mr.MRUtils;
+import solar.mr.proc.State;
 import solar.mr.proc.impl.AnnotatedMRProcess;
 import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
@@ -41,7 +42,7 @@ public final class SimpleMapTest extends BaseMRTest {
 
     private int counter;
 
-    public Map(MRState state) {
+    public Map(State state) {
     }
 
     @MRMapMethod(input = SCHEMA + IN_TABLE_NAME, output = SCHEMA + OUT_TABLE_NAME)

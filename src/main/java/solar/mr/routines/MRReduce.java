@@ -3,12 +3,11 @@ package solar.mr.routines;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 
 import solar.mr.MROutput;
 import solar.mr.MRRoutine;
-import solar.mr.proc.MRState;
+import solar.mr.proc.State;
 
 /**
 * User: solar
@@ -22,7 +21,7 @@ public abstract class MRReduce extends MRRoutine {
   private final Thread reduceThread;
   private final ArrayBlockingQueue<MRRecord> recordsQueue = new ArrayBlockingQueue<>(MAX_REDUCE_SIZE);
 
-  public MRReduce(String[] inputTables, final MROutput output, MRState state) {
+  public MRReduce(String[] inputTables, final MROutput output, State state) {
     super(inputTables, output, state);
     reduceThread = new Thread(new Runnable() {
       private MRRecord record;

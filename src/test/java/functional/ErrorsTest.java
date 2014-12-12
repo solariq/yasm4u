@@ -6,7 +6,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
-import solar.mr.proc.MRState;
+import solar.mr.MRUtils;
+import solar.mr.proc.State;
 import solar.mr.proc.impl.AnnotatedMRProcess;
 import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
@@ -37,7 +38,7 @@ public final class ErrorsTest extends BaseMRTest {
   @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME)
   public static final class MapError {
 
-    public MapError(MRState state) {
+    public MapError(State state) {
     }
 
     @MRMapMethod(input = SCHEMA + IN_TABLE_NAME, output = SCHEMA + OUT_TABLE_NAME)
@@ -62,7 +63,7 @@ public final class ErrorsTest extends BaseMRTest {
   @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME)
   public static final class MapException {
 
-    public MapException(MRState state) {
+    public MapException(State state) {
     }
 
     @MRMapMethod(input = SCHEMA + IN_TABLE_NAME, output = SCHEMA + OUT_TABLE_NAME)
@@ -87,7 +88,7 @@ public final class ErrorsTest extends BaseMRTest {
   @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME)
   public static final class ReduceError {
 
-    public ReduceError(MRState state) {
+    public ReduceError(State state) {
     }
 
     @MRReduceMethod(input = SCHEMA + IN_TABLE_NAME, output = SCHEMA + OUT_TABLE_NAME)
@@ -112,7 +113,7 @@ public final class ErrorsTest extends BaseMRTest {
   @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME)
   public static final class ReduceException {
 
-    public ReduceException(MRState state) {
+    public ReduceException(State state) {
     }
 
     @MRReduceMethod(input = SCHEMA + IN_TABLE_NAME, output = SCHEMA + OUT_TABLE_NAME)
@@ -137,7 +138,7 @@ public final class ErrorsTest extends BaseMRTest {
   @MRProcessClass(goal = SCHEMA + IN_TABLE_NAME)
   public static final class MapIgnored {
 
-    public MapIgnored(MRState state) {
+    public MapIgnored(State state) {
     }
 
     @MRMapMethod(input = SCHEMA + IN_TABLE_NAME, output = SCHEMA + OUT_TABLE_NAME)

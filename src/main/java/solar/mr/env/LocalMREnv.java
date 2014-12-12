@@ -1,24 +1,21 @@
 package solar.mr.env;
 
-import java.io.*;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.*;
-
-
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.func.impl.WeakListenerHolderImpl;
 import com.spbsu.commons.io.StreamTools;
-import com.spbsu.commons.random.FastRandom;
 import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqReader;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.Pair;
 import org.apache.commons.io.FileUtils;
 import solar.mr.*;
-import solar.mr.proc.MRState;
-import solar.mr.MRTableShard;
+import solar.mr.proc.State;
 import solar.mr.routines.MRRecord;
+
+import java.io.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
 
 /**
  * User: solar
@@ -61,7 +58,7 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
   }
 
   @Override
-  public boolean execute(final Class<? extends MRRoutine> exec, final MRState state, final MRTableShard[] in, final MRTableShard[] out,
+  public boolean execute(final Class<? extends MRRoutine> exec, final State state, final MRTableShard[] in, final MRTableShard[] out,
                          final MRErrorsHandler errorsHandler)
   {
     final List<Writer> outputs = new ArrayList<>();
@@ -70,7 +67,7 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
     final boolean hasErrors[] = new boolean[]{false};
 
     try {
-      final Constructor<? extends MRRoutine> constructor = exec.getConstructor(String[].class, MROutput.class, MRState.class);
+      final Constructor<? extends MRRoutine> constructor = exec.getConstructor(String[].class, MROutput.class, State.class);
       for (MRTableShard anIn : in) {
         inputNames.add(anIn.path());
         inputFiles.add(file(anIn.path(), anIn.isSorted()));
@@ -166,13 +163,17 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
   }
 
   @Override
-  public void write(final MRTableShard shard, final Reader content) {
-    invoke(new ShardAlter(writeFile(content, shard, false, false), ShardAlter.AlterType.UPDATED));
+  public MRTableShard write(final MRTableShard shard, final Reader content) {
+    final MRTableShard updatedShard = writeFile(content, shard, false, false);
+    invoke(new ShardAlter(updatedShard, ShardAlter.AlterType.UPDATED));
+    return updatedShard;
   }
 
   @Override
-  public void append(final MRTableShard shard, final Reader content) {
-    invoke(new ShardAlter(writeFile(content, shard, false, true), ShardAlter.AlterType.UPDATED));
+  public MRTableShard append(final MRTableShard shard, final Reader content) {
+    final MRTableShard updatedShard = writeFile(content, shard, false, true);
+    invoke(new ShardAlter(updatedShard, ShardAlter.AlterType.UPDATED));
+    return updatedShard;
   }
 
   private MRTableShard writeFile(final Reader content, final MRTableShard shard, boolean sorted, final boolean append) {
@@ -200,7 +201,8 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
   }
 
   @Override
-  public void delete(final MRTableShard shard) {
+  public MRTableShard delete(final MRTableShard shard) {
+    final MRTableShard updatedShard = new MRTableShard(shard.path(), this, false, false, "0", 0, 0, 0, System.currentTimeMillis());
     try {
       final File sorted = file(shard.path(), true);
       if (sorted.exists())
@@ -208,11 +210,12 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
       final File unsorted = file(shard.path(), false);
       if (unsorted.exists())
         FileUtils.forceDelete(unsorted);
+      return updatedShard;
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
     finally {
-      invoke(new ShardAlter(new MRTableShard(shard.path(), this, false, false, "0", 0, 0, 0, System.currentTimeMillis()), ShardAlter.AlterType.UPDATED));
+      invoke(new ShardAlter(updatedShard, ShardAlter.AlterType.UPDATED));
     }
   }
 
@@ -261,13 +264,14 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
   }
 
   @Override
-  public void copy(MRTableShard[] from, MRTableShard to, boolean append) {
+  public MRTableShard copy(MRTableShard[] from, MRTableShard to, boolean append) {
     try {
       for(int i = 0; i < from.length; i++) {
         final Reader content = from[i].isAvailable() ? new FileReader(file(from[i].path(), false)) : new CharSeqReader("");
         to = writeFile(content, to, false, append || i > 0);
       }
       invoke(new ShardAlter(to, ShardAlter.AlterType.UPDATED));
+      return to;
     } catch (FileNotFoundException e) {
       throw new RuntimeException(e);
     }
@@ -305,7 +309,7 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
   }
 
   @Override
-  public String getTmp() {
+  public String tempPrefix() {
     return "temp/";
   }
 

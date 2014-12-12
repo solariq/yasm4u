@@ -20,7 +20,7 @@ import com.spbsu.commons.util.Pair;
 import solar.mr.MROutput;
 import solar.mr.MRRoutine;
 import solar.mr.RuntimeInterruptedException;
-import solar.mr.proc.MRState;
+import solar.mr.proc.State;
 import solar.mr.MRTableShard;
 
 /**
@@ -36,7 +36,7 @@ public class MRRunner implements Runnable {
 
   private final Map<AccessType, List<String>> tables = new HashMap<>();
   private final Class<? extends MRRoutine> routine;
-  private final MRState state;
+  private final State state;
   private final Reader in;
   private final boolean profilingMode;
 
@@ -44,7 +44,7 @@ public class MRRunner implements Runnable {
     return routine;
   }
 
-  public MRState state() {
+  public State state() {
     return state;
   }
 
@@ -53,11 +53,6 @@ public class MRRunner implements Runnable {
   }
 
   public MRRunner(char[] className) {
-    this(className, false);
-  }
-
-  public MRRunner(char[] className, boolean profilingMode) {
-    this.profilingMode = profilingMode;
     this.in = new InputStreamReader(System.in, Charset.forName("UTF-8"));
 
     final String mrClass = new String(className);
@@ -76,7 +71,8 @@ public class MRRunner implements Runnable {
           }
         }
       };
-      state = (MRState)is.readObject();
+      state = (State)is.readObject();
+      profilingMode = state.get(ProfilerMREnv.PROFILER_ENABLED_VAR);
       CharSeqTools.processLines(new InputStreamReader(MRRunner.class.getResourceAsStream("/" + TABLES_RESOURCE_NAME), StreamTools.UTF), new Processor<CharSequence>() {
         @Override
         public void process(final CharSequence arg) {
@@ -98,7 +94,7 @@ public class MRRunner implements Runnable {
   public void run() {
     final MROutputImpl out = new MROutputImpl(new OutputStreamWriter(System.out, StreamTools.UTF), tables.get(AccessType.WRITE).size());
     try {
-      final Constructor<? extends MRRoutine> constructor = routine.getConstructor(String[].class, MROutput.class, MRState.class);
+      final Constructor<? extends MRRoutine> constructor = routine.getConstructor(String[].class, MROutput.class, State.class);
       constructor.setAccessible(true);
       final MRRoutine instance = constructor.newInstance(ArrayTools.toArray(tables.get(AccessType.READ)), out, state);
 
@@ -136,6 +132,6 @@ public class MRRunner implements Runnable {
   }
 
   public static void main(String[] args) {
-    new MRRunner(args[0].toCharArray(), Boolean.parseBoolean(args[2].toString())).run();
+    new MRRunner(args[0].toCharArray()).run();
   }
 }

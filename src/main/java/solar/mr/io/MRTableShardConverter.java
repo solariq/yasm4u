@@ -5,7 +5,7 @@ import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.types.ConversionPack;
 import com.spbsu.commons.func.types.TypeConverter;
 import com.spbsu.commons.seq.CharSeqTools;
-import solar.mr.proc.MRWhiteboard;
+import solar.mr.proc.Whiteboard;
 import solar.mr.MRTableShard;
 
 /**
@@ -33,11 +33,11 @@ public class MRTableShardConverter implements ConversionPack<MRTableShard,CharSe
     }
   }
 
-  public static class From implements TypeConverter<CharSequence, MRTableShard>, Action<MRWhiteboard> {
-    private MRWhiteboard wb;
+  public static class From implements TypeConverter<CharSequence, MRTableShard>, Action<Whiteboard> {
+    private Whiteboard wb;
 
     @Override
-    public void invoke(final MRWhiteboard wb) {
+    public void invoke(final Whiteboard wb) {
       this.wb = wb;
     }
 

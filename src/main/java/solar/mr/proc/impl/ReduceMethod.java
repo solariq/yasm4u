@@ -7,10 +7,10 @@ import java.util.Iterator;
 
 import com.spbsu.commons.util.Pair;
 import solar.mr.MROutput;
+import solar.mr.proc.State;
 import solar.mr.routines.MRRecord;
 import solar.mr.routines.MRReduce;
 import solar.mr.env.MRRunner;
-import solar.mr.proc.MRState;
 
 /**
 * User: solar
@@ -21,13 +21,13 @@ public class ReduceMethod extends MRReduce {
   private final Method method;
   private final Object routineObj;
 
-  public ReduceMethod(final String[] input, final MROutput output, final MRState state) {
+  public ReduceMethod(final String[] input, final MROutput output, final State state) {
     super(input, output, state);
     try {
       final Pair<String,String> classMethodPair = state.get(MRRunner.ROUTINES_PROPERTY_NAME);
       assert classMethodPair != null;
       final Class<?> routineClass = Class.forName(classMethodPair.getFirst());
-      routineObj = routineClass.getConstructor(MRState.class).newInstance(state);
+      routineObj = routineClass.getConstructor(State.class).newInstance(state);
       method = routineClass.getMethod(classMethodPair.getSecond(), String.class, Iterator.class, MROutput.class);
     } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
       throw new RuntimeException(e);

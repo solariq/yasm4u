@@ -6,7 +6,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
-import solar.mr.proc.MRState;
+import solar.mr.MRUtils;
+import solar.mr.proc.State;
 import solar.mr.proc.impl.AnnotatedMRProcess;
 import solar.mr.proc.tags.MRProcessClass;
 import solar.mr.proc.tags.MRReduceMethod;
@@ -37,7 +38,7 @@ public final class SimpleReduceTest extends BaseMRTest {
   @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME)
   public static final class Reduce {
 
-    public Reduce(MRState state) {
+    public Reduce(State state) {
     }
 
     @MRReduceMethod(input = SCHEMA + IN_TABLE_NAME, output = SCHEMA + OUT_TABLE_NAME)

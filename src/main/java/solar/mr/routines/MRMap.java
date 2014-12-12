@@ -2,8 +2,7 @@ package solar.mr.routines;
 
 import solar.mr.MROutput;
 import solar.mr.MRRoutine;
-import solar.mr.proc.MRState;
-import solar.mr.routines.MRRecord;
+import solar.mr.proc.State;
 
 /**
 * User: solar
@@ -11,7 +10,7 @@ import solar.mr.routines.MRRecord;
 * Time: 11:19
 */
 public abstract class MRMap extends MRRoutine {
-  public MRMap(final String[] inputTables, final MROutput output, final MRState state) {
+  public MRMap(final String[] inputTables, final MROutput output, final State state) {
     super(inputTables, output, state);
   }
 

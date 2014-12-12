@@ -7,10 +7,8 @@ import java.util.*;
 
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.func.impl.WeakListenerHolderImpl;
 import com.spbsu.commons.io.StreamTools;
@@ -26,9 +24,9 @@ import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import org.apache.commons.lang3.NotImplementedException;
 import solar.mr.*;
-import solar.mr.proc.MRState;
+import solar.mr.proc.State;
 import solar.mr.MRTableShard;
-import solar.mr.proc.impl.MRWhiteboardImpl;
+import solar.mr.proc.impl.WhiteboardImpl;
 import solar.mr.routines.MRMap;
 import solar.mr.routines.MRRecord;
 import solar.mr.routines.MRReduce;
@@ -155,7 +153,7 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   }
 
   @Override
-  public boolean execute(Class<? extends MRRoutine> exec, MRState state, MRTableShard[] in, MRTableShard[] out, MRErrorsHandler errorsHandler) {
+  public boolean execute(Class<? extends MRRoutine> exec, State state, MRTableShard[] in, MRTableShard[] out, MRErrorsHandler errorsHandler) {
     return execute(exec, state, in, out, errorsHandler, EMPTY_PROFILER);
   }
 
@@ -220,7 +218,7 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
 
     index[1] = listSeq.length;
     for (index[0] = 0; index[0] < listSeq.length; index[0] += 1) {
-      result.add(new MRWhiteboardImpl.LazyTableShard(prefix
+      result.add(new WhiteboardImpl.LazyTableShard(prefix
           + (index[0] != index[1] ? "/" + listSeq[index[0]].toString() : ""), this));
     }
     return result.toArray(new MRTableShard[result.size()]);
@@ -245,20 +243,20 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   }
 
   @Override
-  public void copy(MRTableShard[] from, MRTableShard to, boolean append) {
+  public MRTableShard copy(MRTableShard[] from, MRTableShard to, boolean append) {
     final List<String> options = defaultOptions();
-    int startIndex = 0;
     if (!append) {
       delete(to); /* Yt requires that destination shouldn't exists */
       options.add("copy");
       options.add(localPath(from[0]));
-      startIndex = 1;
     }
     if (from.length > 1)
       throw new NotImplementedException("Yt: from several source to one destination!!!");
+    invoke(new ShardAlter(to, ShardAlter.AlterType.CHANGED));
+    return to;
   }
 
-  public void write(final MRTableShard shard, final Reader content) {
+  public MRTableShard write(final MRTableShard shard, final Reader content) {
     createTable(localPath(shard));
     final List<String> options = defaultOptions();
     options.add("write");
@@ -267,11 +265,13 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     options.add(localPath(shard));
     MRTools.CounterInputStream cis = new MRTools.CounterInputStream(new LineNumberReader(content), 0, 0, 0);
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, cis);
-    invoke(new ShardAlter(MRTools.updateTableShard(shard, false, cis), ShardAlter.AlterType.UPDATED));
+    final MRTableShard updatedShard = MRTools.updateTableShard(shard, false, cis);
+    invoke(new ShardAlter(updatedShard, ShardAlter.AlterType.UPDATED));
+    return updatedShard;
   }
 
   @Override
-  public void append(final MRTableShard shard, final Reader content) {
+  public MRTableShard append(final MRTableShard shard, final Reader content) {
     createTable(localPath(shard));
     final List<String> options = defaultOptions();
     options.add("write");
@@ -280,7 +280,9 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     options.add("\"<append=true>" + localPath(shard) + "\"");
     MRTools.CounterInputStream cis = new MRTools.CounterInputStream(new LineNumberReader(content), shard.recordsCount(), shard.keysCount(), shard.length());
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, cis);
-    invoke(new ShardAlter(MRTools.updateTableShard(shard, false, cis), ShardAlter.AlterType.UPDATED));
+    final MRTableShard updatedShard = MRTools.updateTableShard(shard, false, cis);
+    invoke(new ShardAlter(updatedShard, ShardAlter.AlterType.UPDATED));
+    return updatedShard;
   }
 
   private MRTableShard createTable(final String tableName) {
@@ -293,13 +295,14 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     return resolve(tableName);
   }
 
-  public void delete(final MRTableShard table) {
+  public MRTableShard delete(final MRTableShard table) {
     final List<String> options = defaultOptions();
 
     options.add("remove");
     options.add(localPath(table));
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     invoke(new ShardAlter(table));
+    return table;
   }
 
   public MRTableShard sort(final MRTableShard table) {
@@ -307,7 +310,7 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   }
 
   @Override
-  public String getTmp() {
+  public String tempPrefix() {
     return "//tmp/";
   }
 
@@ -364,7 +367,7 @@ public class YtMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   }
 
   @Override
-  public boolean execute(final Class<? extends MRRoutine> routineClass, final MRState state, final MRTableShard[] in, final MRTableShard[] out,
+  public boolean execute(final Class<? extends MRRoutine> routineClass, final State state, final MRTableShard[] in, final MRTableShard[] out,
                          final MRErrorsHandler errorsHandler, Profiler profiler)
   {
     final List<String> options = defaultOptions();

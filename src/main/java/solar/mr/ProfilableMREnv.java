@@ -1,6 +1,6 @@
 package solar.mr;
 
-import solar.mr.proc.MRState;
+import solar.mr.proc.State;
 
 import java.util.Map;
 
@@ -34,7 +34,7 @@ public interface ProfilableMREnv extends MREnv {
 
   };
 
-  boolean execute(Class<? extends MRRoutine> exec, MRState state, MRTableShard[] in, MRTableShard[] out, final MRErrorsHandler errorsHandler, final Profiler profiler);
+  boolean execute(Class<? extends MRRoutine> exec, State state, MRTableShard[] in, MRTableShard[] out, final MRErrorsHandler errorsHandler, final Profiler profiler);
 
   MRTableShard[] resolveAll(String[] strings, final Profiler profiler);
 

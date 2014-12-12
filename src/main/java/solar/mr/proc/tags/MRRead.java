@@ -2,9 +2,6 @@ package solar.mr.proc.tags;
 
 import java.lang.annotation.*;
 
-
-import solar.mr.proc.MRState;
-
 /**
  * User: solar
  * Date: 12.10.14

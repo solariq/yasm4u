@@ -11,8 +11,8 @@ import solar.mr.MRTableShard;
 import solar.mr.env.ProfilerMREnv;
 import solar.mr.env.YaMREnv;
 import solar.mr.env.YtMREnv;
-import solar.mr.proc.MRState;
-import solar.mr.proc.MRWhiteboard;
+import solar.mr.proc.State;
+import solar.mr.proc.Whiteboard;
 
 import java.io.*;
 import java.lang.reflect.Method;
@@ -25,13 +25,13 @@ import java.util.Set;
  * Date: 12.10.14
  * Time: 10:23
  */
-public class MRStateImpl implements MRState, Serializable {
+public class StateImpl implements State, Serializable {
   // never ever use this variable out of impl package!!!!!!!!
   Map<String, Object> state = new HashMap<>();
 
-  public MRStateImpl() {}
+  public StateImpl() {}
 
-  public MRStateImpl(MRState copy) {
+  public StateImpl(State copy) {
     for (final String key : copy.keys()) {
       state.put(key, copy.get(key));
     }
@@ -51,9 +51,8 @@ public class MRStateImpl implements MRState, Serializable {
       if (!processAs(consumes[i], new Processor<MRTableShard>() {
         @Override
         public void process(MRTableShard shard) {
-
-          final MREnv env = shard.container() instanceof ProfilerMREnv? ((ProfilerMREnv) shard.container()).getWrapped(): shard.container();
-          holder[0] &= env instanceof YaMREnv || env instanceof YtMREnv|| shard.isAvailable();
+          final MREnv env = shard.container();
+          holder[0] &= env instanceof YaMREnv || shard.isAvailable();
         }
       }))
         holder[0] &= keys().contains(consumes[i]);
@@ -104,9 +103,9 @@ public class MRStateImpl implements MRState, Serializable {
     for(final String current : keys()) {
       final Object instance = get(current);
       assert instance != null;
-      final SerializationRepository<CharSequence> serialization = MRState.SERIALIZATION;
+      final SerializationRepository<CharSequence> serialization = State.SERIALIZATION;
       final TypeConverter<CharSequence, ?> converter = serialization.base.converter(CharSequence.class, instance.getClass());
-      if (converter != null && !new ClassFilter<TypeConverter>(Action.class, MRWhiteboard.class).accept(converter)) {
+      if (converter != null && !new ClassFilter<TypeConverter>(Action.class, Whiteboard.class).accept(converter)) {
         out.writeBoolean(true);
         out.writeUTF(current);
         out.writeUTF(instance.getClass().getName());
@@ -120,7 +119,7 @@ public class MRStateImpl implements MRState, Serializable {
     while(in.readBoolean()) {
       final String current = in.readUTF();
       final String itemClass = in.readUTF();
-      final Object read = MRState.SERIALIZATION.read(in.readUTF(), Class.forName(itemClass));
+      final Object read = State.SERIALIZATION.read(in.readUTF(), Class.forName(itemClass));
       if (state == null)
         state = new HashMap<>();
       state.put(current, read);

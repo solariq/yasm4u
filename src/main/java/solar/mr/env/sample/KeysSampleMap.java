@@ -2,7 +2,7 @@ package solar.mr.env.sample;
 
 import com.spbsu.commons.random.FastRandom;
 import solar.mr.MROutput;
-import solar.mr.proc.MRState;
+import solar.mr.proc.State;
 import solar.mr.routines.MRMap;
 
 /**
@@ -14,7 +14,7 @@ public class KeysSampleMap extends MRMap {
   private final FastRandom rng = new FastRandom();
   private final double probability;
   @SuppressWarnings("ConstantConditions")
-  public KeysSampleMap(String[] input, MROutput out, MRState state) {
+  public KeysSampleMap(String[] input, MROutput out, State state) {
     super(input, out, state);
     probability = state.<Double>get("var:probability");
   }

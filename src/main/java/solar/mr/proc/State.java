@@ -15,7 +15,7 @@ import com.spbsu.commons.func.types.SerializationRepository;
  * Date: 12.10.14
  * Time: 10:23
  */
-public interface MRState extends Serializable {
+public interface State extends Serializable {
   SerializationRepository<CharSequence> SERIALIZATION = new SerializationRepository<>(
       new SerializationRepository<>(ConversionRepository.ROOT, CharSequence.class),
       "solar.mr.io");

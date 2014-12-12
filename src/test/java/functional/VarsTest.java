@@ -4,7 +4,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
-import solar.mr.proc.MRState;
+import solar.mr.MRUtils;
+import solar.mr.proc.State;
 import solar.mr.proc.impl.AnnotatedMRProcess;
 import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
@@ -42,9 +43,9 @@ public final class VarsTest extends BaseMRTest {
   @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME_1)
   public static final class Map1 {
 
-    private final MRState state;
+    private final State state;
 
-    public Map1(MRState state) {
+    public Map1(State state) {
       this.state = state;
     }
 
@@ -90,7 +91,7 @@ public final class VarsTest extends BaseMRTest {
   @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME_2)
   public static final class Map2 {
 
-    public Map2(MRState state) {
+    public Map2(State state) {
     }
 
     @MRMapMethod(input = SCHEMA + IN_TABLE_NAME_2, output = SCHEMA + OUT_TABLE_NAME_2)
@@ -128,7 +129,7 @@ public final class VarsTest extends BaseMRTest {
   @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME_3)
   public static final class Map3 {
 
-    public Map3(MRState state) {
+    public Map3(State state) {
     }
 
     @MRMapMethod(input = SCHEMA + IN_TABLE_NAME_3, output = SCHEMA + OUT_TABLE_NAME_3)

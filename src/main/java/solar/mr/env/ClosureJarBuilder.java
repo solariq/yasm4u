@@ -12,7 +12,7 @@ import java.util.List;
 import com.spbsu.commons.func.Action;
 import solar.mr.MRRoutine;
 import solar.mr.MRTools;
-import solar.mr.proc.MRState;
+import solar.mr.proc.State;
 import solar.mr.MRTableShard;
 
 /**
@@ -95,7 +95,7 @@ public class ClosureJarBuilder {
     this.routine = routine;
   }
 
-  public void setState(MRState state) {
+  public void setState(State state) {
     try {
       final ByteArrayOutputStream out = new ByteArrayOutputStream();
       final ObjectOutputStream oos = new ObjectOutputStream(out);

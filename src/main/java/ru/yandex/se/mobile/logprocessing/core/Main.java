@@ -7,7 +7,7 @@ import solar.mr.MROutput;
 import solar.mr.env.ProcessRunner;
 import solar.mr.env.SSHProcessRunner;
 import solar.mr.env.YaMREnv;
-import solar.mr.proc.MRState;
+import solar.mr.proc.State;
 import solar.mr.proc.impl.AnnotatedMRProcess;
 import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
@@ -27,9 +27,9 @@ public final class Main {
 
     private static final String TMP_TABLE_URI = "temp:mr:///test-counter";
 
-    private final MRState state;
+    private final State state;
 
-    public SampleCounter(MRState state) {
+    public SampleCounter(State state) {
       this.state = state;
     }
 

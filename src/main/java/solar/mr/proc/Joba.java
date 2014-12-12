@@ -5,8 +5,9 @@ package solar.mr.proc;
  * Date: 12.10.14
  * Time: 10:20
  */
-public interface MRJoba {
-  boolean run(MRWhiteboard wb);
+public interface Joba {
+  String name();
+  boolean run(Whiteboard wb);
 
   String[] consumes();
   String[] produces();

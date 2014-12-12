@@ -5,7 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import solar.mr.proc.MRState;
+import solar.mr.proc.State;
 import solar.mr.proc.impl.AnnotatedMRProcess;
 import solar.mr.proc.tags.MRProcessClass;
 import solar.mr.proc.tags.MRRead;
@@ -50,7 +50,7 @@ public final class SimpleReadWriteTest extends BaseMRTest {
   @MRProcessClass(goal = RESULT)
   public static final class Reader {
 
-    public Reader(MRState state) {
+    public Reader(State state) {
     }
 
     @MRRead(input = SCHEMA + TABLE_NAME, output = RESULT)

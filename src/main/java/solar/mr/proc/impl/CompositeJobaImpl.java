@@ -9,13 +9,12 @@ import solar.mr.MREnv;
 import solar.mr.MRErrorsHandler;
 import solar.mr.MRTableShard;
 import solar.mr.env.LocalMREnv;
-import solar.mr.env.ProfilerMREnv;
 import solar.mr.env.YaMREnv;
 import solar.mr.env.YtMREnv;
-import solar.mr.proc.MRJoba;
-import solar.mr.proc.MRProcess;
-import solar.mr.proc.MRState;
-import solar.mr.proc.MRWhiteboard;
+import solar.mr.proc.CompositeJoba;
+import solar.mr.proc.Joba;
+import solar.mr.proc.State;
+import solar.mr.proc.Whiteboard;
 import solar.mr.routines.MRRecord;
 
 import java.util.*;
@@ -25,19 +24,19 @@ import java.util.*;
  * Date: 12.10.14
  * Time: 13:28
  */
-public class MRProcessImpl implements MRProcess {
+public class CompositeJobaImpl implements CompositeJoba {
   private final String name;
   private final String[] goals;
-  private final List<MRJoba> jobs = new ArrayList<>();
-  private final MRWhiteboardImpl prod;
+  private final List<Joba> jobs = new ArrayList<>();
+  private final WhiteboardImpl prod;
   private final LocalMREnv cache = new LocalMREnv();
-  private final MRWhiteboard test;
+  private final Whiteboard test;
 
-  public MRProcessImpl(MREnv env, final String name, final String[] goals) {
+  public CompositeJobaImpl(MREnv env, final String name, final String[] goals) {
     this.name = name;
     this.goals = goals;
-    prod = new MRWhiteboardImpl(env, name, System.getenv("USER"));
-    test = new MRWhiteboardImpl(cache, name() + "/" + prod.env().name(), System.getenv("USER"), null);
+    prod = new WhiteboardImpl(env, name, System.getenv("USER"));
+    test = new WhiteboardImpl(cache, name() + "/" + prod.env().name(), System.getenv("USER"), null);
     prod.setErrorsHandler(new MRErrorsHandler() {
       @Override
       public void error(final String type, final String cause, MRRecord rec) {
@@ -49,7 +48,7 @@ public class MRProcessImpl implements MRProcess {
         cache.append(cache.resolve(rec.source), new CharSeqReader(rec.toString() + "\n"));
       }
     });
-    final MREnv prodEnv = prod.env() instanceof ProfilerMREnv? ((ProfilerMREnv) prod.env()).getWrapped(): prod.env();
+    final MREnv prodEnv = prod.env();
     if (prodEnv instanceof YaMREnv) {
       ((YaMREnv)prodEnv).getJarBuilder().setLocalEnv(cache);
     }
@@ -65,19 +64,29 @@ public class MRProcessImpl implements MRProcess {
   }
 
   @Override
-  public MRWhiteboard wb() {
+  public boolean run(Whiteboard wb) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public String[] consumes() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public Whiteboard wb() {
     return prod;
   }
 
   @Override
-  public MRState execute() {
-    final List<MRJoba> unmergedJobs = unmergeJobs(this.jobs);
-    final List<MRJoba> plan = generateExecutionPlan(unmergedJobs);
-    for (MRJoba joba : plan) {
-      final MRState prevTestState = test.snapshot();
+  public State execute() {
+    final List<Joba> unmergedJobs = unmergeJobs(this.jobs);
+    final List<Joba> plan = generateExecutionPlan(unmergedJobs);
+    for (Joba joba : plan) {
+      final State prevTestState = test.snapshot();
       if (!joba.run(test))
         throw new RuntimeException("MR job failed in test environment: " + joba.toString());
-      final MRState nextTestState = test.snapshot();
+      final State nextTestState = test.snapshot();
       for(int i = 0; i < joba.produces().length; i++) {
         final String product = joba.produces()[i];
         if (!nextTestState.available(product))
@@ -88,7 +97,7 @@ public class MRProcessImpl implements MRProcess {
         System.out.println("Starting joba " + joba.toString() + " at " + prod.env().name());
         if (!joba.run(prod))
           throw new RuntimeException("MR job failed at production: " + joba.toString());
-        final MRState nextProdState = prod.snapshot();
+        final State nextProdState = prod.snapshot();
         for(int i = 0; i < joba.produces().length; i++) {
           final String product = joba.produces()[i];
           if (!nextProdState.available(product))
@@ -102,31 +111,31 @@ public class MRProcessImpl implements MRProcess {
   }
 
   @Override
-  public String[] goals() {
+  public String[] produces() {
     return Arrays.copyOf(goals, goals.length);
   }
 
-  private static class State {
-    public final List<MRJoba> plan;
+  private static class PossibleState {
+    public final List<Joba> plan;
     public double weight = 0;
 
-    private State(List<MRJoba> plan, double weight) {
+    private PossibleState(List<Joba> plan, double weight) {
       this.plan = plan;
       this.weight = weight;
     }
 
-    public State next(MRJoba job) {
-      final List<MRJoba> nextPlan = new ArrayList<>(plan);
+    public PossibleState next(Joba job) {
+      final List<Joba> nextPlan = new ArrayList<>(plan);
       nextPlan.add(job);
-      return new State(nextPlan, weight + 1);
+      return new PossibleState(nextPlan, weight + 1);
     }
   }
   /** need to implement Dijkstra's algorithm on state machine in case of several alternative routes
    * @param jobs available moves to make plan */
-  private List<MRJoba> generateExecutionPlan(final Collection<MRJoba> jobs) {
+  private List<Joba> generateExecutionPlan(final Collection<Joba> jobs) {
     final String[] universe;
     final TObjectIntMap<String> resourceIndices = new TObjectIntHashMap<>();
-    final Map<BitSet, State> states = new HashMap<>();
+    final Map<BitSet, PossibleState> states = new HashMap<>();
     final TreeSet<BitSet> order = new TreeSet<>(new Comparator<BitSet>() {
       @Override
       public int compare(BitSet o1, BitSet o2) {
@@ -137,7 +146,7 @@ public class MRProcessImpl implements MRProcess {
     { // initialize universe and starting state
       final Set<String> consumes = new HashSet<>();
       final Set<String> produces = new HashSet<>();
-      for (final MRJoba job : jobs) {
+      for (final Joba job : jobs) {
         consumes.addAll(Arrays.asList(job.consumes()));
         produces.addAll(Arrays.asList(job.produces()));
       }
@@ -174,15 +183,15 @@ public class MRProcessImpl implements MRProcess {
         }
         initialState.set(resourceIndices.get(consume), true);
       }
-      states.put(initialState, new State(new ArrayList<MRJoba>(), 0.));
+      states.put(initialState, new PossibleState(new ArrayList<Joba>(), 0.));
       order.add(initialState);
     }
 
     BitSet current;
-    State best = null;
+    PossibleState best = null;
     double bestScore = Double.POSITIVE_INFINITY;
     while ((current = order.pollFirst()) != null) {
-      final State currentState = states.get(current);
+      final PossibleState currentState = states.get(current);
       if (bestScore <= currentState.weight)
         continue;
       boolean isFinal = true;
@@ -196,7 +205,7 @@ public class MRProcessImpl implements MRProcess {
         continue;
       }
 
-      for (final MRJoba job : jobs) {
+      for (final Joba job : jobs) {
         boolean available = true;
         for (final String resource : job.consumes()) {
           if (!current.get(resourceIndices.get(resource)))
@@ -208,8 +217,8 @@ public class MRProcessImpl implements MRProcess {
         for (final String resource : job.produces()) {
           next.set(resourceIndices.get(resource), true);
         }
-        final State nextState = currentState.next(job);
-        final State knownState = states.get(next);
+        final PossibleState nextState = currentState.next(job);
+        final PossibleState knownState = states.get(next);
         if (knownState == null || knownState.weight > nextState.weight) {
           states.put(next, nextState);
           order.add(next);
@@ -221,17 +230,17 @@ public class MRProcessImpl implements MRProcess {
     return best.plan;
   }
 
-  private List<MRJoba> unmergeJobs(final List<MRJoba> jobs) {
+  private List<Joba> unmergeJobs(final List<Joba> jobs) {
     final TObjectIntMap<String> sharded = new TObjectIntHashMap<>();
-    for (final MRJoba joba : jobs) {
+    for (final Joba joba : jobs) {
       for (final String resource : joba.produces()) {
         sharded.adjustOrPutValue(resource, 1, 1);
       }
     }
 
     final Map<String, List<String>> shards = new HashMap<>();
-    final List<MRJoba> result = new ArrayList<>();
-    for (final MRJoba joba : jobs) {
+    final List<Joba> result = new ArrayList<>();
+    for (final Joba joba : jobs) {
       final String[] outputs = new String[joba.produces().length];
       for(int i = 0; i < outputs.length; i++) {
         final String resourceName = joba.produces()[i];
@@ -245,9 +254,14 @@ public class MRProcessImpl implements MRProcess {
         else outputs[i] = resourceName;
       }
       if (!Arrays.equals(outputs, joba.produces())) {
-        result.add(new MRJoba() {
+        result.add(new Joba() {
           @Override
-          public boolean run(MRWhiteboard wb) {
+          public String name() {
+            return toString();
+          }
+
+          @Override
+          public boolean run(Whiteboard wb) {
             synchronized (joba) {
               final Object[] resolved = new Object[outputs.length];
               for(int i = 0; i < outputs.length; i++) {
@@ -292,7 +306,7 @@ public class MRProcessImpl implements MRProcess {
     return result;
   }
 
-  private boolean checkProductsOlderThenResources(MRWhiteboard wb, String[] produces, String[] consumes) {
+  private boolean checkProductsOlderThenResources(Whiteboard wb, String[] produces, String[] consumes) {
     final long[] maxConsumesTime = new long[]{0};
     for(int i = 0; i < consumes.length; i++) {
       wb.processAs(consumes[i], new Processor<MRTableShard>() {
@@ -314,13 +328,13 @@ public class MRProcessImpl implements MRProcess {
     return result[0];
   }
 
-  public void addJob(MRJoba job) {
+  public void addJob(Joba job) {
     jobs.add(job);
   }
 
   @Override
   public <T> T result() {
-    final MRState finalState = execute();
+    final State finalState = execute();
     return finalState.get(goals[0]);
   }
 }

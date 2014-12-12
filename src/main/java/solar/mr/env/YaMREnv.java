@@ -19,8 +19,7 @@ import com.spbsu.commons.util.cache.impl.FixedSizeCache;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import solar.mr.*;
-import solar.mr.proc.MRState;
-import solar.mr.proc.impl.MRWhiteboardImpl;
+import solar.mr.proc.State;
 import solar.mr.routines.MRMap;
 import solar.mr.routines.MRRecord;
 import solar.mr.routines.MRReduce;
@@ -33,7 +32,7 @@ import java.util.*;
  * Date: 19.09.14
  * Time: 17:08
  */
-public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements ProfilableMREnv {
+public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements MREnv {
   private final String user;
 
   private final String master;
@@ -163,7 +162,7 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
           final String name = nameNode.textValue();
           final long size = metaJSON.get("full_size").longValue();
           final String sorted = metaJSON.has("sorted") ? metaJSON.get("sorted").toString() : "0";
-          final long ts = metaJSON.has("mod_time") ? metaJSON.get("mod_time").longValue() : System.currentTimeMillis();
+//          final long ts = metaJSON.has("mod_time") ? metaJSON.get("mod_time").longValue() : System.currentTimeMillis();
           final long recordsCount = metaJSON.has("records") ? metaJSON.get("records").longValue() : 0;
           result.add(new MRTableShard(name, this, true, "1".equals(sorted), "" + size, size, recordsCount/10, recordsCount, System.currentTimeMillis()));
         }
@@ -181,7 +180,7 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   }
 
   @Override
-  public void copy(MRTableShard[] from, MRTableShard to, boolean append) {
+  public MRTableShard copy(MRTableShard[] from, MRTableShard to, boolean append) {
     final List<String> options = defaultOptions();
     long totalLength = append ? to.length() : 0;
     long recordsCount = append ? to.recordsCount() : 0;
@@ -197,29 +196,33 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     options.add(localPath(to));
     options.add("-copy");
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
-    invoke(new ShardAlter(
-            new MRTableShard(localPath(to), to.container(), true, false, "" + totalLength, totalLength, keysCount, recordsCount, System.currentTimeMillis()),
-            ShardAlter.AlterType.UPDATED));
+    final MRTableShard updatedShard = new MRTableShard(localPath(to), to.container(), true, false, "" + totalLength, totalLength, keysCount, recordsCount, System.currentTimeMillis());
+    invoke(new ShardAlter(updatedShard, ShardAlter.AlterType.UPDATED));
+    return updatedShard;
   }
 
-  public void write(final MRTableShard shard, final Reader content) {
+  public MRTableShard write(final MRTableShard shard, final Reader content) {
     final List<String> options = defaultOptions();
     options.add("-write");
     options.add(localPath(shard));
     MRTools.CounterInputStream cis = new MRTools.CounterInputStream(new LineNumberReader(content), 0, 0, 0);
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, cis);
-    invoke(new ShardAlter(MRTools.updateTableShard(shard, false, cis), ShardAlter.AlterType.UPDATED));
+    final MRTableShard updatedShard = MRTools.updateTableShard(shard, false, cis);
+    invoke(new ShardAlter(updatedShard, ShardAlter.AlterType.UPDATED));
+    return updatedShard;
   }
 
   @Override
-  public void append(final MRTableShard shard, final Reader content) {
+  public MRTableShard append(final MRTableShard shard, final Reader content) {
     final List<String> options = defaultOptions();
     options.add("-write");
     options.add("-dstappend");
     options.add(localPath(shard));
     MRTools.CounterInputStream cis = new MRTools.CounterInputStream(new LineNumberReader(content), shard.recordsCount(), shard.keysCount(), shard.length());
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, cis);
-    invoke(new ShardAlter(MRTools.updateTableShard(shard, false, cis), ShardAlter.AlterType.UPDATED));
+    final MRTableShard updatedShard = MRTools.updateTableShard(shard, false, cis);
+    invoke(new ShardAlter(updatedShard, ShardAlter.AlterType.UPDATED));
+    return updatedShard;
   }
 
   private String localPath(MRTableShard shard) {
@@ -229,16 +232,16 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     return shard.path();
   }
 
-  public void delete(final MRTableShard shard) {
+  public MRTableShard delete(final MRTableShard shard) {
     if (!shard.isAvailable())
-      return;
+      return shard;
     final List<String> options = defaultOptions();
     options.add("-drop");
     options.add(localPath(shard));
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
-    invoke(new ShardAlter(
-            new MRTableShard(localPath(shard), shard.container(), false, false, "0", 0, 0, 0, System.currentTimeMillis()),
-            ShardAlter.AlterType.UPDATED));
+    final MRTableShard updatedShard = new MRTableShard(localPath(shard), shard.container(), false, false, "0", 0, 0, 0, System.currentTimeMillis());
+    invoke(new ShardAlter(updatedShard, ShardAlter.AlterType.UPDATED));
+    return updatedShard;
   }
 
   public MRTableShard sort(final MRTableShard shard) {
@@ -255,7 +258,7 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   }
 
   @Override
-  public String getTmp() {
+  public String tempPrefix() {
     return "temp/";
   }
 
@@ -319,13 +322,8 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   }
 
   @Override
-  public MRTableShard resolve(final String path, Profiler profiler) {
-    return resolveAll(new String[]{path}, profiler)[0];
-  }
-
-  @Override
   public MRTableShard resolve(final String path) {
-    return resolveAll(new String[]{path}, EMPTY_PROFILER)[0];
+    return resolveAll(new String[]{path})[0];
   }
 
   private static final Set<String> FAT_DIRECTORIES = new HashSet<>(Arrays.asList(
@@ -360,12 +358,8 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     return result;
   }
 
-  public MRTableShard[] resolveAll(String[] paths) {
-    return resolveAll(paths, EMPTY_PROFILER);
-  }
-
   @Override
-  public MRTableShard[] resolveAll(String[] paths, Profiler profiler) {
+  public MRTableShard[] resolveAll(String[] paths) {
     final MRTableShard[] result = new MRTableShard[paths.length];
     final long time = System.currentTimeMillis();
     final Set<String> unknown = new HashSet<>();
@@ -385,11 +379,7 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     final Set<String> bestPrefixes = findBestPrefixes(unknown);
     for (final String prefix : bestPrefixes) {
       final MRTableShard[] list;
-      if (profiler.isEnabled()) {
-        list = profiler.getPofilableEnv().list(prefix);
-      } else {
-        list = list(prefix);
-      }
+      list = list(prefix);
       for(int i = 0; i < list.length; i++) {
         final MRTableShard shard = list[i];
         final int index = ArrayTools.indexOf(localPath(shard), paths);
@@ -406,9 +396,8 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
   }
 
   @Override
-  public boolean execute(final Class<? extends MRRoutine> routineClass, final MRState state, final MRTableShard[] in, final MRTableShard[] out,
-                         final MRErrorsHandler errorsHandler, final Profiler profiler)
-  {
+  public boolean execute(final Class<? extends MRRoutine> routineClass, final State state,
+                         final MRTableShard[] in, final MRTableShard[] out, final MRErrorsHandler errorsHandler) {
     final List<String> options = defaultOptions();
 
     int inputShardsCount = 0;
@@ -426,10 +415,6 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
     final String errorsShardName = "temp/errors-" + Integer.toHexString(new FastRandom().nextInt());
     options.add("-dst");
     options.add(errorsShardName);
-    if (profiler.isEnabled()) {
-      options.add("-dst");
-      options.add(profiler.getTableName());
-    }
     final File jarFile;
     synchronized (jarBuilder) {
       for(int i = 0; i < in.length; i++) {
@@ -452,7 +437,7 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
       options.add(inputShardsCount > 1 && inputShardsCount < 10 ? "-reducews" : "-reduce");
     } else
       throw new RuntimeException("Unknown MR routine type");
-    options.add("java -XX:-UsePerfData -Xmx1G -Xms1G -jar " + jarFile.getName() + " " + routineClass.getName() + " " + outputShardsCount + " " + profiler.isEnabled());
+    options.add("java -XX:-UsePerfData -Xmx1G -Xms1G -jar " + jarFile.getName() + " " + routineClass.getName() + " " + outputShardsCount);
     final int[] errorsCount = new int[]{0};
     executeCommand(options, defaultOutputProcessor, new Processor<CharSequence>() {
       String table;
@@ -488,23 +473,8 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
         System.err.println(record.key + "\t" + record.sub.replace("\\n", "\n").replace("\\t", "\t"));
       }
     };
-    if (!profiler.isEnabled()) {
-      errorsCount[0] += read(errorsShard, errorProcessor);
-      delete(errorsShard);
-    } else {
-      errorsCount[0] += profiler.getPofilableEnv().read(errorsShard, errorProcessor);
-      profiler.getPofilableEnv().delete(errorsShard);
-      final MRTableShard profilerShard = new MRTableShard(profiler.getTableName(), this, true, false, "0", 0, 0, 0, System.currentTimeMillis());
-      final Map<String, Integer> stat = new HashMap<>();
-      profiler.getPofilableEnv().read(profilerShard, new MRRoutine(new String[]{profiler.getTableName()}, null, state) {
-        @Override
-        public void invoke(final MRRecord record) {
-          stat.put(record.key, Integer.parseInt(record.value.toString()));
-        }
-      });
-      profiler.addExecutionStatistics(stat);
-      profiler.getPofilableEnv().delete(profilerShard);
-    }
+    errorsCount[0] += read(errorsShard, errorProcessor);
+    delete(errorsShard);
 
     if (errorsCount[0] == 0) {
       for(int i = 0; i < out.length; i++) {
@@ -526,11 +496,6 @@ public class YaMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements
 
   public ClosureJarBuilder getJarBuilder() {
     return jarBuilder;
-  }
-
-  @Override
-  public boolean execute(Class<? extends MRRoutine> exec, MRState state, MRTableShard[] in, MRTableShard[] out, MRErrorsHandler errorsHandler) {
-    return execute(exec, state, in, out, errorsHandler, EMPTY_PROFILER);
   }
 
   private final FixedSizeCache<String, MRTableShard> shardsCache = new FixedSizeCache<>(1000, CacheStrategy.Type.LRU);

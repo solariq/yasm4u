@@ -6,7 +6,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
-import solar.mr.proc.MRState;
+import solar.mr.MRUtils;
+import solar.mr.proc.State;
 import solar.mr.proc.impl.AnnotatedMRProcess;
 import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
@@ -47,7 +48,7 @@ public final class MultiMapTest extends BaseMRTest {
   })
   public static final class Map2in1 {
 
-    public Map2in1(MRState state) {
+    public Map2in1(State state) {
     }
 
     @MRMapMethod(input = SCHEMA + IN_TABLE_NAME_1, output = SCHEMA + OUT_TABLE_NAME_1)
@@ -81,7 +82,7 @@ public final class MultiMapTest extends BaseMRTest {
   })
   public static final class Map2in2 {
 
-    public Map2in2(MRState state) {
+    public Map2in2(State state) {
     }
 
     @MRMapMethod(
@@ -127,7 +128,7 @@ public final class MultiMapTest extends BaseMRTest {
   })
   public static final class Map1in2 {
 
-    public Map1in2(MRState state) {
+    public Map1in2(State state) {
     }
 
     @MRMapMethod(

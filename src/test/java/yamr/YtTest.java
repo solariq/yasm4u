@@ -5,9 +5,8 @@ import solar.mr.MREnv;
 import solar.mr.MROutput;
 import solar.mr.env.ProcessRunner;
 import solar.mr.env.SSHProcessRunner;
-import solar.mr.env.YaMREnv;
 import solar.mr.env.YtMREnv;
-import solar.mr.proc.MRState;
+import solar.mr.proc.State;
 import solar.mr.proc.impl.AnnotatedMRProcess;
 import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
@@ -27,10 +26,10 @@ public class YtTest {
   @MRProcessClass(goal = {GOALS})
   public static final class SampleSplitter {
 
-    private final MRState state;
+    private final State state;
     private static final Random rnd = new Random(0xdeadbeef);
 
-    public SampleSplitter(MRState state) {
+    public SampleSplitter(State state) {
       this.state = state;
     }
 

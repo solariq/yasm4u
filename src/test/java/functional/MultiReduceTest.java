@@ -6,7 +6,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
-import solar.mr.proc.MRState;
+import solar.mr.MRUtils;
+import solar.mr.proc.State;
 import solar.mr.proc.impl.AnnotatedMRProcess;
 import solar.mr.proc.tags.MRProcessClass;
 import solar.mr.proc.tags.MRReduceMethod;
@@ -14,7 +15,7 @@ import solar.mr.routines.MRRecord;
 
 import java.util.*;
 
-import static solar.mr.MRTestUtils.*;
+import static solar.mr.MRUtils.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -43,7 +44,7 @@ public final class MultiReduceTest extends BaseMRTest {
   })
   public static final class Reduce2in1 {
 
-    public Reduce2in1(MRState state) {
+    public Reduce2in1(State state) {
     }
 
     @MRReduceMethod(input = SCHEMA + IN_TABLE_NAME_1, output = SCHEMA + OUT_TABLE_NAME_1)
@@ -83,7 +84,7 @@ public final class MultiReduceTest extends BaseMRTest {
   })
   public static final class Reduce2in2 {
 
-    public Reduce2in2(MRState state) {
+    public Reduce2in2(State state) {
     }
 
     @MRReduceMethod(
@@ -132,7 +133,7 @@ public final class MultiReduceTest extends BaseMRTest {
   })
   public static final class Reduce1in2 {
 
-    public Reduce1in2(MRState state) {
+    public Reduce1in2(State state) {
     }
 
     @MRReduceMethod(
