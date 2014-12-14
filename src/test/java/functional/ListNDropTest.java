@@ -21,9 +21,10 @@ public final class ListNDropTest extends BaseMRTest {
   private final MRTestUtils.Record[] RECORDS_2 = createRecords(1);
   private final MRTestUtils.Record[] RECORDS_3 = createRecords(1);
 
-  private static final String IN_TABLE_NAME_1 = TABLE_NAME_PREFIX + "ListTest-1-" + SALT;
-  private static final String IN_TABLE_NAME_2 = TABLE_NAME_PREFIX + "ListTest-2-" + SALT;
-  private static final String IN_TABLE_NAME_3 = TABLE_NAME_PREFIX + "ListTest-3-" + SALT;
+  private static final String IN_TABLE_NAME_PREFIX = TABLE_NAME_PREFIX + "list/";
+  private static final String IN_TABLE_NAME_1 = IN_TABLE_NAME_PREFIX + "ListTest-1-" + SALT;
+  private static final String IN_TABLE_NAME_2 = IN_TABLE_NAME_PREFIX + "ListTest-2-" + SALT;
+  private static final String IN_TABLE_NAME_3 = IN_TABLE_NAME_PREFIX + "ListTest-3-" + SALT;
 
   @Before
   public void createTable() {
@@ -34,16 +35,16 @@ public final class ListNDropTest extends BaseMRTest {
 
   @Test
   public void listShouldWork() {
-    MRTableShard[] result = env.list(TABLE_NAME_PREFIX);
+    MRTableShard[] result = env.list(IN_TABLE_NAME_PREFIX);
     assertEquals(3, result.length);
   }
 
   @Test
   public void dropShouldWork() {
-    MRTableShard[] result = env.list(TABLE_NAME_PREFIX);
+    MRTableShard[] result = env.list(IN_TABLE_NAME_PREFIX);
     assertEquals(3, result.length);
     dropMRTable(env, IN_TABLE_NAME_1);
-    result = env.list(TABLE_NAME_PREFIX);
+    result = env.list(IN_TABLE_NAME_PREFIX);
     assertEquals(2, result.length);
   }
 
@@ -52,6 +53,7 @@ public final class ListNDropTest extends BaseMRTest {
     dropMRTable(env, IN_TABLE_NAME_1);
     dropMRTable(env, IN_TABLE_NAME_2);
     dropMRTable(env, IN_TABLE_NAME_3);
+    dropMRTable(env, IN_TABLE_NAME_PREFIX);
   }
 
 }
