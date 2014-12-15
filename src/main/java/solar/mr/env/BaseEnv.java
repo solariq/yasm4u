@@ -4,7 +4,10 @@ import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.func.impl.WeakListenerHolderImpl;
 import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.seq.CharSeqTools;
+import com.spbsu.commons.util.cache.CacheStrategy;
+import com.spbsu.commons.util.cache.impl.FixedSizeCache;
 import solar.mr.MREnv;
+import solar.mr.MRTableShard;
 import solar.mr.ProfilableMREnv;
 
 import java.io.IOException;
@@ -90,4 +93,19 @@ public abstract class BaseEnv extends WeakListenerHolderImpl<MREnv.ShardAlter> {
       throw new RuntimeException(e);
     }
   }
+
+
+  protected final FixedSizeCache<String, MRTableShard> shardsCache = new FixedSizeCache<>(1000, CacheStrategy.Type.LRU);
+
+  @Override
+  protected void invoke(MREnv.ShardAlter e) {
+    if (e.type == MREnv.ShardAlter.AlterType.CHANGED) {
+      shardsCache.clear(e.shard.path());
+    }
+    else if (e.type == MREnv.ShardAlter.AlterType.UPDATED) {
+      shardsCache.put(e.shard.path(), e.shard);
+    }
+    super.invoke(e);
+  }
+
 }

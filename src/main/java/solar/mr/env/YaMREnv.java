@@ -413,17 +413,4 @@ public class YaMREnv extends BaseEnv implements MREnv {
   public ClosureJarBuilder getJarBuilder() {
     return jarBuilder;
   }
-
-  private final FixedSizeCache<String, MRTableShard> shardsCache = new FixedSizeCache<>(1000, CacheStrategy.Type.LRU);
-
-  @Override
-  protected void invoke(ShardAlter e) {
-    if (e.type == ShardAlter.AlterType.CHANGED) {
-      shardsCache.clear(e.shard.path());
-    }
-    else if (e.type == ShardAlter.AlterType.UPDATED) {
-      shardsCache.put(e.shard.path(), e.shard);
-    }
-    super.invoke(e);
-  }
 }

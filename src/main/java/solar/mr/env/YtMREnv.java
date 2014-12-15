@@ -38,6 +38,7 @@ import solar.mr.routines.MRReduce;
  */
 public class YtMREnv extends BaseEnv implements ProfilableMREnv {
 
+  private final Random rng = new FastRandom();
   public YtMREnv(final ProcessRunner runner, final String tag, final String master) {
     super(runner, tag, master);
   }
@@ -63,8 +64,8 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
   public int read(MRTableShard shard, final Processor<CharSequence> linesProcessor) {
     final int[] recordsCount = new int[]{0};
 
-    if (!shard.isAvailable())
-      return 0;
+    //if (!shard.isAvailable())
+    //  return 0;
 
     final List<String> options = defaultOptions();
     options.add("read");
@@ -96,7 +97,7 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
   }
 
   private static final Set<String> FAT_DIRECTORIES = new HashSet<>(Arrays.asList(
-      "//userdata/user_sessions"
+      "/userdata/user_sessions"
       //"redir_log",
       //"access_log",
       //"reqans_log"
@@ -135,7 +136,22 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
   @Override
   public MRTableShard[] resolveAll(String[] paths, final Profiler profiler) {
     final MRTableShard[] result = new MRTableShard[paths.length];
-    final Set<String> bestPrefixes = findBestPrefixes(new HashSet<>(Arrays.asList(paths)));
+    final long time = System.currentTimeMillis();
+    final Set<String> unknown = new HashSet<>();
+    for(int i = 0; i < paths.length; i++) {
+      final String path = paths[i];
+      final MRTableShard shard = shardsCache.get(path);
+      if (shard != null) {
+        if (time - shard.metaTS() < MRTools.FRESHNESS_TIMEOUT) {
+          result[i] = shard;
+          continue;
+        }
+        shardsCache.clear(path);
+      }
+      unknown.add(path);
+    }
+
+    final Set<String> bestPrefixes = findBestPrefixes(unknown);
     for (final String prefix : bestPrefixes) {
       final MRTableShard[] list = list(prefix);
       for(int i = 0; i < list.length; i++) {
@@ -148,6 +164,7 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
     for(int i = 0; i < result.length; i++) {
       if (result[i] == null)
         result[i] = new MRTableShard(paths[i], this, false, false, "0", 0, 0, 0, System.currentTimeMillis());
+      shardsCache.put(paths[i], result[i]);
       invoke(new ShardAlter(result[i], ShardAlter.AlterType.UPDATED));
     }
     return result;
@@ -162,7 +179,8 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
 
     final List<String> optionEntity = new ArrayList<>();
     optionEntity.addAll(defaultOptionsEntity);
-    optionEntity.add(prefix + "/@");
+    final String path = localPath(new MRWhiteboardImpl.LazyTableShard(prefix, this));
+    optionEntity.add(path + (prefix.endsWith("/")? "" : "/") + "@");
     final AppenderProcessor getBuilder = new AppenderProcessor();
     executeCommand(optionEntity, getBuilder, defaultErrorsProcessor, null);
 
@@ -171,7 +189,8 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
       JsonParser getParser = JSONTools.parseJSON(getBuilder.sequence());
       extractTableFromJson(prefix, result, getParser);
       if (!result.isEmpty()) {
-        return result.toArray(new MRTableShard[1]);
+        shardsCache.put(prefix, result.get(0));
+        return new MRTableShard[]{result.get(0)};
       }
     } catch (IOException| ParseException e) {
       return new MRTableShard[0];
@@ -179,7 +198,8 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
 
     final List<String> options = defaultOptions();
     options.add("list");
-    options.add(prefix);
+    final String nodePath = path.substring(0, path.length() - 1);
+    options.add(nodePath);
     final AppenderProcessor builder = new AppenderProcessor(" ");
     executeCommand(options, builder, defaultErrorsProcessor, null);
 
@@ -193,7 +213,7 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
 
     index[1] = listSeq.length;
     for (index[0] = 0; index[0] < listSeq.length; index[0] += 1) {
-      result.add(new WhiteboardImpl.LazyTableShard(prefix
+      result.add(new MRWhiteboardImpl.LazyTableShard(nodePath.substring(1) /* this is in Yt form prefixed with "//" */
           + (index[0] != index[1] ? "/" + listSeq[index[0]].toString() : ""), this));
     }
     return result.toArray(new MRTableShard[result.size()]);
@@ -218,20 +238,33 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
   }
 
   @Override
-  public MRTableShard copy(MRTableShard[] from, MRTableShard to, boolean append) {
-    final List<String> options = defaultOptions();
+  public void copy(MRTableShard[] from, MRTableShard to, boolean append) {
+    int startIndex = 0;
     if (!append) {
       delete(to); /* Yt requires that destination shouldn't exists */
+      final List<String> options = defaultOptions();
       options.add("copy");
       options.add(localPath(from[0]));
+      executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
+      startIndex = 1;
     }
-    if (from.length > 1)
-      throw new NotImplementedException("Yt: from several source to one destination!!!");
+
+    if (from.length > 1) {
+      for (int i = startIndex; i < from.length; ++i) {
+        final List<String> options = defaultOptions();
+        options.add("merge");
+        options.add("--src");
+        options.add(localPath(from[i]));
+        options.add("--dst");
+        options.add(localPath(to));
+        //options.add("--mode sorted");
+        executeCommand(options,defaultOutputProcessor, defaultErrorsProcessor, null);
+      }
+    }
     invoke(new ShardAlter(to, ShardAlter.AlterType.CHANGED));
-    return to;
   }
 
-  public MRTableShard write(final MRTableShard shard, final Reader content) {
+  public  MRTableShard write(final MRTableShard shard, final Reader content) {
     createTable(localPath(shard));
     final List<String> options = defaultOptions();
     options.add("write");
@@ -260,14 +293,18 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
     return updatedShard;
   }
 
-  private MRTableShard createTable(final String tableName) {
+  private MRTableShard createTable(final MRTableShard shard) {
+    final MRTableShard sh = shardsCache.get(shard.path());
+    if (sh != null)
+      return sh;
+
     final List<String> options = defaultOptions();
     options.add("create");
     options.add("-r");
     options.add("table");
-    options.add(tableName);
+    options.add(localPath(shard));
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
-    return resolve(tableName);
+    return resolve(shard.path());
   }
 
   public MRTableShard delete(final MRTableShard table) {
@@ -277,16 +314,26 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
     options.add(localPath(table));
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     invoke(new ShardAlter(table));
-    return table;
+    shardsCache.clear(table.path());
   }
 
   public MRTableShard sort(final MRTableShard table) {
-    throw new NotImplementedException("YtMREnv::sort");
+    if (table.isSorted())
+      return table;
+    final List<String> options = defaultOptions();
+    options.add("sort");
+    options.add("--src");
+    options.add(localPath(table));
+    options.add("--dst");
+    options.add(localPath(table));
+    options.add("--sort_by key");
+    invoke(new ShardAlter(table, ShardAlter.AlterType.CHANGED));
+    return table;
   }
 
   @Override
   public String getTmp() {
-    return "//tmp/";
+    return "/tmp/";
   }
 
   @Override
@@ -318,13 +365,13 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
       throw new RuntimeException("Unknown MR routine type");
 
     options.add("--format");
-    options.add("\"<has_subkey=true>yamr\"");
+    options.add("\"<has_subkey=true;enable_table_index=true>yamr\"");
 
     final MRTableShard[] realOut = new MRTableShard[out.length];
     for(int i = 0; i < out.length; i++) {
       options.add("--dst");
       options.add(localPath(out[i]));
-      realOut[i] = createTable(localPath(out[i])); /* lazy materialization */
+      realOut[i] = createTable(out[i]); /* lazy materialization */
     }
 
     final File jarFile;
@@ -343,16 +390,18 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
     }
 
     options.add("--memory-limit 2000");
-    options.add("'/usr/local/java8/bin/java -XX:-UsePerfData -Xmx1G -Xms1G -jar " + jarFile.getName() + " " + routineClass.getName() + " " + out.length + "" + profiler.isEnabled() + "'");
+    options.add("'/usr/local/java8/bin/java -XX:-UsePerfData -Xmx1G -Xms1G -jar ");
+    options.add(jarFile.getName()); /* please do not append to the rest of the command */
+    options.add(" " + routineClass.getName() + " " + out.length + " " + profiler.isEnabled() + "'");
     for(int i = 0; i < in.length; i++) {
       options.add("--src");
       options.add(localPath(in[i]));
     }
 
-    final String errorsShardName = "//tmp/errors-" + Integer.toHexString(new FastRandom().nextInt());
-    final MRTableShard errorsShard = createTable(errorsShardName);
+    final String errorsShardName = "/tmp/errors-" + Integer.toHexString(new FastRandom().nextInt());
+    final MRTableShard errorsShard = createTable(new MRWhiteboardImpl.LazyTableShard(errorsShardName, this));
     options.add("--dst");
-    options.add(errorsShardName);
+    options.add(localPath(errorsShard));
 
     final int[] errorsCount = new int[]{0};
     executeCommand(options, defaultOutputProcessor, new Processor<CharSequence>() {
@@ -423,23 +472,6 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
     return CharSeqTools.parseBoolean(builder.build());
   }
 
-  boolean isShardPathSorted(final String path) {
-    String shardName = path;
-    final List<String> options = defaultOptions();
-    options.add("get");
-    options.add(shardName + "/@sorted");
-    final CharSeqBuilder builder = new CharSeqBuilder();
-    executeCommand(options, new Processor<CharSequence>() {
-      @Override
-      public void process(final CharSequence arg) {
-        builder.append(arg);
-      }
-    }, defaultErrorsProcessor, null);
-
-    CharSeq jsonBool = builder.build();
-    return CharSeqTools.parseBoolean(jsonBool.subSequence(1, jsonBool.length() - 1));
-  }
-
   private final FixedSizeCache<String, MRTableShard> shardsCache = new FixedSizeCache<>(1000, CacheStrategy.Type.LRU);
 
   @Override
@@ -507,7 +539,7 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
   }
 
   private String localPath(MRTableShard shard) {
-    return shard.path();
+    return "/" + shard.path();
   }
 
   private static class AppenderProcessor implements Processor<CharSequence> {
