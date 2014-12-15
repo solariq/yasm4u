@@ -35,7 +35,7 @@ public class BaseMRTest {
         {LocalMREnv.createTemp()},
         {new YaMREnv(YAMR_RUNNER, YAMR_USER, YAMR_CLUSTER)},
         //{new ProfilerMREnv(new YaMREnv(YAMR_RUNNER, YAMR_USER, YAMR_CLUSTER))},
-        {new YtMREnv(YTMR_RUNNER, YTMR_USER, YTMR_CLUSTER)}
+        //{new YtMREnv(YTMR_RUNNER, YTMR_USER, YTMR_CLUSTER)}
     });
   }
 
