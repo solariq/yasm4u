@@ -244,7 +244,7 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
       prefix = prefix.substring(prefix.length() + 1 + home.getAbsolutePath().length() - prefixFile.getAbsolutePath().length());
     }
     final String finalPrefix = prefix;
-    final List<MRTableShard> result = new ArrayList<>();
+    final HashMap<String, MRTableShard> result = new HashMap<>();
     final File finalPrefixFile = prefixFile;
     StreamTools.visitFiles(prefixFile, new Processor<String>() {
       @Override
@@ -253,14 +253,18 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
 
         if (path.endsWith(".txt")) {
           final long[] recordsAndKeys = countRecordsAndKeys(file);
-          result.add(new MRTableShard(finalPrefix + path.substring(0, path.indexOf(".txt")), LocalMREnv.this, true, false, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], System.currentTimeMillis()));
+          final String shardPath = finalPrefix + path.substring(0, path.indexOf(".txt"));
+          if (!result.containsKey(shardPath)) {
+            result.put(shardPath, new MRTableShard(shardPath, LocalMREnv.this, true, false, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], System.currentTimeMillis()));
+          }
         } else if (path.endsWith(".txt.sorted")) {
           final long[] recordsAndKeys = countRecordsAndKeys(file);
-          result.add(new MRTableShard(finalPrefix + path.substring(0, path.indexOf(".txt.sorted")), LocalMREnv.this, true, true, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], System.currentTimeMillis()));
+          final String shardPath = finalPrefix + path.substring(0, path.indexOf(".txt.sorted"));
+          result.put(shardPath, new MRTableShard(shardPath, LocalMREnv.this, true, true, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], System.currentTimeMillis()));
         }
       }
     });
-    return result.toArray(new MRTableShard[result.size()]);
+    return result.values().toArray(new MRTableShard[result.size()]);
   }
 
   @Override
