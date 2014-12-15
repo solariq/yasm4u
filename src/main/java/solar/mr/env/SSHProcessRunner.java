@@ -93,7 +93,7 @@ public class SSHProcessRunner implements ProcessRunner {
           switch (opt) {
             case "-map":
             case "-reduce":
-            case "-reducews":
+            case "-reducews": {
               command.append(" ").append(opt);
               String routine = options.get(index++);
               for (int i = 0; i < remoteResources.size(); i++) {
@@ -102,6 +102,7 @@ public class SSHProcessRunner implements ProcessRunner {
                 routine = routine.replace(localFile.getName(), remoteFile.getName());
               }
               command.append(" \'").append(routine).append("\'");
+            }
               break;
             case "-file":
             case "--local-file":
@@ -109,6 +110,21 @@ public class SSHProcessRunner implements ProcessRunner {
               final File localResource = new File(options.get(index++));
               localResources.add(localResource);
               command.append(" ").append(transferFile(localResource.toURI().toURL(), ".jar", remoteResources));
+              if (opt.equals("-file"))
+                break;
+              else {
+                /* in Yt --local-file appears after map/reduce */
+                for (int i = 0; i < remoteResources.size(); i++) {
+                  File remoteFile = remoteResources.get(i);
+                  File localFile = localResources.get(i);
+                  int optAbsoluteIndex = options.indexOf(localFile.getAbsolutePath());
+                  options.remove(optAbsoluteIndex);
+                  options.add(optAbsoluteIndex, remoteFile.getAbsolutePath());
+                  int optIndex = options.indexOf(localFile.getName());
+                  options.remove(optIndex);
+                  options.add(optIndex, remoteFile.getName());
+                }
+              }
               break;
             default:
               command.append(" ").append(opt);
