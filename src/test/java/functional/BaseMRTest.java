@@ -12,8 +12,12 @@ import java.util.Collection;
  */
 public class BaseMRTest {
 
-  public static final String TABLE_NAME_PREFIX = "{var:tmp}/yasm4u-tests/";
-  public static final String SALT = "_{var:user}"; // Don't know how to implement this better yet
+  /** 
+   * please, dont change TABLE_NAME_PREFIX, Yt has several places where mobilesearch user  has rw access 
+   * that not a problem in YaMR. 
+   */
+  public static final String TABLE_NAME_PREFIX = "/home/mobilesearch/yasm4u-tests/";
+  public static final String SALT = "_test"; // Don't know how to implement this better yet
 
   public static final String SCHEMA = "mr://";
   public static final String TMP_SCHEMA = "temp:mr://";
