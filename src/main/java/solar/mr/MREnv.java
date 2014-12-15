@@ -28,9 +28,6 @@ public interface MREnv extends WeakListenerHolder<MREnv.ShardAlter> {
   MRTableShard delete(MRTableShard shard);
   MRTableShard sort(MRTableShard shard);
 
-  /* loacation of temporal resources */
-  String tempPrefix();
-
   String name();
 
   class ShardAlter {

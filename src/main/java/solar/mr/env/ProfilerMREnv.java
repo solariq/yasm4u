@@ -49,8 +49,8 @@ public final class ProfilerMREnv implements MREnv {
     wb.wipe();
   }
 
-  public String tempPrefix() {
-    return wrapped.tempPrefix();
+  public String getTmp() {
+    return wrapped.getTmp();
   }
 
   @Override

@@ -179,7 +179,7 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
 
     final List<String> optionEntity = new ArrayList<>();
     optionEntity.addAll(defaultOptionsEntity);
-    final String path = localPath(new MRWhiteboardImpl.LazyTableShard(prefix, this));
+    final String path = localPath(new WhiteboardImpl.LazyTableShard(prefix, this));
     optionEntity.add(path + (prefix.endsWith("/")? "" : "/") + "@");
     final AppenderProcessor getBuilder = new AppenderProcessor();
     executeCommand(optionEntity, getBuilder, defaultErrorsProcessor, null);
@@ -213,7 +213,7 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
 
     index[1] = listSeq.length;
     for (index[0] = 0; index[0] < listSeq.length; index[0] += 1) {
-      result.add(new MRWhiteboardImpl.LazyTableShard(nodePath.substring(1) /* this is in Yt form prefixed with "//" */
+      result.add(new WhiteboardImpl.LazyTableShard(nodePath.substring(1) /* this is in Yt form prefixed with "//" */
           + (index[0] != index[1] ? "/" + listSeq[index[0]].toString() : ""), this));
     }
     return result.toArray(new MRTableShard[result.size()]);
@@ -238,7 +238,7 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
   }
 
   @Override
-  public void copy(MRTableShard[] from, MRTableShard to, boolean append) {
+  public MRTableShard copy(MRTableShard[] from, MRTableShard to, boolean append) {
     int startIndex = 0;
     if (!append) {
       delete(to); /* Yt requires that destination shouldn't exists */
@@ -262,10 +262,11 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
       }
     }
     invoke(new ShardAlter(to, ShardAlter.AlterType.CHANGED));
+    return to;
   }
 
-  public  MRTableShard write(final MRTableShard shard, final Reader content) {
-    createTable(localPath(shard));
+  public MRTableShard write(final MRTableShard shard, final Reader content) {
+    createTable(shard);
     final List<String> options = defaultOptions();
     options.add("write");
     options.add("--format");
@@ -280,7 +281,7 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
 
   @Override
   public MRTableShard append(final MRTableShard shard, final Reader content) {
-    createTable(localPath(shard));
+    createTable(shard);
     final List<String> options = defaultOptions();
     options.add("write");
     options.add("--format");
@@ -315,6 +316,7 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     invoke(new ShardAlter(table));
     shardsCache.clear(table.path());
+    return table;
   }
 
   public MRTableShard sort(final MRTableShard table) {
@@ -399,7 +401,7 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
     }
 
     final String errorsShardName = "/tmp/errors-" + Integer.toHexString(new FastRandom().nextInt());
-    final MRTableShard errorsShard = createTable(new MRWhiteboardImpl.LazyTableShard(errorsShardName, this));
+    final MRTableShard errorsShard = createTable(new WhiteboardImpl.LazyTableShard(errorsShardName, this));
     options.add("--dst");
     options.add(localPath(errorsShard));
 

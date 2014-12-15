@@ -20,8 +20,8 @@ import solar.mr.MRErrorsHandler;
 import solar.mr.MRTools;
 import solar.mr.env.YaMREnv;
 import solar.mr.routines.MRRecord;
-import solar.mr.proc.MRState;
-import solar.mr.proc.MRWhiteboard;
+import solar.mr.proc.State;
+import solar.mr.proc.Whiteboard;
 import solar.mr.MRTableShard;
 
 /**
@@ -29,7 +29,7 @@ import solar.mr.MRTableShard;
  * Date: 12.10.14
  * Time: 10:23
  */
-public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Action<MREnv.ShardAlter> {
+public class MRWhiteboardImpl extends StateImpl implements Whiteboard, Action<MREnv.ShardAlter> {
   private final MREnv env;
   private final String user;
   private final Properties increment = new Properties();
@@ -37,7 +37,7 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
   private final Random rng = new FastRandom();
   private MRErrorsHandler errorsHandler;
   private SerializationRepository<CharSequence> marshaling;
-  private MRWhiteboard connected;
+  private Whiteboard connected;
 
   public MRWhiteboardImpl(final MREnv env, final String id, final String user) {
     this(env, id, user, new MRErrorsHandler() {
@@ -57,13 +57,13 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
   }
 
   public MRWhiteboardImpl(final MREnv env, final String id, final String user, MRErrorsHandler handler) {
-    marshaling = new SerializationRepository<>(MRState.SERIALIZATION).customize(
+    marshaling = new SerializationRepository<>(State.SERIALIZATION).customize(
         new OrFilter<>(
-            new AndFilter<TypeConverter>(new ClassFilter<TypeConverter>(Action.class, MRWhiteboard.class), new Filter<TypeConverter>() {
+            new AndFilter<TypeConverter>(new ClassFilter<TypeConverter>(Action.class, Whiteboard.class), new Filter<TypeConverter>() {
       @Override
       public boolean accept(final TypeConverter converter) {
         //noinspection unchecked
-        ((Action<MRWhiteboard>) converter).invoke(MRWhiteboardImpl.this);
+        ((Action<Whiteboard>) converter).invoke(MRWhiteboardImpl.this);
         return true;
       }
     }), new TrueFilter<TypeConverter>()));
@@ -167,9 +167,9 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
   }
 
   @Override
-  public MRState snapshot() {
+  public State snapshot() {
     sync();
-    return new MRStateImpl(this);
+    return new StateImpl(this);
   }
 
   private final Set<String> hints = new HashSet<>();
@@ -267,7 +267,7 @@ public class MRWhiteboardImpl extends MRStateImpl implements MRWhiteboard, Actio
       connected.wipe();
   }
 
-  public void connect(final MRWhiteboard test) {
+  public void connect(final Whiteboard test) {
     connected = test;
   }
 
