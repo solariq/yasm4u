@@ -362,7 +362,9 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
       options.add("map");
     else if (MRReduce.class.isAssignableFrom(routineClass)) {
       //options.add(inputShardsCount > 1 && inputShardsCount < 10 ? "-reducews" : "-reduce");
-      options.add("reduce");
+      options.add("map-reduce");
+      options.add("--reduce-by key");
+      options.add("--sort-by key");
     } else
       throw new RuntimeException("Unknown MR routine type");
 
@@ -387,11 +389,21 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
       jarBuilder.setRoutine(routineClass);
       jarBuilder.setState(state);
       jarFile = jarBuilder.build();
-      options.add("--local-file");
+      if (MRReduce.class.isAssignableFrom(routineClass))
+        options.add("--reduce-local-file");
+      else
+        options.add("--local-file");
       options.add(jarFile.getAbsolutePath());
     }
 
-    options.add("--memory-limit 2000");
+    if (MRReduce.class.isAssignableFrom(routineClass)) {
+      options.add("--reduce-memory-limit 2000");
+      options.add("--reducer");
+    }
+    else {
+      options.add("--memory-limit 2000");
+    }
+
     options.add("'/usr/local/java8/bin/java -XX:-UsePerfData -Xmx1G -Xms1G -jar ");
     options.add(jarFile.getName()); /* please do not append to the rest of the command */
     options.add(" " + routineClass.getName() + " " + out.length + " " + profiler.isEnabled() + "'");
