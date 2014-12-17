@@ -3,9 +3,7 @@ package solar.mr;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.seq.CharSeqTools;
 import org.jetbrains.annotations.NotNull;
-import solar.mr.MREnv;
-import solar.mr.MRTableShard;
-import solar.mr.proc.impl.MRWhiteboardImpl;
+import solar.mr.proc.impl.WhiteboardImpl;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -94,7 +92,7 @@ public final class MRTestUtils {
 
   private static MRTableShard pathToShard(MREnv env, String path) {
     //return env.resolve(path);
-    return new MRWhiteboardImpl.LazyTableShard(path, env);
+    return new WhiteboardImpl.LazyTableShard(path, env);
     //return new MRTableShard(path, env, true, false, "0", 0, 0, 0, System.currentTimeMillis());
   }
 
