@@ -297,7 +297,7 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
 
   private MRTableShard createTable(final MRTableShard shard) {
     final MRTableShard sh = shardsCache.get(shard.path());
-    if (sh != null)
+    if (sh != null && sh.isAvailable())
       return sh;
 
     final List<String> options = defaultOptions();
