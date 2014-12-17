@@ -41,6 +41,9 @@ public class StateImpl implements State, Serializable {
   @Override
   public <T> T get(final String name) {
     //noinspection unchecked
+    if (!state.containsKey(name))
+      return null;
+
     return (T)state.get(name);
   }
 
@@ -52,7 +55,8 @@ public class StateImpl implements State, Serializable {
         @Override
         public void process(MRTableShard shard) {
           final MREnv env = shard.container();
-          holder[0] &= env instanceof YaMREnv || shard.isAvailable();
+          /* YtMREnv - shouldn't be here, but at some moments it affected because results not "available" before opertion finished */
+          holder[0] &= env instanceof YaMREnv || env instanceof YtMREnv || shard.isAvailable();
         }
       }))
         holder[0] &= keys().contains(consumes[i]);
