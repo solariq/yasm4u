@@ -245,6 +245,7 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
       final List<String> options = defaultOptions();
       options.add("copy");
       options.add(localPath(from[0]));
+      options.add(localPath(to));
       executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
       startIndex = 1;
     }
@@ -256,7 +257,7 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
         options.add("--src");
         options.add(localPath(from[i]));
         options.add("--dst");
-        options.add(localPath(to));
+        options.add("\"<append=true>\"" + localPath(to));
         //options.add("--mode sorted");
         executeCommand(options,defaultOutputProcessor, defaultErrorsProcessor, null);
       }
