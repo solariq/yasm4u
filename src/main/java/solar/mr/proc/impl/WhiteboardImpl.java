@@ -79,10 +79,12 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
           return;
         CharSequence[] parts = CharSeqTools.split(arg, '\t');
         try {
-          if (parts[1].length() > 0)
-            state.put(parts[0].toString(), marshaling.read(parts[2], Class.forName(parts[1].toString())));
-          else
-            state.remove(parts[0].toString());
+          if (parts.length > 1) {
+            if (parts[1].length() > 0)
+              state.put(parts[0].toString(), marshaling.read(parts[2], Class.forName(parts[1].toString())));
+            else
+              state.remove(parts[0].toString());
+          }
         } catch (ClassNotFoundException e) {
           throw new RuntimeException(e);
         }
