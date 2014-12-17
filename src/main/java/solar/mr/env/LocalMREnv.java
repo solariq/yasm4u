@@ -238,17 +238,23 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
 
   @Override
   public MRTableShard[] list(String prefix) {
-    File prefixFile = path(prefix);
+    File prefixFile = new File(home, prefix);
+    String startsWith = "";
     if (!prefixFile.exists()) {
       prefixFile = prefixFile.getParentFile();
-      prefix = prefix.substring(prefix.length() + 1 + home.getAbsolutePath().length() - prefixFile.getAbsolutePath().length());
+      final String parentPrefix = prefixFile.getAbsolutePath().substring(home.getAbsolutePath().length() + 1);
+      startsWith = prefix.substring(parentPrefix.length());
+      prefix = parentPrefix;
     }
     final String finalPrefix = prefix;
     final HashMap<String, MRTableShard> result = new HashMap<>();
     final File finalPrefixFile = prefixFile;
+    final String finalStartsWith = startsWith;
     StreamTools.visitFiles(prefixFile, new Processor<String>() {
       @Override
       public void process(String path) {
+        if (!path.startsWith(finalStartsWith))
+          return;
         final File file = new File(finalPrefixFile, path);
 
         if (path.endsWith(".txt")) {
