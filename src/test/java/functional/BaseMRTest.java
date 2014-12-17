@@ -26,7 +26,7 @@ public class BaseMRTest {
   public static final String YAMR_USER = "mobilesearch";
   public static final String YAMR_CLUSTER = "cedar:8013";
   public static final ProcessRunner YTMR_RUNNER = new SSHProcessRunner("testing.mobsearch.serp.yandex.ru", "/usr/bin/yt");
-  public static final String YTMR_USER = "{var:user}";
+  public static final String YTMR_USER = "minamoto";
   public static final String YTMR_CLUSTER = "plato.yt.yandex.net";
 
   @Parameterized.Parameters
@@ -35,7 +35,7 @@ public class BaseMRTest {
         {LocalMREnv.createTemp()},
         {new YaMREnv(YAMR_RUNNER, YAMR_USER, YAMR_CLUSTER)},
         //{new ProfilerMREnv(new YaMREnv(YAMR_RUNNER, YAMR_USER, YAMR_CLUSTER))},
-        //{new YtMREnv(YTMR_RUNNER, YTMR_USER, YTMR_CLUSTER)}
+        {new YtMREnv(YTMR_RUNNER, YTMR_USER, YTMR_CLUSTER)}
     });
   }
 
