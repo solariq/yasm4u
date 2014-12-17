@@ -106,6 +106,7 @@ public class SSHProcessRunner implements ProcessRunner {
               break;
             case "-file":
             case "--local-file":
+            case "--reduce-local-file":
               command.append(" ").append(opt);
               final File localResource = new File(options.get(index++));
               localResources.add(localResource);
