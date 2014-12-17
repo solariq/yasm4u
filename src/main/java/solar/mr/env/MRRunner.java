@@ -72,7 +72,8 @@ public class MRRunner implements Runnable {
         }
       };
       state = (State)is.readObject();
-      profilingMode = state.get(ProfilerMREnv.PROFILER_ENABLED_VAR);
+      Boolean boxedValue = state.get(ProfilerMREnv.PROFILER_ENABLED_VAR);
+      profilingMode = boxedValue == null ? false : boxedValue;
       CharSeqTools.processLines(new InputStreamReader(MRRunner.class.getResourceAsStream("/" + TABLES_RESOURCE_NAME), StreamTools.UTF), new Processor<CharSequence>() {
         @Override
         public void process(final CharSequence arg) {
