@@ -71,7 +71,7 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
     this.env = env;
     this.user = user;
 
-    myShard = new LazyTableShard(env.getTmp() + "/" + user + "/state/" + id, env);
+    myShard = new LazyTableShard(env.getTmp() + user + "/state/" + id, env);
     env.read(myShard, new Processor<CharSequence>() {
       @Override
       public void process(final CharSequence arg) {
@@ -120,7 +120,7 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
           if (subProtocol.startsWith("mr://")) {
 
             int offset = "mr://".length();
-            final String path = env.getTmp() + "/" + user + subProtocol.substring(offset) + "-" + (Integer.toHexString(rng.nextInt()));
+            final String path = env.getTmp() + user + subProtocol.substring(offset) + "-" + (Integer.toHexString(rng.nextInt()));
             final MRTableShard resolve = new LazyTableShard(path, env);
             set(resource, resolve);
             return (T)resolve;
@@ -130,7 +130,7 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
           Object result;
           final String path = uri.getPath();
           if (resource.endsWith("*"))
-            result = env.list(path.substring(1, path.length() - 1));
+            result = env.list(path.substring(0, path.length() - 1));
           else {
             result = new LazyTableShard(path, env);
           }
