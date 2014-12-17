@@ -151,16 +151,16 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
       unknown.add(path);
     }
 
-    final Set<String> bestPrefixes = findBestPrefixes(unknown);
-    for (final String prefix : bestPrefixes) {
-      final MRTableShard[] list = list(prefix);
-      for(int i = 0; i < list.length; i++) {
-        final MRTableShard shard = list[i];
-        final int index = ArrayTools.indexOf(localPath(shard), paths);
-        if (index >= 0)
-          result[index] = shard;
-      }
+    for (final String u:unknown) {
+      final MRTableShard[] shards = list(u);
+      assert shards.length <= 1;
+      if (shards.length != 1)
+        continue;
+
+      int index = ArrayTools.indexOf(shards[0].path(), paths);
+      result[index] = shards[0];
     }
+
     for(int i = 0; i < result.length; i++) {
       if (result[i] == null)
         result[i] = new MRTableShard(paths[i], this, false, false, "0", 0, 0, 0, System.currentTimeMillis());
