@@ -32,8 +32,7 @@ import solar.mr.routines.MRReduce;
  */
 public class YtMREnv extends BaseEnv implements ProfilableMREnv {
 
-  private final Random rng = new FastRandom();
-  public YtMREnv(final ProcessRunner runner, final String tag, final String master) {
+    public YtMREnv(final ProcessRunner runner, final String tag, final String master) {
     super(runner, tag, master);
   }
 
