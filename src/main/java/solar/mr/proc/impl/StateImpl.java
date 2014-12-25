@@ -108,6 +108,8 @@ public class StateImpl implements State, Serializable {
       final Object instance = get(current);
       assert instance != null;
       final SerializationRepository<CharSequence> serialization = State.SERIALIZATION;
+      if (instance instanceof WhiteboardImpl.LazyTableShard)
+        continue;
       final TypeConverter<CharSequence, ?> converter = serialization.base.converter(CharSequence.class, instance.getClass());
       if (converter != null && !new ClassFilter<TypeConverter>(Action.class, Whiteboard.class).accept(converter)) {
         out.writeBoolean(true);
