@@ -33,6 +33,10 @@ public class MRTools {
   public static final long FRESHNESS_TIMEOUT = TimeUnit.HOURS.toMillis(1);
   private static Logger LOG = Logger.getLogger(MRTools.class);
   public static final String FORBIDEN = MREnv.class.getName().replace('.', '/');
+  static {
+    ClassPool.doPruning = true;
+  }
+
 
   public static void buildClosureJar(final Class aRootClass, final String outputJar, Action<Class> action) throws IOException {
     buildClosureJar(aRootClass, outputJar, action, Collections.<String,byte[]>emptyMap());
@@ -84,6 +88,8 @@ public class MRTools {
                   }
                   known.add(next);
                 }
+                ctClass.detach();
+                ctClass.prune();
               }
             }
           } catch (IOException e) {
@@ -158,6 +164,7 @@ public class MRTools {
           LOG.warn("Requested resource was not found in current classpath: " + resourceName);
       }
       file.close();
+      classLoader.close();
     } catch (ClassNotFoundException e) {
       throw new RuntimeException(e);
     } catch (NoSuchMethodException e) {
