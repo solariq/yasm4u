@@ -10,19 +10,13 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spbsu.commons.func.Processor;
-import com.spbsu.commons.func.impl.WeakListenerHolderImpl;
-import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.random.FastRandom;
-import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.ArrayTools;
 import com.spbsu.commons.util.JSONTools;
 import com.spbsu.commons.util.cache.CacheStrategy;
 import com.spbsu.commons.util.cache.impl.FixedSizeCache;
-import gnu.trove.map.TObjectIntMap;
-import gnu.trove.map.hash.TObjectIntHashMap;
-import org.apache.commons.lang3.NotImplementedException;
 import solar.mr.*;
 import solar.mr.proc.State;
 import solar.mr.MRTableShard;
@@ -94,38 +88,6 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
         linesProcessor.process(arg);
       }
     }), defaultErrorsProcessor, null);
-  }
-
-  private static final Set<String> FAT_DIRECTORIES = new HashSet<>(Arrays.asList(
-      "/userdata/user_sessions"
-      //"redir_log",
-      //"access_log",
-      //"reqans_log"
-  ));
-
-  private static Set<String> findBestPrefixes(Set<String> paths) {
-    if (paths.size() < 2)
-      return paths;
-    final Set<String> result = new HashSet<>();
-    final TObjectIntMap<String> parents = new TObjectIntHashMap<>();
-    for(final String path : paths.toArray(new String[paths.size()])){
-      int index = path.lastIndexOf('/');
-      if (index < 0 || FAT_DIRECTORIES.contains(path.substring(0, index))) {
-        result.add(path);
-        paths.remove(path);
-      }
-      else parents.adjustOrPutValue(path.substring(0, index), 1, 1);
-    }
-    for(final String path : paths) {
-      final String parent = path.substring(0, path.lastIndexOf('/'));
-
-      if (parents.get(parent) == 1 && CharSeqTools.split(parent, '/').length < 2) {
-        result.add(path);
-        parents.remove(parent);
-      }
-    }
-    result.addAll(findBestPrefixes(parents.keySet()));
-    return result;
   }
 
   @Override
@@ -218,7 +180,6 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
     /* uber-for */
     final int[] index = new int[2];
     final CharSeqBuilder jsonOutputBuilder = new CharSeqBuilder();
-    SepInLoopProcessor processor = new SepInLoopProcessor(jsonOutputBuilder, index, ',');
     jsonOutputBuilder.append('[');
 
     index[1] = listSeq.length;
@@ -261,11 +222,11 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
     }
     createTable(to);
 
-    for (int i = 0; i < from.length; ++i) {
+    for (final MRTableShard sh:from){
       final List<String> options = defaultOptions();
       options.add("merge");
       options.add("--src");
-      options.add(localPath(from[i]));
+      options.add(localPath(sh));
       options.add("--dst");
       options.add("\"<append=true>\"" + localPath(to));
       //options.add("--mode sorted");
@@ -391,8 +352,8 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
 
     final File jarFile;
     synchronized (jarBuilder) {
-      for(int i = 0; i < in.length; i++) {
-        jarBuilder.addInput(in[i]);
+      for(final MRTableShard sh:in) {
+        jarBuilder.addInput(sh);
       }
       for(int i = 0; i < out.length; i++) {
         jarBuilder.addOutput(realOut[i]);
@@ -420,11 +381,11 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
     options.add(" " + routineClass.getName() + " " + out.length + " " + profiler.isEnabled() + "'");
 
     int inCount = 0;
-    for(int i = 0; i < in.length; i++) {
-      if (!resolve(in[i].path()).isAvailable())
+    for(final MRTableShard sh:in) {
+      if (!resolve(sh.path()).isAvailable())
         continue;
       options.add("--src");
-      options.add(localPath(in[i]));
+      options.add(localPath(sh));
       inCount ++;
     }
     if (inCount == 0) {
@@ -492,22 +453,6 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
     return jarBuilder;
   }
 
-  private boolean isShardPathExists(final String path) {
-    String shardName = path;
-    final List<String> options = defaultOptions();
-    options.add("exists");
-    options.add(localPath(new WhiteboardImpl.LazyTableShard(shardName, this)));
-    final CharSeqBuilder builder = new CharSeqBuilder();
-    executeCommand(options, new Processor<CharSequence>() {
-      @Override
-      public void process(final CharSequence arg) {
-        builder.append(arg);
-      }
-    }, defaultErrorsProcessor, null);
-
-    return CharSeqTools.parseBoolean(builder.build());
-  }
-
   private final FixedSizeCache<String, MRTableShard> shardsCache = new FixedSizeCache<>(1000, CacheStrategy.Type.LRU);
 
   @Override
@@ -519,59 +464,6 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
       shardsCache.put(localPath(e.shard), e.shard);
     }
     super.invoke(e);
-  }
-
-  private String upload(final String from, final String to) {
-
-    final String toPath = "//tmp/" + user + "/state/files";
-    if (!isShardPathExists(toPath)) {
-      createNode(toPath);
-    }
-
-    final String toRemoteFile = toPath + "/" + to;
-    try {
-      final List<String> options = defaultOptions();
-      options.add("upload");
-      options.add(toRemoteFile);
-      executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, new FileInputStream(from));
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    return toRemoteFile;
-  }
-
-  private void createNode(String toPath) {
-    final List<String> options = defaultOptions();
-    options.add("create");
-    options.add("map_node");
-    options.add(toPath);
-    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
-  }
-
-  private void deleteFile(final String file) {
-    final List<String>  options = defaultOptions();
-    options.add("remove");
-    options.add(file);
-    executeCommand(options, new YtResponseProcessor(defaultOutputProcessor), defaultErrorsProcessor, null);
-  }
-
-  private static class SepInLoopProcessor implements Processor<CharSequence> {
-    final CharSeqBuilder builder;
-    final int[] indexAndLimit;
-    final char sep;
-
-    SepInLoopProcessor(final CharSeqBuilder builder, final int indexAndLimit[], char sep) {
-      this.builder = builder;
-      this.indexAndLimit = indexAndLimit;
-      this.sep = sep;
-
-    }
-    @Override
-    public void process(CharSequence arg) {
-      builder.append(arg);
-      if (indexAndLimit[0] < indexAndLimit[1] - 1)
-        builder.append(sep);
-    }
   }
 
   private String localPath(MRTableShard shard) {
