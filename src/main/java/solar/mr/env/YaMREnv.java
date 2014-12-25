@@ -340,9 +340,9 @@ public class YaMREnv extends BaseEnv implements MREnv {
       for(int i = 0; i < out.length; i++) {
         jarBuilder.addOutput(out[i]);
       }
-      jarBuilder.setRoutine(routineClass);
+      //jarBuilder.setRoutine(routineClass);
       jarBuilder.setState(state);
-      jarFile = jarBuilder.build();
+      jarFile = jarBuilder.build(routineClass);
       options.add("-file");
       options.add(jarFile.getAbsolutePath());
     }
