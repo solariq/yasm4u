@@ -271,6 +271,7 @@ public class YaMREnv extends BaseEnv implements MREnv {
       }
     }
     result.addAll(findBestPrefixes(parents.keySet()));
+    result.remove("");
     return result;
   }
 
