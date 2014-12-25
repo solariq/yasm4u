@@ -22,7 +22,7 @@ import solar.mr.MRTableShard;
  */
 public class ClosureJarBuilder {
   private String localMRHome;
-  private Class<? extends MRRoutine> routine;
+  //private Class<? extends MRRoutine> routine;
   private final List<MRTableShard> input = new ArrayList<>();
   private final List<MRTableShard> output = new ArrayList<>();
   final HashMap<String, byte[]> resourcesMap = new HashMap<>();
@@ -31,7 +31,7 @@ public class ClosureJarBuilder {
     this.localMRHome = localMRHome;
   }
 
-  public File build() {
+  public File build(final Class<? extends MRRoutine> routine) {
     final File tempFile;
     try {
       tempFile = File.createTempFile("yamr-routine-", ".jar");
@@ -78,7 +78,7 @@ public class ClosureJarBuilder {
       resourcesMap.clear();
       input.clear();
       output.clear();
-      routine = null;
+      //routine = null;
     }
     return tempFile;
   }
@@ -91,9 +91,9 @@ public class ClosureJarBuilder {
     input.add(mrTable);
   }
 
-  public void setRoutine(final Class<? extends MRRoutine> routine) {
+  /* public void setRoutine(final Class<? extends MRRoutine> routine) {
     this.routine = routine;
-  }
+  }*/
 
   public void setState(State state) {
     try {
