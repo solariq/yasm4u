@@ -83,7 +83,7 @@ public class YtMREnv extends RemoteMREnv {
       public void process(final CharSequence arg) {
         linesProcessor.process(arg);
       }
-    }), defaultErrorsProcessor, null);
+    }, defaultErrorsProcessor, null);
   }
 
   @Override
@@ -352,6 +352,7 @@ public class YtMREnv extends RemoteMREnv {
       options.add(localPath(sh));
       inCount ++;
     }
+
     if (inCount == 0) {
       for (final MRTableShard d:out) {
         createTable(d);
