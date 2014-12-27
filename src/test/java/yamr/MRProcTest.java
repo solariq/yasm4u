@@ -1,11 +1,5 @@
 package yamr;
 
-import java.util.Date;
-import java.util.Iterator;
-import java.util.Properties;
-import java.util.Random;
-
-
 import com.spbsu.commons.random.FastRandom;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.Pair;
@@ -13,19 +7,23 @@ import org.junit.Assert;
 import org.junit.Test;
 import solar.mr.MREnv;
 import solar.mr.MROutput;
+import solar.mr.MRTableShard;
 import solar.mr.env.LocalMREnv;
 import solar.mr.env.ProcessRunner;
 import solar.mr.env.SSHProcessRunner;
 import solar.mr.env.YaMREnv;
+import solar.mr.proc.AnnotatedMRProcess;
 import solar.mr.proc.State;
 import solar.mr.proc.Whiteboard;
-import solar.mr.proc.impl.AnnotatedMRProcess;
 import solar.mr.proc.impl.WhiteboardImpl;
 import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
 import solar.mr.proc.tags.MRRead;
 import solar.mr.proc.tags.MRReduceMethod;
-import solar.mr.MRTableShard;
+
+import java.util.Date;
+import java.util.Iterator;
+import java.util.Random;
 
 /**
  * User: solar
@@ -142,6 +140,7 @@ public class MRProcTest {
     mrProcess.wb().wipe();
     mrProcess.wb().set("var:date", new Date(2014-1900, 8, 1));
     int count = mrProcess.<Integer>result();
+    mrProcess.wb().wipe();
     Assert.assertEquals(2611709, count);
   }
 
@@ -149,10 +148,10 @@ public class MRProcTest {
   public void testExceptionMap() {
     final ProcessRunner runner = new SSHProcessRunner(TEST_SERVER_PROXY, "/Berkanavt/mapreduce/bin/mapreduce-dev");
     final MREnv env = new YaMREnv(runner, TEST_MR_USER, "cedar:8013");
-    final Properties initial = new Properties();
-    initial.put("var:date", new Date(2014-1900, 8, 1));
-    initial.put("var:delay", 10000);
-    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(FailAtRandomReduce.class, env, initial);
+    final Whiteboard initial = new WhiteboardImpl(env, FailAtRandomReduce.class.getName());
+    initial.set("var:date", new Date(2014 - 1900, 8, 1));
+    initial.set("var:delay", 10000);
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(FailAtRandomReduce.class, env);
     int count = mrProcess.<Integer>result();
     Assert.assertEquals(0, count);
     mrProcess.wb().wipe();
@@ -276,8 +275,8 @@ public class MRProcTest {
   public void testArrays1() {
     final ProcessRunner runner = new SSHProcessRunner("batista", "/Berkanavt/mapreduce/bin/mapreduce-dev");
     final MREnv env = new YaMREnv(runner, "mobilesearch", "cedar:8013");
-    final Properties vars = new Properties();
-    vars.put("var:user", System.getProperty("user.name"));
+    final Whiteboard vars = new WhiteboardImpl(env, SampleSplitter1.class.getName());
+    vars.set("var:user", System.getProperty("user.name"));
 
     final StringBuilder sb = new StringBuilder();
     for (int i = 0; i < LIMIT; ++i) {
@@ -285,9 +284,9 @@ public class MRProcTest {
       if (i < LIMIT - 1) sb.append(',');
     }
 
-    vars.put("var:array1_10", (Object)sb.toString().split(","));
+    vars.set("var:array1_10", (Object) sb.toString().split(","));
 
-    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SampleSplitter1.class, env, vars);
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SampleSplitter1.class, vars);
     mrProcess.wb().wipe();
     mrProcess.execute();
   }
@@ -308,8 +307,8 @@ public class MRProcTest {
   public void testArrays0() {
     //final ProcessRunner runner = new SSHProcessRunner("batista", "/Berkanavt/mapreduce/bin/mapreduce-dev");
     final MREnv env = new LocalMREnv(System.getProperty("user.home"));
-    final Properties vars = new Properties();
-    vars.put("var:user", System.getProperty("user.name"));
+    final Whiteboard vars = new WhiteboardImpl(env, ArraysTest0.class.getName());
+    vars.set("var:user", System.getProperty("user.name"));
 
     final StringBuilder sb = new StringBuilder();
     int limit = 3;
@@ -318,9 +317,9 @@ public class MRProcTest {
       if (i < limit - 1) sb.append(',');
     }
 
-    vars.put("var:array1_10", (Object)sb.toString().split(","));
+    vars.set("var:array1_10", (Object)sb.toString().split(","));
 
-    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(ArraysTest0.class, env, vars);
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(ArraysTest0.class, vars);
     mrProcess.wb().wipe();
     //mrProcess.execute();
   }

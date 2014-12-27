@@ -8,7 +8,9 @@ import solar.mr.env.ProcessRunner;
 import solar.mr.env.SSHProcessRunner;
 import solar.mr.env.YaMREnv;
 import solar.mr.proc.State;
-import solar.mr.proc.impl.AnnotatedMRProcess;
+import solar.mr.proc.AnnotatedMRProcess;
+import solar.mr.proc.Whiteboard;
+import solar.mr.proc.impl.WhiteboardImpl;
 import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
 import solar.mr.proc.tags.MRReduceMethod;
@@ -65,7 +67,8 @@ public final class Main {
     System.out.println("Starting Java MR calculation!");
     final ProcessRunner runner = new SSHProcessRunner("batista", "/Berkanavt/mapreduce/bin/mapreduce-dev");
     final MREnv env = new YaMREnv(runner, "mobilesearch", "cedar:8013");
-    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SampleCounter.class, env);
+    final Whiteboard wb = new WhiteboardImpl(env, SampleCounter.class.getName());
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SampleCounter.class, wb);
     mrProcess.execute();
     mrProcess.wb().wipe();
   }

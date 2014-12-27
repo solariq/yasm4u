@@ -5,27 +5,22 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spbsu.commons.func.Processor;
-import com.spbsu.commons.func.impl.WeakListenerHolderImpl;
-import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.random.FastRandom;
 import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.ArrayTools;
-import com.spbsu.commons.util.Holder;
 import com.spbsu.commons.util.JSONTools;
-import com.spbsu.commons.util.cache.CacheStrategy;
-import com.spbsu.commons.util.cache.impl.FixedSizeCache;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import solar.mr.*;
-import solar.mr.proc.State;
 import solar.mr.proc.impl.WhiteboardImpl;
-import solar.mr.routines.MRMap;
 import solar.mr.routines.MRRecord;
-import solar.mr.routines.MRReduce;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.LineNumberReader;
+import java.io.Reader;
 import java.util.*;
 
 /**
@@ -33,7 +28,7 @@ import java.util.*;
  * Date: 19.09.14
  * Time: 17:08
  */
-public class YaMREnv extends BaseEnv implements MREnv {
+public class YaMREnv extends RemoteMREnv {
 
   public YaMREnv(final ProcessRunner runner, final String user, final String master) {
     super(runner, user, master);
@@ -41,9 +36,8 @@ public class YaMREnv extends BaseEnv implements MREnv {
 
   protected YaMREnv(final ProcessRunner runner, final String user, final String master,
                     final Processor<CharSequence> errorsProc,
-                    final Processor<CharSequence> outputProc,
-                    ClosureJarBuilder jarBuilder) {
-    super(runner, user, master, errorsProc, outputProc, jarBuilder);
+                    final Processor<CharSequence> outputProc) {
+    super(runner, user, master, errorsProc, outputProc);
   }
 
   protected List<String> defaultOptions() {
@@ -313,12 +307,11 @@ public class YaMREnv extends BaseEnv implements MREnv {
   }
 
   @Override
-  public boolean execute(final Class<? extends MRRoutine> routineClass, final State state,
-                         final MRTableShard[] in, final MRTableShard[] out, final MRErrorsHandler errorsHandler) {
+  public boolean execute(MRRoutineBuilder builder, final MRErrorsHandler errorsHandler) {
     final List<String> options = defaultOptions();
-
+    MRTableShard[] in = resolveAll(builder.input());
+    MRTableShard[] out = resolveAll(builder.output());
     int inputShardsCount = 0;
-    int outputShardsCount = 0;
     for(int i = 0; i < in.length; i++) {
       options.add("-src");
       options.add(localPath(in[i]));
@@ -327,34 +320,24 @@ public class YaMREnv extends BaseEnv implements MREnv {
     for(int i = 0; i < out.length; i++) {
       options.add("-dst");
       options.add(localPath(out[i]));
-      outputShardsCount++;
     }
     final String errorsShardName = "temp/errors-" + Integer.toHexString(new FastRandom().nextInt());
     options.add("-dst");
     options.add(errorsShardName);
-    final File jarFile;
-    synchronized (jarBuilder) {
-      for(int i = 0; i < in.length; i++) {
-        jarBuilder.addInput(in[i]);
-      }
-      for(int i = 0; i < out.length; i++) {
-        jarBuilder.addOutput(out[i]);
-      }
-      //jarBuilder.setRoutine(routineClass);
-      jarBuilder.setState(state);
-      jarFile = jarBuilder.build(routineClass);
-      options.add("-file");
-      options.add(jarFile.getAbsolutePath());
+    final File jarFile = builder.buildJar(this, errorsHandler);
+    options.add("-file");
+    options.add(jarFile.getAbsolutePath());
+
+    switch (builder.getRoutineType()) {
+      case MAP:
+        options.add("-map");
+        break;
+      case REDUCE:
+        options.add(inputShardsCount > 1 && inputShardsCount < 10 ? "-reducews" : "-reduce");
+        break;
     }
 
-    if (MRMap.class.isAssignableFrom(routineClass))
-      options.add("-map");
-
-    else if (MRReduce.class.isAssignableFrom(routineClass)) {
-      options.add(inputShardsCount > 1 && inputShardsCount < 10 ? "-reducews" : "-reduce");
-    } else
-      throw new RuntimeException("Unknown MR routine type");
-    options.add("java -XX:-UsePerfData -Xmx1G -Xms1G -jar " + jarFile.getName() + " " + routineClass.getName() + " " + outputShardsCount);
+    options.add("java -XX:-UsePerfData -Xmx1G -Xms1G -jar " + jarFile.getName());
     final int[] errorsCount = new int[]{0};
     executeCommand(options, defaultOutputProcessor, new Processor<CharSequence>() {
       String table;
@@ -381,7 +364,7 @@ public class YaMREnv extends BaseEnv implements MREnv {
       }
     }, null);
     final MRTableShard errorsShard = new MRTableShard(errorsShardName, this, true, false, "0", 0, 0, 0, System.currentTimeMillis());
-    MRRoutine errorProcessor = new MRRoutine(new String[]{errorsShardName}, null, state) {
+    MRRoutine errorProcessor = new MRRoutine(new String[]{errorsShardName}, null, null) {
       @Override
       public void invoke(final MRRecord record) {
         CharSequence[] parts = CharSeqTools.split(record.value, '\t', new CharSequence[4]);
@@ -409,9 +392,5 @@ public class YaMREnv extends BaseEnv implements MREnv {
   @Override
   public String toString() {
     return "YaMR://" + user + "@" + master + "/";
-  }
-
-  public ClosureJarBuilder getJarBuilder() {
-    return jarBuilder;
   }
 }

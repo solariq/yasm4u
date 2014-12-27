@@ -1,39 +1,39 @@
 package solar.mr.env;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.io.Writer;
-import java.util.concurrent.LinkedTransferQueue;
-
-
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.Pair;
 import org.apache.log4j.Logger;
+import solar.mr.MREnv;
 import solar.mr.MRErrorsHandler;
 import solar.mr.MROutput;
-import solar.mr.MRProfilerHandler;
 import solar.mr.routines.MRRecord;
+
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.LinkedTransferQueue;
 
 /**
 * User: solar
 * Date: 17.10.14
 * Time: 10:36
 */
-public class MROutputImpl implements MROutput, MRProfilerHandler {
+public class MROutputImpl implements MROutput {
   private static Logger LOG = Logger.getLogger(MROutputImpl.class);
   private final LinkedTransferQueue<Pair<Integer, CharSequence>> queue = new LinkedTransferQueue<>();
+  private final String[] outTables;
   private final int errorTable;
   private final Thread outputThread;
   private final MRErrorsHandler errorsHandler;
+  private int lastActiveTable = 0;
 
-  public MROutputImpl(final Writer out, final int errorTable) {
+  public MROutputImpl(final Writer out, String[] outputTables) {
+    this.outTables = outputTables;
     this.errorsHandler = null;
-    this.errorTable = errorTable;
+    this.errorTable = outputTables.length - 1;
     outputThread = new Thread(new Runnable() {
       @Override
       public void run() {
-        int lastActiveTable = 0;
         try {
           try {
             //noinspection InfiniteLoopStatement
@@ -61,8 +61,19 @@ public class MROutputImpl implements MROutput, MRProfilerHandler {
     outputThread.start();
   }
 
-  public MROutputImpl(final Writer[] out, final MRErrorsHandler errorsHandler) {
-    this.errorsHandler = errorsHandler;
+  public MROutputImpl(MREnv env, String[] output, MRErrorsHandler handler) {
+    if (!(env instanceof LocalMREnv))
+      throw new IllegalArgumentException("Not implemented for environments other than local");
+    this.outTables = output;
+    this.errorsHandler = handler;
+    final Writer[] out = new Writer[output.length];
+    for(int i = 0; i < out.length; i++) {
+      try {
+        out[i] = new FileWriter(((LocalMREnv) env).file(output[i], false));
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
     errorTable = out.length;
     outputThread = new Thread(new Runnable() {
       @Override
@@ -116,6 +127,11 @@ public class MROutputImpl implements MROutput, MRProfilerHandler {
   }
 
   @Override
+  public String[] names() {
+    return outTables;
+  }
+
+  @Override
   public void error(final String type, final String cause, final MRRecord rec) {
     if (errorsHandler != null)
       errorsHandler.error(type, cause, rec);
@@ -129,9 +145,18 @@ public class MROutputImpl implements MROutput, MRProfilerHandler {
 
   @Override
   public void error(final Throwable th, final MRRecord rec) {
-    final ByteArrayOutputStream out = new ByteArrayOutputStream();
-    th.printStackTrace(new PrintStream(out));
-    error(th.getClass().getName(), out.toString().replace("\n", "\\n"), rec);
+    if (errorsHandler != null) {
+      errorsHandler.error(th, rec);
+    }
+    else {
+      final ByteArrayOutputStream out = new ByteArrayOutputStream();
+      try (final ObjectOutputStream dos = new ObjectOutputStream(out)) {
+        dos.writeObject(th);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      error(th.getClass().getName(), CharSeqTools.toBase64(out.toByteArray()).toString(), rec);
+    }
   }
 
   private void push(int tableNo, CharSequence record) {
@@ -152,8 +177,39 @@ public class MROutputImpl implements MROutput, MRProfilerHandler {
     }
   }
 
-  @Override
-  public void hostStatistics(String host, int time) {
-    push(errorTable + 1, CharSeqTools.concatWithDelimeter("\t", host, "#", "" + time));
+  public void parse(CharSequence arg) {
+    final CharSequence[] split = CharSeqTools.split(arg, '\t');
+
+    if (split.length == 1) {
+      lastActiveTable = CharSeqTools.parseInt(split[0]);
+    }
+    else if (split.length >= 3) {
+      if (lastActiveTable == errorTable) {
+        final MRRecord rec = new MRRecord(outTables[lastActiveTable], split[2].toString(), split[3].toString(), split[4]);
+
+        boolean isException = false;
+        {
+          final Class<?> aClass;
+          try {
+            aClass = Class.forName(split[0].toString());
+            isException = Throwable.class.isAssignableFrom(aClass);
+          } catch (ClassNotFoundException e) {
+            //
+          }
+        }
+        if (isException) {
+          try (final ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(CharSeqTools.parseBase64(split[1])))) {
+            error((Throwable) is.readObject(), rec);
+          } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+          }
+        }
+        else {
+          error(split[0].toString(), split[1].toString(), rec);
+        }
+      }
+      else push(lastActiveTable, arg);
+    }
+    else throw new IllegalArgumentException("Can not parse MRRecord from string: " + arg);
   }
 }

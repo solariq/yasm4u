@@ -4,8 +4,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
+import solar.mr.proc.AnnotatedMRProcess;
 import solar.mr.proc.State;
-import solar.mr.proc.impl.AnnotatedMRProcess;
+import solar.mr.proc.Whiteboard;
+import solar.mr.proc.impl.WhiteboardImpl;
 import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
 
@@ -71,10 +73,10 @@ public final class VarsTest extends BaseMRTest {
     final int INT_VAL = 123;
     final String STRING_VAL = "test";
     writeRecords(env, IN_TABLE_NAME_1, RECORDS);
-    Properties vars = new Properties();
-    vars.put(INT_VAR, INT_VAL);
-    vars.put(STRING_VAR, STRING_VAL);
-    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(Map1.class, env, vars);
+    Whiteboard vars = new WhiteboardImpl(env, Map1.class.getName());
+    vars.set(INT_VAR, INT_VAL);
+    vars.set(STRING_VAR, STRING_VAL);
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(Map1.class, vars);
     mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
@@ -109,11 +111,11 @@ public final class VarsTest extends BaseMRTest {
     final String REAL_IN_TABLE_NAME_2 = IN_TABLE_NAME_2.replace("{" + INT_VAR + "}", "" + INT_VAL).replace("{" + STRING_VAR + "}", STRING_VAL).replace("{" + DATE_VAR + ",date,yyyyMMdd}", format.format(DATE_VAL));
     final String REAL_OUT_TABLE_NAME_2 = OUT_TABLE_NAME_2.replace("{" + INT_VAR + "}", "" + INT_VAL).replace("{" + STRING_VAR + "}", STRING_VAL).replace("{" + DATE_VAR + ",date,yyyyMMdd}", format.format(DATE_VAL));
     writeRecords(env, REAL_IN_TABLE_NAME_2, RECORDS);
-    Properties vars = new Properties();
-    vars.put(INT_VAR, INT_VAL);
-    vars.put(STRING_VAR, STRING_VAL);
-    vars.put(DATE_VAR, DATE_VAL);
-    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(Map2.class, env, vars);
+    Whiteboard vars = new WhiteboardImpl(env, Map2.class.getName());
+    vars.set(INT_VAR, INT_VAL);
+    vars.set(STRING_VAR, STRING_VAL);
+    vars.set(DATE_VAR, DATE_VAL);
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(Map2.class, vars);
     mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
@@ -143,9 +145,9 @@ public final class VarsTest extends BaseMRTest {
   @Test
   public void arraysInNamesShouldWork() {
     writeRecords(env, IN_TABLE_NAME_3, RECORDS);
-    Properties vars = new Properties();
-    vars.put(ARRAY_VAR, ARRAY_VALS);
-    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(Map3.class, env, vars);
+    Whiteboard vars = new WhiteboardImpl(env, Map3.class.getName());
+    vars.set(ARRAY_VAR, ARRAY_VALS);
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(Map3.class, vars);
     mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();

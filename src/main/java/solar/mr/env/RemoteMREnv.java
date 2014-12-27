@@ -6,9 +6,8 @@ import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.cache.CacheStrategy;
 import com.spbsu.commons.util.cache.impl.FixedSizeCache;
-import solar.mr.MREnv;
-import solar.mr.MRTableShard;
-import solar.mr.ProfilableMREnv;
+import solar.mr.*;
+import solar.mr.proc.State;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,16 +17,15 @@ import java.util.List;
 /**
  * Created by minamoto on 10/12/14.
  */
-public abstract class BaseEnv extends WeakListenerHolderImpl<MREnv.ShardAlter> {
+public abstract class RemoteMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements MREnv {
   protected final String user;
 
   protected final String master;
   protected final Processor<CharSequence> defaultErrorsProcessor;
   protected final Processor<CharSequence> defaultOutputProcessor;
   protected final ProcessRunner runner;
-  protected final ClosureJarBuilder jarBuilder;
 
-  protected BaseEnv(final ProcessRunner runner, final String user, final String master) {
+  protected RemoteMREnv(final ProcessRunner runner, final String user, final String master) {
     this(runner, user, master,
         new Processor<CharSequence>() {
           @Override
@@ -40,21 +38,18 @@ public abstract class BaseEnv extends WeakListenerHolderImpl<MREnv.ShardAlter> {
           public void process(final CharSequence arg) {
             System.out.println(arg);
           }
-        },
-        new ClosureJarBuilder(LocalMREnv.DEFAULT_HOME)
+        }
     );
   }
 
-  protected BaseEnv(final ProcessRunner runner, final String user, final String master,
-                    final Processor<CharSequence> errorsProc,
-                    final Processor<CharSequence> outputProc,
-                    ClosureJarBuilder jarBuilder) {
+  protected RemoteMREnv(final ProcessRunner runner, final String user, final String master,
+                        final Processor<CharSequence> errorsProc,
+                        final Processor<CharSequence> outputProc) {
     this.runner = runner;
     this.user = user;
     this.master = master;
     this.defaultErrorsProcessor = errorsProc;
     this.defaultOutputProcessor = outputProc;
-    this.jarBuilder = jarBuilder;
   }
 
   protected void executeCommand(final List<String> options, final Processor<CharSequence> outputProcessor,

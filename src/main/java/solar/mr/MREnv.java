@@ -1,10 +1,12 @@
 package solar.mr;
 
+import java.io.InputStream;
 import java.io.Reader;
 
 
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.func.WeakListenerHolder;
+import javafx.util.Builder;
 import solar.mr.proc.State;
 
 /**
@@ -13,7 +15,7 @@ import solar.mr.proc.State;
  * Time: 10:56
  */
 public interface MREnv extends WeakListenerHolder<MREnv.ShardAlter> {
-  boolean execute(Class<? extends MRRoutine> exec, State state, MRTableShard[] in, MRTableShard[] out, final MRErrorsHandler errorsHandler);
+  boolean execute(MRRoutineBuilder exec, final MRErrorsHandler errorsHandler);
 
   MRTableShard[] list(String prefix);
   MRTableShard resolve(String path);

@@ -1,27 +1,17 @@
 package solar.mr.env;
 
 import java.io.*;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 
-import com.spbsu.commons.func.Processor;
+import com.spbsu.commons.func.Action;
 import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqTools;
-import com.spbsu.commons.util.ArrayTools;
 import com.spbsu.commons.util.Pair;
-import solar.mr.MROutput;
-import solar.mr.MRRoutine;
-import solar.mr.RuntimeInterruptedException;
-import solar.mr.proc.State;
-import solar.mr.MRTableShard;
+import solar.mr.*;
 
 /**
 * User: solar
@@ -30,37 +20,23 @@ import solar.mr.MRTableShard;
 */
 public class MRRunner implements Runnable {
   public static final Pair<Integer, CharSequence> STOP = new Pair<Integer, CharSequence>(-1, "");
-  public static final String TABLES_RESOURCE_NAME = ".tables";
-  public static final String STATE_RESOURCE_NAME = ".state";
-  public static final String ROUTINES_PROPERTY_NAME = "var:routines";
+  public static final String BUILDER_RESOURCE_NAME = ".builder";
 
-  private final Map<AccessType, List<String>> tables = new HashMap<>();
-  private final Class<? extends MRRoutine> routine;
-  private final State state;
+  private final MRRoutineBuilder routineBuilder;
+  private final OutputStream out;
   private final Reader in;
-  private final boolean profilingMode;
 
-  public Class<? extends MRRoutine> routine() {
-    return routine;
+  public MRRunner() {
+    this(System.in, System.out);
   }
+  public MRRunner(InputStream in, OutputStream out) {
+    this.out = out;
+    this.in = new InputStreamReader(in, Charset.forName("UTF-8"));
 
-  public State state() {
-    return state;
-  }
-
-  public enum AccessType {
-    READ, WRITE
-  }
-
-  public MRRunner(char[] className) {
-    this.in = new InputStreamReader(System.in, Charset.forName("UTF-8"));
-
-    final String mrClass = new String(className);
     try {
       //noinspection unchecked
-      routine = (Class<? extends MRRoutine>)Class.forName(mrClass);
       final ClassLoader loader = getClass().getClassLoader();
-      final ObjectInputStream is = new ObjectInputStream(MRRunner.class.getResourceAsStream("/" + STATE_RESOURCE_NAME)){
+      final ObjectInputStream is = new ObjectInputStream(MRRunner.class.getResourceAsStream("/" + BUILDER_RESOURCE_NAME)){
         @Override
         protected Class<?> resolveClass(final ObjectStreamClass desc) throws IOException, ClassNotFoundException {
           try {
@@ -71,43 +47,31 @@ public class MRRunner implements Runnable {
           }
         }
       };
-      state = (State)is.readObject();
-      Boolean boxedValue = state.get(ProfilerMREnv.PROFILER_ENABLED_VAR);
-      profilingMode = boxedValue == null ? false : boxedValue;
-      CharSeqTools.processLines(new InputStreamReader(MRRunner.class.getResourceAsStream("/" + TABLES_RESOURCE_NAME), StreamTools.UTF), new Processor<CharSequence>() {
-        @Override
-        public void process(final CharSequence arg) {
-          final CharSequence[] parts = CharSeqTools.split(arg, '\t');
-          final AccessType accessType = AccessType.valueOf(parts[0].toString().toUpperCase());
-          List<String> tables = MRRunner.this.tables.get(accessType);
-          if (tables == null)
-            MRRunner.this.tables.put(accessType, tables = new ArrayList<>());
-          tables.add(parts[1].toString());
-        }
-      });
-
+      routineBuilder = (MRRoutineBuilder)is.readObject();
     } catch (ClassNotFoundException | IOException e) {
       throw new RuntimeException(e);
     }
   }
 
+
   @Override
   public void run() {
-    final MROutputImpl out = new MROutputImpl(new OutputStreamWriter(System.out, StreamTools.UTF), tables.get(AccessType.WRITE).size());
+    final String[] outputTables = routineBuilder.output();
+    final MROutputImpl out = new MROutputImpl(new OutputStreamWriter(this.out, StreamTools.UTF), outputTables);
     try {
-      final Constructor<? extends MRRoutine> constructor = routine.getConstructor(String[].class, MROutput.class, State.class);
-      constructor.setAccessible(true);
-      final MRRoutine instance = constructor.newInstance(ArrayTools.toArray(tables.get(AccessType.READ)), out, state);
+      final MRRoutine instance = routineBuilder.build(out);
 
       long start = System.currentTimeMillis();
       CharSeqTools.processLines(in, instance);
       instance.process(CharSeq.EMPTY);
-      if (profilingMode) {
-        out.hostStatistics(InetAddress.getLocalHost().getHostName(), (int) (System.currentTimeMillis() - start));
+      final Boolean profile = instance.state().get(ProfilerMREnv.PROFILER_ENABLED_VAR);
+      if (profile != null && profile) {
+        final int profilingTable = outputTables.length - 2;
+        dumpProfilingStats(out, start, profilingTable);
       }
     } catch (RuntimeInterruptedException e) {
       // skip
-    } catch (InvocationTargetException | NoSuchMethodException | InstantiationException | IOException | IllegalAccessException e) {
+    } catch (IOException e) {
       throw new RuntimeException(e);
     } finally {
       out.interrupt();
@@ -115,24 +79,23 @@ public class MRRunner implements Runnable {
     }
   }
 
-  public void runLocally(char[] localMRHome, char[][] inTables, char[][] outTables) throws NoSuchMethodException,
-                                                                                           InvocationTargetException,
-                                                                                           InstantiationException,
-                                                                                           IllegalAccessException
-  {
-    final LocalMREnv sampleEnv = new LocalMREnv(new String(localMRHome));
-    final MRTableShard[] input = new MRTableShard[inTables.length];
-    final MRTableShard[] output = new MRTableShard[outTables.length];
-    for (int i = 0; i < input.length; i++) {
-      input[i] = sampleEnv.resolve(new String(inTables[i]));
-    }
-    for (int i = 0; i < output.length; i++) {
-      output[i] = sampleEnv.resolve(new String(outTables[i]));
-    }
-    sampleEnv.execute(routine(), state(), input, output, null);
+  private void dumpProfilingStats(MROutputImpl out, long start, int profilingTable) throws UnknownHostException {
+    out.add(profilingTable, InetAddress.getLocalHost().getHostName(), "#", Long.toString(System.currentTimeMillis() - start));
   }
 
-  public static void main(String[] args) {
-    new MRRunner(args[0].toCharArray()).run();
+  public static void main(String[] args) throws Exception {
+    if (args.length > 1 && "--dump".equals(args[0])) {
+      MRTools.buildClosureJar(MRRunner.class, args[1], new Action<Class>() {
+        @Override
+        public void invoke(Class aClass) {
+          try {
+            ((Runnable)aClass.newInstance()).run();
+          } catch (InstantiationException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+          }
+        }
+      });
+    }
+    else new MRRunner().run();
   }
 }

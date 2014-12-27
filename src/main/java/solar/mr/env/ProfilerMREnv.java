@@ -2,16 +2,10 @@ package solar.mr.env;
 
 import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
-import solar.mr.MREnv;
-import solar.mr.MRErrorsHandler;
-import solar.mr.MRRoutine;
-import solar.mr.MRTableShard;
-import solar.mr.proc.State;
+import solar.mr.*;
 import solar.mr.proc.Whiteboard;
 import solar.mr.proc.impl.WhiteboardImpl;
-import solar.mr.routines.MRMap;
 import solar.mr.routines.MRRecord;
-import solar.mr.routines.MRReduce;
 
 import java.io.Reader;
 import java.util.EnumMap;
@@ -54,35 +48,33 @@ public final class ProfilerMREnv implements MREnv {
   }
 
   @Override
-  public boolean execute(Class<? extends MRRoutine> exec, State state, MRTableShard[] in, MRTableShard[] out, MRErrorsHandler errorsHandler) {
+  public boolean execute(MRRoutineBuilder builder,  MRErrorsHandler errorsHandler) {
     long start = System.currentTimeMillis();
-    final Operation execOperation;
-    if (MRMap.class.isAssignableFrom(exec)) {
-      execOperation = Operation.MAP;
-    } else if (MRReduce.class.isAssignableFrom(exec)) {
-      execOperation = Operation.REDUCE;
-    } else {
-      execOperation = Operation.UNKNOWN_ROUTINE;
-    }
-
     final MRTableShard profilerShard = wb.get(PROFILER_SHARD_NAME);
     assert profilerShard != null;
-    final MRTableShard[] alteredOut = new MRTableShard[out.length + 1];
-    System.arraycopy(out, 0, alteredOut, 0, out.length);
-    alteredOut[out.length] = profilerShard;
-
-    boolean result = wrapped.execute(exec, state, in, alteredOut, errorsHandler);
+    builder.addOutput(profilerShard.path());
+    boolean result = wrapped.execute(builder, errorsHandler);
     final Map<String, Long> stat = new HashMap<>();
-    wrapped.read(profilerShard, new MRRoutine(new String[]{profilerShard.path()}, null, state) {
+    wrapped.read(profilerShard, new MRRoutine(new String[]{profilerShard.path()}, null, null) {
       @Override
       public void invoke(final MRRecord record) {
         stat.put(record.key, Long.parseLong(record.value.toString()));
       }
     });
-    incrementTime(execOperation, System.currentTimeMillis() - start);
-    if (execOperation != Operation.UNKNOWN_ROUTINE)
-      mergeMaps(execOperation == Operation.MAP? mapHostsTime: reduceHostsTime, stat);
+    final Operation routineType = convertToOperation(builder.getRoutineType());
+    incrementTime(routineType, System.currentTimeMillis() - start);
+    mergeMaps(routineType == Operation.MAP ? mapHostsTime: reduceHostsTime, stat);
     return result;
+  }
+
+  private Operation convertToOperation(MRRoutineBuilder.RoutineType type) {
+    switch (type) {
+      case MAP:
+        return Operation.MAP;
+      case REDUCE:
+        return Operation.REDUCE;
+    }
+    throw new IllegalStateException("Should never happen");
   }
 
   @Override

@@ -7,7 +7,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
 import solar.mr.proc.State;
-import solar.mr.proc.impl.AnnotatedMRProcess;
+import solar.mr.proc.AnnotatedMRProcess;
 import solar.mr.proc.tags.MRProcessClass;
 import solar.mr.proc.tags.MRReduceMethod;
 import solar.mr.routines.MRRecord;

@@ -25,7 +25,7 @@ import java.util.Set;
  * Date: 12.10.14
  * Time: 10:23
  */
-public class StateImpl implements State, Serializable {
+public class StateImpl implements State {
   // never ever use this variable out of impl package!!!!!!!!
   Map<String, Object> state = new HashMap<>();
 
@@ -133,5 +133,6 @@ public class StateImpl implements State, Serializable {
   }
 
   private void readObjectNoData() throws ObjectStreamException {
+    state = new HashMap<>();
   }
 }

@@ -36,7 +36,6 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
   private final Random rng = new FastRandom();
   private MRErrorsHandler errorsHandler;
   private SerializationRepository<CharSequence> marshaling;
-  private Whiteboard connected;
 
   public WhiteboardImpl(final MREnv env, final String id, final String user) {
     this(env, id, user, new MRErrorsHandler() {
@@ -91,6 +90,10 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
       }
     });
     env.addListener(this);
+  }
+
+  public WhiteboardImpl(MREnv env, String name) {
+    this(env, name, System.getenv("USER"));
   }
 
   @Override
@@ -264,13 +267,6 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
       }
       env.delete(myShard);
     }
-
-    if (connected != null)
-      connected.wipe();
-  }
-
-  public void connect(final Whiteboard test) {
-    connected = test;
   }
 
   public void setErrorsHandler(MRErrorsHandler errorsHandler) {

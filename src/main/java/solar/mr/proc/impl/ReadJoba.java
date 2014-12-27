@@ -21,7 +21,7 @@ import solar.mr.MRTableShard;
 * Date: 13.10.14
 * Time: 8:04
 */
-class ReadJoba implements Joba {
+public class ReadJoba implements Joba {
   private final String[] input;
   private final String output;
   private final Method method;

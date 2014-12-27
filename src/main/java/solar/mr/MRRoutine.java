@@ -63,4 +63,11 @@ public abstract class MRRoutine implements Processor<CharSequence>, Action<MRRec
     return state;
   }
 
+  public String[] input() {
+    return inputTables;
+  }
+
+  public String[] output() {
+    return output.names();
+  }
 }

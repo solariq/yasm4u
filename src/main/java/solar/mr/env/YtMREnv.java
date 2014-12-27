@@ -1,11 +1,5 @@
 package solar.mr.env;
 
-import java.io.*;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
-
-
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,29 +12,32 @@ import com.spbsu.commons.util.JSONTools;
 import com.spbsu.commons.util.cache.CacheStrategy;
 import com.spbsu.commons.util.cache.impl.FixedSizeCache;
 import solar.mr.*;
-import solar.mr.proc.State;
-import solar.mr.MRTableShard;
 import solar.mr.proc.impl.WhiteboardImpl;
-import solar.mr.routines.MRMap;
 import solar.mr.routines.MRRecord;
-import solar.mr.routines.MRReduce;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.LineNumberReader;
+import java.io.Reader;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * User: solar
  * Date: 19.09.14
  * Time: 17:08
  */
-public class YtMREnv extends BaseEnv implements ProfilableMREnv {
-
-    public YtMREnv(final ProcessRunner runner, final String tag, final String master) {
+public class YtMREnv extends RemoteMREnv {
+  public YtMREnv(final ProcessRunner runner, final String tag, final String master) {
     super(runner, tag, master);
   }
 
-  protected YtMREnv(final ProcessRunner runner, final String user, final String master,
+  @SuppressWarnings("UnusedDeclaration")
+  public YtMREnv(final ProcessRunner runner, final String user, final String master,
                     final Processor<CharSequence> errorsProc,
-                    final Processor<CharSequence> outputProc,
-                    ClosureJarBuilder jarBuilder) {
-    super(runner, user, master, errorsProc, outputProc, jarBuilder);
+                    final Processor<CharSequence> outputProc) {
+    super(runner, user, master, errorsProc, outputProc);
   }
 
   protected List<String> defaultOptions() {
@@ -90,12 +87,7 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
   }
 
   @Override
-  public boolean execute(Class<? extends MRRoutine> exec, State state, MRTableShard[] in, MRTableShard[] out, MRErrorsHandler errorsHandler) {
-    return execute(exec, state, in, out, errorsHandler, EMPTY_PROFILER);
-  }
-
-  @Override
-  public MRTableShard[] resolveAll(String[] paths, final Profiler profiler) {
+  public MRTableShard[] resolveAll(String[] paths) {
     final MRTableShard[] result = new MRTableShard[paths.length];
     final long time = System.currentTimeMillis();
     final Set<String> unknown = new HashSet<>();
@@ -178,8 +170,6 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
 
     /* uber-for */
     final int[] index = new int[2];
-    final CharSeqBuilder jsonOutputBuilder = new CharSeqBuilder();
-    jsonOutputBuilder.append('[');
 
     index[1] = listSeq.length;
     for (index[0] = 0; index[0] < listSeq.length; index[0] += 1) {
@@ -310,79 +300,54 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
   }
 
   @Override
-  public MRTableShard resolve(final String path, Profiler profiler) {
-    return resolveAll(new String[]{path}, profiler)[0];
-  }
-
-  @Override
   public MRTableShard resolve(final String path) {
-    return resolveAll(new String[]{path}, EMPTY_PROFILER)[0];
+    return resolveAll(new String[]{path})[0];
   }
 
   @Override
-  public MRTableShard[] resolveAll(String[] strings) {
-    return resolveAll(strings, EMPTY_PROFILER);
-  }
-
-  @Override
-  public boolean execute(final Class<? extends MRRoutine> routineClass, final State state, final MRTableShard[] in, final MRTableShard[] out,
-                         final MRErrorsHandler errorsHandler, Profiler profiler)
+  public boolean execute(MRRoutineBuilder builder, final MRErrorsHandler errorsHandler)
   {
     final List<String> options = defaultOptions();
-    if (MRMap.class.isAssignableFrom(routineClass))
-      options.add("map");
-    else if (MRReduce.class.isAssignableFrom(routineClass)) {
-      //options.add(inputShardsCount > 1 && inputShardsCount < 10 ? "-reducews" : "-reduce");
-      options.add("map-reduce");
-      options.add("--reduce-by key");
-      options.add("--sort-by key");
-    } else
-      throw new RuntimeException("Unknown MR routine type");
+    switch (builder.getRoutineType()) {
+      case REDUCE:
+        options.add("map-reduce");
+        options.add("--reduce-by key");
+        options.add("--sort-by key");
+        options.add("--reduce-memory-limit 2000");
+        options.add("--reducer");
+
+        break;
+      case MAP:
+        options.add("map");
+        //noinspection fallthrough
+      default:
+        options.add("--memory-limit 2000");
+        break;
+    }
 
     options.add("--format");
     options.add("\"<has_subkey=true;enable_table_index=true>yamr\"");
+    MRTableShard[] in = resolveAll(builder.input());
+    MRTableShard[] out = resolveAll(builder.output());
 
-    final MRTableShard[] realOut = new MRTableShard[out.length];
+//    final MRTableShard[] realOut = new MRTableShard[out.length];
     for(int i = 0; i < out.length; i++) {
       options.add("--dst");
       options.add(localPath(out[i]));
-      realOut[i] = createTable(out[i]); /* lazy materialization */
+//      realOut[i] =
+      createTable(out[i]); /* lazy materialization */
     }
 
-    final File jarFile;
-    synchronized (jarBuilder) {
-      for(final MRTableShard sh:in) {
-        jarBuilder.addInput(sh);
-      }
-      for(int i = 0; i < out.length; i++) {
-        jarBuilder.addOutput(realOut[i]);
-      }
-      //jarBuilder.setRoutine(routineClass);
-      jarBuilder.setState(state);
-      jarFile = jarBuilder.build(routineClass);
-      if (MRReduce.class.isAssignableFrom(routineClass))
-        options.add("--reduce-local-file");
-      else
-        options.add("--local-file");
-      options.add(jarFile.getAbsolutePath());
-    }
-
-    if (MRReduce.class.isAssignableFrom(routineClass)) {
-      options.add("--reduce-memory-limit 2000");
-      options.add("--reducer");
-    }
-    else {
-      options.add("--memory-limit 2000");
-    }
+    final File jarFile = builder.buildJar(this, errorsHandler);
 
     options.add("'/usr/local/java8/bin/java -XX:-UsePerfData -Xmx1G -Xms1G -jar ");
     options.add(jarFile.getName()); /* please do not append to the rest of the command */
-    options.add(" " + routineClass.getName() + " " + out.length + " " + profiler.isEnabled() + "'");
-
     int inCount = 0;
+
     for(final MRTableShard sh:in) {
       if (!resolve(sh.path()).isAvailable())
         continue;
+
       options.add("--src");
       options.add(localPath(sh));
       inCount ++;
@@ -424,7 +389,7 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
         System.err.println(arg);
       }
     }, null);
-    errorsCount[0] += read(errorsShard, new MRRoutine(new String[]{errorsShardName}, null, state) {
+    errorsCount[0] += read(errorsShard, new MRRoutine(new String[]{errorsShardName}, null, null) {
       @Override
       public void invoke(final MRRecord record) {
         CharSequence[] parts = CharSeqTools.split(record.value, '\t', new CharSequence[4]);
@@ -446,10 +411,6 @@ public class YtMREnv extends BaseEnv implements ProfilableMREnv {
   @Override
   public String toString() {
     return "YaMR://" + user + "@" + master + "/";
-  }
-
-  public ClosureJarBuilder getJarBuilder() {
-    return jarBuilder;
   }
 
   private final FixedSizeCache<String, MRTableShard> shardsCache = new FixedSizeCache<>(1000, CacheStrategy.Type.LRU);

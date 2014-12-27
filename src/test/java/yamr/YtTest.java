@@ -7,7 +7,9 @@ import solar.mr.env.ProcessRunner;
 import solar.mr.env.SSHProcessRunner;
 import solar.mr.env.YtMREnv;
 import solar.mr.proc.State;
-import solar.mr.proc.impl.AnnotatedMRProcess;
+import solar.mr.proc.AnnotatedMRProcess;
+import solar.mr.proc.Whiteboard;
+import solar.mr.proc.impl.WhiteboardImpl;
 import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
 
@@ -59,13 +61,13 @@ public class YtTest {
     final ProcessRunner runner = new SSHProcessRunner("testing.mobsearch.serp.yandex.ru", "/usr/bin/yt");
     final MREnv env = new YtMREnv(runner, "minamoto", "plato.yt.yandex.net");
 
-    final Properties vars = new Properties();
+    Whiteboard wb = new WhiteboardImpl(env, SampleSplitter.class.getName());
     List<String> array = new ArrayList<>();
     for (int i = 0; i < LIMIT; ++i) {
       array.add(Integer.toString(i));
     }
-    vars.put("var:array", array.toArray(new String[array.size()]));
-    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SampleSplitter.class, env, vars);
+    wb.set("var:array", array.toArray(new String[array.size()]));
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SampleSplitter.class, wb);
     mrProcess.wb().wipe();
     mrProcess.execute();
   }

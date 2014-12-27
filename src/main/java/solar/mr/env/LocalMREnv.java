@@ -13,8 +13,6 @@ import solar.mr.proc.State;
 import solar.mr.routines.MRRecord;
 
 import java.io.*;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 /**
@@ -58,54 +56,45 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
   }
 
   @Override
-  public boolean execute(final Class<? extends MRRoutine> exec, final State state, final MRTableShard[] in, final MRTableShard[] out,
-                         final MRErrorsHandler errorsHandler)
+  public boolean execute(MRRoutineBuilder builder, final MRErrorsHandler errorsHandler)
   {
-    final List<Writer> outputs = new ArrayList<>();
-    final List<String> inputNames = new ArrayList<>(in.length);
-    final List<File> inputFiles = new ArrayList<>(in.length);
     final boolean hasErrors[] = new boolean[]{false};
 
     try {
-      final Constructor<? extends MRRoutine> constructor = exec.getConstructor(String[].class, MROutput.class, State.class);
-      for (MRTableShard anIn : in) {
-        inputNames.add(anIn.path());
-        inputFiles.add(file(anIn.path(), anIn.isSorted()));
-      }
-      for (MRTableShard anOut : out) {
-        outputs.add(new FileWriter(file(anOut.path(), false)));
-        //noinspection ResultOfMethodCallIgnored
-        file(anOut.path(), true).delete();
-      }
-
-      final MROutputImpl mrOutput = new MROutputImpl(outputs.toArray(new Writer[outputs.size()]), new MRErrorsHandler() {
+      final MROutputImpl output = new MROutputImpl(this, builder.output(), new MRErrorsHandler() {
         @Override
         public void error(final String type, final String cause, MRRecord rec) {
           hasErrors[0] = true;
-          throw new RuntimeException(rec.source + "\t" + rec.toString() + "\n\t" + type + "\t" + cause.replace("\\n", "\n") + "\t");
+          errorsHandler.error(type, cause, rec);
         }
 
         @Override
         public void error(final Throwable th, final MRRecord rec) {
           hasErrors[0] = true;
-          throw new RuntimeException(rec.source + "\t" + rec.toString(), th);
+          errorsHandler.error(th, rec);
         }
       });
-      final MRRoutine routine = constructor.newInstance(inputNames.toArray(new String[inputNames.size()]), mrOutput, state);
+      final MRRoutine routine = builder.build(output);
 
-      for (final File file : inputFiles) {
+      for (final String path : routine.input()) {
+        final File file = file(path);
         if (file.exists())
           CharSeqTools.processLines(new FileReader(file), routine);
       }
       routine.process(CharSeq.EMPTY);
 
-      for (MRTableShard anOut : out) {
-        invoke(new ShardAlter(anOut));
+      output.interrupt();
+      output.join();
+
+      { // invalidating caches
+        final long time = System.currentTimeMillis();
+        for (MRTableShard anOut : resolveAll(routine.output())) {
+          if (anOut.metaTS() < time)
+            invoke(new ShardAlter(anOut, ShardAlter.AlterType.CHANGED));
+        }
       }
 
-      mrOutput.interrupt();
-      mrOutput.join();
-    } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException | IOException e) {
+    } catch (IOException e) {
       throw new RuntimeException(e);
     }
     return !hasErrors[0];
@@ -345,18 +334,11 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
     return file;
   }
 
-  private File path(final String path) {
-    final File node = new File(home, path);
-    if (node.isDirectory()) {
-      return node;
-    }
-    else {
-      final File sorted = new File(home, path + ".txt.sorted");
-      if (sorted.exists())
-        return sorted;
-      else
-        return new File(home, path + ".txt");
-    }
+  public File file(final String path) {
+    final File result = file(path, true);
+    if (result != null)
+      return result;
+    return file(path, false);
   }
 
   private String crc(File file) {
