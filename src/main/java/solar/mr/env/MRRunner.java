@@ -35,6 +35,9 @@ public class MRRunner implements Runnable {
          new OutputStreamWriter(System.out, StreamTools.UTF),
          readFromStream(MRRunner.class.getResourceAsStream("/" + BUILDER_RESOURCE_NAME), MRRunner.class.getClassLoader()));
   }
+  public MRRunner(InputStream in, OutputStream out) {
+    this.out = out;
+    this.in = new InputStreamReader(in, Charset.forName("UTF-8"));
 
   public MRRunner(Reader in, Writer out, MRRoutineBuilder builder) {
     this.out = out;

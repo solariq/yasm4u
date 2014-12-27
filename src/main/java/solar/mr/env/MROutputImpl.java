@@ -9,6 +9,8 @@ import solar.mr.MROutput;
 import solar.mr.routines.MRRecord;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.LinkedTransferQueue;
 
 /**
