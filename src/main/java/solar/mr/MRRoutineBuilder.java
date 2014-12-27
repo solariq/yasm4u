@@ -7,7 +7,10 @@ import com.spbsu.commons.system.RuntimeUtils;
 import solar.mr.env.MROutputImpl;
 import solar.mr.env.MRRunner;
 import solar.mr.proc.State;
+<<<<<<< HEAD
 import solar.mr.routines.MRRecord;
+=======
+>>>>>>> Rework for jar generation, MREnv execution interface, introduced job builders
 
 import java.io.*;
 import java.util.ArrayList;
@@ -82,12 +85,16 @@ public abstract class MRRoutineBuilder implements Serializable {
     complete();
     if (jar != null)
       return jar;
+<<<<<<< HEAD
     Process process = null;
+=======
+>>>>>>> Rework for jar generation, MREnv execution interface, introduced job builders
     try {
       final File jar = File.createTempFile("yamr-routine-", ".jar");
       //noinspection ResultOfMethodCallIgnored
       jar.delete();
       jar.deleteOnExit();
+<<<<<<< HEAD
       process = RuntimeUtils.runJvm(MRRunner.class, "--dump", jar.getAbsolutePath());
       final ByteArrayOutputStream builderSerialized = new ByteArrayOutputStream();
       try (final ObjectOutputStream outputStream = new ObjectOutputStream(builderSerialized)) {
@@ -97,6 +104,12 @@ public abstract class MRRoutineBuilder implements Serializable {
       final Reader from = new InputStreamReader(process.getInputStream(), StreamTools.UTF);
       to.append(CharSeqTools.toBase64(builderSerialized.toByteArray())).append("\n");
       to.flush();
+=======
+
+      final Process process = RuntimeUtils.runJvm(MRRunner.class, "--dump", jar.getAbsolutePath());
+      final Writer to = new OutputStreamWriter(process.getOutputStream(), StreamTools.UTF);
+      final Reader from = new InputStreamReader(process.getInputStream(), StreamTools.UTF);
+>>>>>>> Rework for jar generation, MREnv execution interface, introduced job builders
 
       for (int i = 0; i < tablesIn.size(); i++) {
         final MRTableShard inputShard = env.resolve(tablesIn.get(i));
