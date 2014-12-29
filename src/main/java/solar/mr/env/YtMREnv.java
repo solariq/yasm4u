@@ -83,7 +83,7 @@ public class YtMREnv extends RemoteMREnv {
       public void process(final CharSequence arg) {
         linesProcessor.process(arg);
       }
-    }, defaultErrorsProcessor, null);
+    }), defaultErrorsProcessor, null);
   }
 
   @Override
