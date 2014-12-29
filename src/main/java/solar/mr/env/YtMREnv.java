@@ -83,7 +83,7 @@ public class YtMREnv extends RemoteMREnv {
       public void process(final CharSequence arg) {
         linesProcessor.process(arg);
       }
-    }, defaultErrorsProcessor, null);
+    }), defaultErrorsProcessor, null);
   }
 
   @Override
@@ -344,13 +344,14 @@ public class YtMREnv extends RemoteMREnv {
     options.add("'/usr/local/java8/bin/java -XX:-UsePerfData -Xmx1G -Xms1G -jar ");
     options.add(jarFile.getName()); /* please do not append to the rest of the command */
 
-    for(int i = 0; i < in.length; i++) {
+    int inCount = 0;
+    for(final MRTableShard sh:in) {
       options.add("--src");
       options.add(localPath(sh));
       inCount ++;
     }
     if (inCount == 0) {
-      for (final MRTableShard d:realOut) {
+      for (final MRTableShard d:out) {
         createTable(d);
       }
       return true;
