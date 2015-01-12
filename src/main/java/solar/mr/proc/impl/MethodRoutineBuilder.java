@@ -38,7 +38,7 @@ class MethodRoutineBuilder extends MRRoutineBuilder {
       final Object instance = routineClass.getConstructor(State.class);
       switch (type) {
         case MAP: {
-          final Method method = routineClass.getMethod(methodName, String.class, String.class, CharSequence.class);
+          final Method method = routineClass.getMethod(methodName, String.class, String.class, CharSequence.class, MROutput.class);
           return new MRMap(input(), output, state) {
             @Override
             public void map(String key, String sub, CharSequence value) {
@@ -51,7 +51,7 @@ class MethodRoutineBuilder extends MRRoutineBuilder {
           };
         }
         case REDUCE: {
-          final Method method = routineClass.getMethod(methodName, String.class, Iterator.class);
+          final Method method = routineClass.getMethod(methodName, String.class, Iterator.class, MROutput.class);
           return new MRReduce(input(), output, state) {
             @Override
             public void reduce(String key, Iterator<MRRecord> reduce) {
