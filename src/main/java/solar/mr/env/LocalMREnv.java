@@ -336,7 +336,7 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
 
   public File file(final String path) {
     final File result = file(path, true);
-    if (result != null)
+    if (result != null && result.exists())
       return result;
     return file(path, false);
   }

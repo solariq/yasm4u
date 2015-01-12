@@ -32,10 +32,10 @@ class MethodRoutineBuilder extends MRRoutineBuilder {
   }
 
   @Override
-  public MRRoutine build(MROutput output) {
+  public MRRoutine build(final MROutput output) {
     complete();
     try {
-      final Object instance = routineClass.getConstructor(State.class);
+      final Object instance = routineClass.getConstructor(State.class).newInstance(state);
       switch (type) {
         case MAP: {
           final Method method = routineClass.getMethod(methodName, String.class, String.class, CharSequence.class, MROutput.class);
@@ -43,7 +43,7 @@ class MethodRoutineBuilder extends MRRoutineBuilder {
             @Override
             public void map(String key, String sub, CharSequence value) {
               try {
-                method.invoke(instance, key, sub, value);
+                method.invoke(instance, key, sub, value, output);
               } catch (IllegalAccessException | InvocationTargetException e) {
                 throw new RuntimeException(e);
               }
@@ -56,7 +56,7 @@ class MethodRoutineBuilder extends MRRoutineBuilder {
             @Override
             public void reduce(String key, Iterator<MRRecord> reduce) {
               try {
-                method.invoke(instance, key, reduce);
+                method.invoke(instance, key, reduce, output);
               } catch (IllegalAccessException | InvocationTargetException e) {
                 throw new RuntimeException(e);
               }
@@ -64,7 +64,7 @@ class MethodRoutineBuilder extends MRRoutineBuilder {
           };
         }
       }
-    } catch (NoSuchMethodException e) {
+    } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
       throw new RuntimeException(e);
     }
     throw new UnsupportedOperationException("Should never happen");

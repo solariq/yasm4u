@@ -23,10 +23,9 @@ public final class MRTestUtils {
     for (Record record: records) {
       sb.append(record + "\n");
     }
-    try {
-      Reader reader = new InputStreamReader(new ByteArrayInputStream(sb.toString().getBytes("UTF-8")));
+    try (Reader reader = new InputStreamReader(new ByteArrayInputStream(sb.toString().getBytes("UTF-8")))){
       env.write(pathToShard(env, path), reader);
-    } catch (UnsupportedEncodingException e) {
+    } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -91,8 +90,8 @@ public final class MRTestUtils {
   }
 
   private static MRTableShard pathToShard(MREnv env, String path) {
-    //return env.resolve(path);
-    return new WhiteboardImpl.LazyTableShard(path, env);
+    return env.resolve(path);
+//    return new WhiteboardImpl.LazyTableShard(path, env);
     //return new MRTableShard(path, env, true, false, "0", 0, 0, 0, System.currentTimeMillis());
   }
 
