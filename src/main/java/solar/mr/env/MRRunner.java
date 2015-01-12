@@ -35,9 +35,12 @@ public class MRRunner implements Runnable {
          new OutputStreamWriter(System.out, StreamTools.UTF),
          readFromStream(MRRunner.class.getResourceAsStream("/" + BUILDER_RESOURCE_NAME), MRRunner.class.getClassLoader()));
   }
-  public MRRunner(InputStream in, OutputStream out) {
+
+  public MRRunner(Reader in, Writer out, MRRoutineBuilder builder) {
     this.out = out;
-    this.in = new InputStreamReader(in, Charset.forName("UTF-8"));
+    this.in = in;
+    this.routineBuilder = builder;
+  }
 
   public MRRunner(Holder<byte[]> holder) {
     final LineNumberReader in = new LineNumberReader(new InputStreamReader(System.in, StreamTools.UTF));
@@ -60,7 +63,7 @@ public class MRRunner implements Runnable {
           }
         }
       };
-      routineBuilder = (MRRoutineBuilder)is.readObject();
+      return  (MRRoutineBuilder)is.readObject();
     } catch (ClassNotFoundException | IOException e) {
       throw new RuntimeException(e);
     }
@@ -129,6 +132,9 @@ public class MRRunner implements Runnable {
       MRTools.buildClosureJar(MRRunner.class, args[1], new Action<Class>() {
         @Override
         public void invoke(Class aClass) {
+          final LineNumberReader in = new LineNumberReader(new InputStreamReader(System.in, StreamTools.UTF));
+          final OutputStreamWriter out = new OutputStreamWriter(System.out, StreamTools.UTF);
+          final ClassLoader loader = aClass.getClassLoader();
           try {
             final Object serializedBuilderHolder = aClass.getClassLoader().loadClass(Holder.class.getName()).newInstance();
             final Runnable runnable = (Runnable) aClass.getConstructor(serializedBuilderHolder.getClass()).newInstance(serializedBuilderHolder);
