@@ -122,12 +122,11 @@ public class StateImpl implements State {
   }
 
   private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+    state = new HashMap<>();
     while(in.readBoolean()) {
       final String current = in.readUTF();
       final String itemClass = in.readUTF();
       final Object read = State.SERIALIZATION.read(in.readUTF(), Class.forName(itemClass));
-      if (state == null)
-        state = new HashMap<>();
       state.put(current, read);
     }
   }

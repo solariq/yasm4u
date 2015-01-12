@@ -85,7 +85,7 @@ public class CompositeMREnv implements MREnv {
         return false;
       final MRTableShard[] outAfter = original.resolveAll(paths(out));
       for(int i = 0; i < out.length; i++) {
-        copyState.set(out[i].path(), Pair.create(outAfter[i], localOutAfter[i]));
+        copyState.set("mr://" + out[i].path(), Pair.create(outAfter[i], localOutAfter[i]));
       }
     }
     finally {
@@ -106,7 +106,7 @@ public class CompositeMREnv implements MREnv {
     MRTableShard[] result = new MRTableShard[shards.length];
     for(int i = 0; i < shards.length; i++) {
       final MRTableShard shard = shards[i];
-      final Pair<MRTableShard,MRTableShard> remote2local = copyState.get(shard.path());
+      final Pair<MRTableShard,MRTableShard> remote2local = copyState.snapshot().get("mr://" + shard.path());
       if (remote2local != null && shard.equals(remote2local.second)) {
         result[i] = remote2local.second;
         continue;
@@ -183,7 +183,7 @@ public class CompositeMREnv implements MREnv {
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
-      copyState.set(shard.path(), Pair.create(shard, result[i] = localShardHolder.getValue()));
+      copyState.set("mr://" + shard.path(), Pair.create(shard, result[i] = localShardHolder.getValue()));
     }
     return result;
   }
@@ -248,7 +248,7 @@ public class CompositeMREnv implements MREnv {
 
   @Override
   public String name() {
-    return "CompositeMREnv(" + original.name() + "," + localCopy.name() + ")";
+    return original.name();
   }
 
   @Override
@@ -259,5 +259,10 @@ public class CompositeMREnv implements MREnv {
   @Override
   public void addListener(Action<? super ShardAlter> lst) {
     original.addListener(lst);
+  }
+
+  @Override
+  public String toString() {
+    return "CompositeMREnv(" + original.toString() + "," + localCopy.toString() + ")";
   }
 }

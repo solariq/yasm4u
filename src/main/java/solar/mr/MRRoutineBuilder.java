@@ -81,15 +81,21 @@ public abstract class MRRoutineBuilder implements Serializable {
     complete();
     if (jar != null)
       return jar;
+    Process process = null;
     try {
       final File jar = File.createTempFile("yamr-routine-", ".jar");
       //noinspection ResultOfMethodCallIgnored
       jar.delete();
       jar.deleteOnExit();
-
-      final Process process = RuntimeUtils.runJvm(MRRunner.class, "--dump", jar.getAbsolutePath());
+      process = RuntimeUtils.runJvm(MRRunner.class, "--dump", jar.getAbsolutePath());
+      final ByteArrayOutputStream builderSerialized = new ByteArrayOutputStream();
+      try (final ObjectOutputStream outputStream = new ObjectOutputStream(builderSerialized)) {
+        outputStream.writeObject(this);
+      }
       final Writer to = new OutputStreamWriter(process.getOutputStream(), StreamTools.UTF);
       final Reader from = new InputStreamReader(process.getInputStream(), StreamTools.UTF);
+      to.append(CharSeqTools.toBase64(builderSerialized.toByteArray())).append("\n");
+      to.flush();
 
       for (int i = 0; i < tablesIn.size(); i++) {
         final MRTableShard inputShard = env.resolve(tablesIn.get(i));
@@ -103,7 +109,6 @@ public abstract class MRRoutineBuilder implements Serializable {
             }
           }
         });
-        to.close();
         final MROutputImpl output = new MROutputImpl(env, output(), errorsHandler);
         CharSeqTools.processLines(from, new Processor<CharSequence>() {
           @Override
@@ -112,9 +117,19 @@ public abstract class MRRoutineBuilder implements Serializable {
           }
         });
       }
+      to.close();
+      process.waitFor();
       return this.jar = jar;
-    } catch (IOException e) {
+    } catch (IOException | InterruptedException e) {
       throw new RuntimeException(e);
+    }
+    finally {
+      if (process != null)
+        try {
+          StreamTools.transferData(process.getErrorStream(), System.err);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
     }
   }
 

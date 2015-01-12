@@ -32,10 +32,10 @@ public class BaseMRTest {
   @Parameterized.Parameters
   public static Collection<Object[]> data() {
     return Arrays.asList(new Object[][]{
-        {LocalMREnv.createTemp()},
-        {new YaMREnv(YAMR_RUNNER, YAMR_USER, YAMR_CLUSTER)},
+//        {LocalMREnv.createTemp()},
+        {new CompositeMREnv(new YaMREnv(YAMR_RUNNER, YAMR_USER, YAMR_CLUSTER))},
         //{new ProfilerMREnv(new YaMREnv(YAMR_RUNNER, YAMR_USER, YAMR_CLUSTER))},
-        {new YtMREnv(YTMR_RUNNER, YTMR_USER, YTMR_CLUSTER)}
+//        {new YtMREnv(YTMR_RUNNER, YTMR_USER, YTMR_CLUSTER)}
     });
   }
 
