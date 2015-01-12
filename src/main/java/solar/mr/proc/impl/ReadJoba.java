@@ -44,8 +44,8 @@ public class ReadJoba implements Joba {
 
   @Override
   public boolean run(final Whiteboard wb) {
+    final MRTableShard shard = wb.get(input[0]);
     final State state = wb.snapshot();
-    final MRTableShard shard = state.get(input[0]);
     final ArrayBlockingQueue<CharSequence> seqs = new ArrayBlockingQueue<>(1000);
     final Thread readTh = new Thread(){
       @Override
