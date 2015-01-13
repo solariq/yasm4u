@@ -54,9 +54,7 @@ public class StateImpl implements State {
       if (!processAs(consumes[i], new Processor<MRTableShard>() {
         @Override
         public void process(MRTableShard shard) {
-          final MREnv env = shard.container();
-          /* YtMREnv - shouldn't be here, but at some moments it affected because results not "available" before opertion finished */
-          holder[0] &= env instanceof YaMREnv || env instanceof YtMREnv || shard.isAvailable();
+          holder[0] &= shard.isAvailable();
         }
       }))
         holder[0] &= keys().contains(consumes[i]);

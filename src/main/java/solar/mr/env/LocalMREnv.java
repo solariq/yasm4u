@@ -9,7 +9,6 @@ import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.Pair;
 import org.apache.commons.io.FileUtils;
 import solar.mr.*;
-import solar.mr.proc.State;
 import solar.mr.routines.MRRecord;
 
 import java.io.*;
@@ -107,18 +106,18 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
       final File sortedFile = file(path, true);
       if (sortedFile.exists()) {
         final long[] recordsAndKeys = countRecordsAndKeys(sortedFile);
-        result = new MRTableShard(path, this, true, true, crc(sortedFile), length(sortedFile), recordsAndKeys[1], recordsAndKeys[0], System.currentTimeMillis());
+        result = new MRTableShard(path, true, true, crc(sortedFile), length(sortedFile), recordsAndKeys[1], recordsAndKeys[0], System.currentTimeMillis());
       }
     }
     if (result == null) {
       final File unsortedFile = file(path, false);
       if (unsortedFile.exists()) {
         final long[] recordsAndKeys = countRecordsAndKeys(unsortedFile);
-        result = new MRTableShard(path, this, true, false, crc(unsortedFile), length(unsortedFile), recordsAndKeys[1], recordsAndKeys[0], System.currentTimeMillis());
+        result = new MRTableShard(path, true, false, crc(unsortedFile), length(unsortedFile), recordsAndKeys[1], recordsAndKeys[0], System.currentTimeMillis());
       }
     }
     if (result == null)
-      result = new MRTableShard(path, this, false, false, "0", 0, 0, 0, System.currentTimeMillis());
+      result = new MRTableShard(path, false, false, "0", 0, 0, 0, System.currentTimeMillis());
     invoke(new ShardAlter(result, ShardAlter.AlterType.UPDATED));
     return result;
   }
@@ -191,7 +190,7 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
 
   @Override
   public MRTableShard delete(final MRTableShard shard) {
-    final MRTableShard updatedShard = new MRTableShard(shard.path(), this, false, false, "0", 0, 0, 0, System.currentTimeMillis());
+    final MRTableShard updatedShard = new MRTableShard(shard.path(), false, false, "0", 0, 0, 0, System.currentTimeMillis());
     try {
       final File sorted = file(shard.path(), true);
       if (sorted.exists())
@@ -250,12 +249,12 @@ public class LocalMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> impleme
           final long[] recordsAndKeys = countRecordsAndKeys(file);
           final String shardPath = finalPrefix + path.substring(0, path.indexOf(".txt"));
           if (!result.containsKey(shardPath)) {
-            result.put(shardPath, new MRTableShard(shardPath, LocalMREnv.this, true, false, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], System.currentTimeMillis()));
+            result.put(shardPath, new MRTableShard(shardPath, true, false, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], System.currentTimeMillis()));
           }
         } else if (path.endsWith(".txt.sorted")) {
           final long[] recordsAndKeys = countRecordsAndKeys(file);
           final String shardPath = finalPrefix + path.substring(0, path.indexOf(".txt.sorted"));
-          result.put(shardPath, new MRTableShard(shardPath, LocalMREnv.this, true, true, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], System.currentTimeMillis()));
+          result.put(shardPath, new MRTableShard(shardPath, true, true, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], System.currentTimeMillis()));
         }
       }
     });

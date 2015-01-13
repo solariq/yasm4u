@@ -7,6 +7,7 @@ import com.spbsu.commons.system.RuntimeUtils;
 import solar.mr.env.MROutputImpl;
 import solar.mr.env.MRRunner;
 import solar.mr.proc.State;
+import solar.mr.routines.MRRecord;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -111,7 +112,17 @@ public abstract class MRRoutineBuilder implements Serializable {
         });
       }
       to.close();
-      final MROutputImpl output = new MROutputImpl(env, output(), errorsHandler);
+      final MROutputImpl output = new MROutputImpl(env, output(), new MRErrorsHandler() {
+        @Override
+        public void error(String type, String cause, MRRecord record) {
+          throw new RuntimeException("Error during MR operation.\nType: " + type + "\tCause: " + cause + "\tRecord: [" + record + "]");
+        }
+
+        @Override
+        public void error(Throwable th, MRRecord record) {
+          throw new RuntimeException("Exception during processing: [" + record.toString() + "]", th);
+        }
+      });
       CharSeqTools.processLines(from, new Processor<CharSequence>() {
         @Override
         public void process(CharSequence arg) {

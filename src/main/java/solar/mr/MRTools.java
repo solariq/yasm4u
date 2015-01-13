@@ -13,8 +13,6 @@ import java.util.jar.Manifest;
 
 
 import com.spbsu.commons.func.Action;
-import com.spbsu.commons.func.types.ConversionRepository;
-import com.spbsu.commons.func.types.SerializationRepository;
 import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.seq.CharSeqTools;
 import javassist.ClassPool;
@@ -173,7 +171,7 @@ public class MRTools {
   }
 
   public static MRTableShard updateTableShard(MRTableShard shard, boolean sorted, CounterInputStream cis) {
-    return new MRTableShard(shard.path(), shard.container(), true, sorted,
+    return new MRTableShard(shard.path(), true, sorted,
             "" + cis.totalLength(), cis.totalLength(), cis.keysCount(), cis.recordsCount(),
             System.currentTimeMillis());
   }

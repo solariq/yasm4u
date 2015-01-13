@@ -274,15 +274,17 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
   }
 
   public static class LazyTableShard extends MRTableShard {
+    private final MREnv env;
     MRTableShard realShard;
 
     public LazyTableShard(String path, MREnv env) {
-      super(path, env, false, false, "", 0, 0, 0, 0);
+      super(path, false, false, "", 0, 0, 0, 0);
+      this.env = env;
     }
 
     private MRTableShard real() {
       if (realShard == null)
-        realShard = container().resolve(path());
+        realShard = env.resolve(path());
       return realShard;
     }
 

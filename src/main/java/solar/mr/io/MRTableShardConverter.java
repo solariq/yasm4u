@@ -1,11 +1,9 @@
 package solar.mr.io;
 
 
-import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.types.ConversionPack;
 import com.spbsu.commons.func.types.TypeConverter;
 import com.spbsu.commons.seq.CharSeqTools;
-import solar.mr.proc.Whiteboard;
 import solar.mr.MRTableShard;
 
 /**
@@ -18,7 +16,7 @@ public class MRTableShardConverter implements ConversionPack<MRTableShard,CharSe
     @Override
     public CharSequence convert(final MRTableShard from) {
       final StringBuilder builder = new StringBuilder();
-      builder.append(from.container().name()).append("!").append(from.path())
+      builder.append(from.path())
           .append("?available=").append(from.isAvailable())
           .append("&sorted=").append(from.isSorted());
       if (from.isAvailable()) {
@@ -33,21 +31,10 @@ public class MRTableShardConverter implements ConversionPack<MRTableShard,CharSe
     }
   }
 
-  public static class From implements TypeConverter<CharSequence, MRTableShard>, Action<Whiteboard> {
-    private Whiteboard wb;
-
-    @Override
-    public void invoke(final Whiteboard wb) {
-      this.wb = wb;
-    }
-
+  public static class From implements TypeConverter<CharSequence, MRTableShard> {
     @Override
     public MRTableShard convert(final CharSequence from) {
-      CharSequence[] parts = CharSeqTools.split(from, "!");
-      final String env = parts[0].toString();
-      if (!env.equals(wb.env().name()))
-        throw new IllegalStateException("Serialized shard does not correspond to current environment");
-      parts = CharSeqTools.split(parts[1], "?");
+      CharSequence[] parts = CharSeqTools.split(from, "?");
       final String path = parts[0].toString();
       parts = CharSeqTools.split(parts[1], "#");
       final long ts = CharSeqTools.parseLong(parts[1]);
@@ -75,7 +62,7 @@ public class MRTableShardConverter implements ConversionPack<MRTableShard,CharSe
           keysCount = CharSeqTools.parseLong(kv[1]);
       }
 
-      return new MRTableShard(path, wb.env(), available, sorted, crc, length, keysCount, recordsCount, ts);
+      return new MRTableShard(path, available, sorted, crc, length, keysCount, recordsCount, ts);
     }
   }
   @Override

@@ -133,7 +133,7 @@ public class YaMREnv extends RemoteMREnv {
           final String sorted = metaJSON.has("sorted") ? metaJSON.get("sorted").toString() : "0";
 //          final long ts = metaJSON.has("mod_time") ? metaJSON.get("mod_time").longValue() : System.currentTimeMillis();
           final long recordsCount = metaJSON.has("records") ? metaJSON.get("records").longValue() : 0;
-          result.add(new MRTableShard(name, this, true, "1".equals(sorted), "" + size, size, recordsCount/10, recordsCount, System.currentTimeMillis()));
+          result.add(new MRTableShard(name, true, "1".equals(sorted), "" + size, size, recordsCount/10, recordsCount, System.currentTimeMillis()));
         }
         next = parser.nextToken();
       }
@@ -165,7 +165,7 @@ public class YaMREnv extends RemoteMREnv {
     options.add(localPath(to));
     options.add("-copy");
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
-    final MRTableShard updatedShard = new MRTableShard(localPath(to), to.container(), true, false, "" + totalLength, totalLength, keysCount, recordsCount, System.currentTimeMillis());
+    final MRTableShard updatedShard = new MRTableShard(localPath(to), true, false, "" + totalLength, totalLength, keysCount, recordsCount, System.currentTimeMillis());
     invoke(new ShardAlter(updatedShard, ShardAlter.AlterType.UPDATED));
     return updatedShard;
   }
@@ -208,7 +208,7 @@ public class YaMREnv extends RemoteMREnv {
     options.add("-drop");
     options.add(localPath(shard));
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
-    final MRTableShard updatedShard = new MRTableShard(localPath(shard), shard.container(), false, false, "0", 0, 0, 0, System.currentTimeMillis());
+    final MRTableShard updatedShard = new MRTableShard(localPath(shard), false, false, "0", 0, 0, 0, System.currentTimeMillis());
     invoke(new ShardAlter(updatedShard, ShardAlter.AlterType.UPDATED));
     return updatedShard;
   }
@@ -217,7 +217,7 @@ public class YaMREnv extends RemoteMREnv {
     if (shard.isSorted())
       return shard;
     final List<String> options = defaultOptions();
-    final MRTableShard newShard = new MRTableShard(localPath(shard), this, true, true, shard.crc(), shard.length(), shard.keysCount(), shard.recordsCount(), System.currentTimeMillis());
+    final MRTableShard newShard = new MRTableShard(localPath(shard), true, true, shard.crc(), shard.length(), shard.keysCount(), shard.recordsCount(), System.currentTimeMillis());
     options.add("-sort");
     options.add(localPath(shard));
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
@@ -300,7 +300,7 @@ public class YaMREnv extends RemoteMREnv {
     }
     for(int i = 0; i < result.length; i++) {
       if (result[i] == null)
-        result[i] = new MRTableShard(paths[i], this, false, false, "0", 0, 0, 0, time);
+        result[i] = new MRTableShard(paths[i], false, false, "0", 0, 0, 0, time);
       invoke(new ShardAlter(result[i], ShardAlter.AlterType.UPDATED));
     }
     return result;
@@ -363,7 +363,7 @@ public class YaMREnv extends RemoteMREnv {
         System.err.println(arg);
       }
     }, null);
-    final MRTableShard errorsShard = new MRTableShard(errorsShardName, this, true, false, "0", 0, 0, 0, System.currentTimeMillis());
+    final MRTableShard errorsShard = new MRTableShard(errorsShardName, true, false, "0", 0, 0, 0, System.currentTimeMillis());
     MRRoutine errorProcessor = new MRRoutine(new String[]{errorsShardName}, null, null) {
       @Override
       public void invoke(final MRRecord record) {

@@ -28,7 +28,7 @@ public class MROutputImpl implements MROutput {
   public MROutputImpl(final Writer out, String[] outputTables) {
     this.outTables = outputTables;
     this.errorsHandler = null;
-    this.errorTable = outputTables.length - 1;
+    this.errorTable = outputTables.length;
     outputThread = new Thread(new Runnable() {
       @Override
       public void run() {
@@ -183,7 +183,7 @@ public class MROutputImpl implements MROutput {
     }
     else if (split.length >= 3) {
       if (lastActiveTable == errorTable) {
-        final MRRecord rec = new MRRecord(outTables[lastActiveTable], split[2].toString(), split[3].toString(), split[4]);
+        final MRRecord rec = new MRRecord(split[2].toString(), split[3].toString(), split[4].toString(), split[5]);
 
         boolean isException = false;
         {

@@ -29,14 +29,9 @@ public class MRTableShardArrayConverter implements ConversionPack<MRTableShard[]
     }
   }
 
-  public static class FromArray implements TypeConverter<CharSequence, MRTableShard[]>, Action<Whiteboard> {
+  public static class FromArray implements TypeConverter<CharSequence, MRTableShard[]> {
 
     private final MRTableShardConverter.From SINGLE_FROM = new MRTableShardConverter.From();
-
-    @Override
-    public void invoke(final Whiteboard wb) {
-      SINGLE_FROM.invoke(wb);
-    }
 
     @Override
     public MRTableShard[] convert(final CharSequence from) {

@@ -117,7 +117,7 @@ public class YtMREnv extends RemoteMREnv {
 
     for(int i = 0; i < result.length; i++) {
       if (result[i] == null)
-        result[i] = new MRTableShard(paths[i], this, false, false, "0", 0, 0, 0, System.currentTimeMillis());
+        result[i] = new MRTableShard(paths[i], false, false, "0", 0, 0, 0, System.currentTimeMillis());
       else {
         shardsCache.put(paths[i], result[i]);
         invoke(new ShardAlter(result[i], ShardAlter.AlterType.UPDATED));
@@ -194,7 +194,7 @@ public class YtMREnv extends RemoteMREnv {
       final long ts = c.getTimeInMillis();
       final long recordsCount = metaJSON.has("row_count") ? metaJSON.get("row_count").longValue() : 0;
       final String path = prefix.endsWith("/" + name)? prefix : prefix + "/" + name;
-      final MRTableShard sh = new MRTableShard(path, this, true, sorted, "" + size, size, recordsCount/10, recordsCount, ts);
+      final MRTableShard sh = new MRTableShard(path, true, sorted, "" + size, size, recordsCount/10, recordsCount, ts);
       result.add(sh);
       invoke(new ShardAlter(sh, ShardAlter.AlterType.UPDATED));
     }

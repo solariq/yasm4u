@@ -8,7 +8,6 @@ package solar.mr;
 */
 public class MRTableShard {
   private final String path;
-  private final MREnv container;
   private final long recordsCount;
   private final long metaTS;
   private final boolean exist;
@@ -17,10 +16,9 @@ public class MRTableShard {
   private final long length;
   private final long keysCount;
 
-  public MRTableShard(final String path, final MREnv container, final boolean exist, final boolean sorted, final String crc,
+  public MRTableShard(final String path, final boolean exist, final boolean sorted, final String crc,
                       long length, long keysCount, long recordsCount, final long ts) {
     this.path = path;
-    this.container = container;
     this.exist = exist;
     this.crc = crc;
     this.sorted = sorted;
@@ -44,13 +42,12 @@ public class MRTableShard {
       return false;
 
     final MRTableShard that = (MRTableShard) o;
-    return container().name().equals(that.container().name()) && crc.equals(that.crc) && exist == that.exist && sorted == that.sorted && path().equals(that.path());
+    return crc.equals(that.crc) && exist == that.exist && sorted == that.sorted && path().equals(that.path());
   }
 
   @Override
   public int hashCode() {
     int result = path.hashCode();
-    result = 31 * result + container.hashCode();
     result = 31 * result + (exist ? 1 : 0);
     result = 31 * result + crc.hashCode();
     result = 31 * result + (sorted ? 1 : 0);
@@ -59,15 +56,11 @@ public class MRTableShard {
 
   @Override
   public String toString() {
-    return container().name() + path();
+    return path();
   }
 
   public String path() {
     return path;
-  }
-
-  public MREnv container() {
-    return container;
   }
 
   public long recordsCount() {
