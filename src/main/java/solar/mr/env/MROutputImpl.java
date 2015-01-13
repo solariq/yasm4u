@@ -28,11 +28,7 @@ public class MROutputImpl implements MROutput {
   public MROutputImpl(final Writer out, String[] outputTables) {
     this.outTables = outputTables;
     this.errorsHandler = null;
-<<<<<<< HEAD
     this.errorTable = outputTables.length;
-=======
-    this.errorTable = outputTables.length - 1;
->>>>>>> Rework for jar generation, MREnv execution interface, introduced job builders
     outputThread = new Thread(new Runnable() {
       @Override
       public void run() {
