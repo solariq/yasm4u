@@ -24,7 +24,7 @@ import static org.junit.Assert.assertTrue;
  * Created by inikifor on 04.12.14.
  */
 @RunWith(Parameterized.class)
-public final class AsteriskTest extends BaseMRTest {
+public abstract class AsteriskTest extends BaseMRTest {
 
   private final Record[] RECORDS_1 = createRecords(10, 3);
   private final Record[] RECORDS_2 = createRecords(20, 3);

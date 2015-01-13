@@ -8,7 +8,7 @@ print STDERR (time())." ";
 if ($mode eq "next") {
     my $pid = shift @ARGV;
     my $file = shift @ARGV;
-    print STDERR "Next $pid $file\n";
+    print STDERR "-> Next $pid $file\n";
     $file =~ /(.*\/)(\d+)$/;
     $index = $2;
     $dir = $1;
@@ -16,12 +16,15 @@ if ($mode eq "next") {
     $next = $dir.(++$index);
     if (-e $next) {
         print STDOUT "next $next\n";
+        print STDERR "<- $next\n";
     }
     elsif(0 == system("kill -0 $pid 2>/dev/null")) {
         print "alive\n";
+        print STDERR "<- alive\n";
     }
     else {
         print "dead\n";
+        print STDERR "<- dead\n";
     }
 }
 elsif ($mode eq "run") {
@@ -34,7 +37,7 @@ elsif ($mode eq "run") {
     my $bin = shift @ARGV;
     my $command = "$bin '".join("' '", @ARGV)."' 2>&1 |";
     open MR, $command;
-    print STDERR "Run $$ $file $command\n";
+    print STDERR "-> Run $$ $file $command\n";
     $index = 0;
     while(<MR>) {
       my $modIndex = $index % $LINES_PER_CHUNK;

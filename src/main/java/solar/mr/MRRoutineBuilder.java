@@ -109,15 +109,16 @@ public abstract class MRRoutineBuilder implements Serializable {
             }
           }
         });
-        final MROutputImpl output = new MROutputImpl(env, output(), errorsHandler);
-        CharSeqTools.processLines(from, new Processor<CharSequence>() {
-          @Override
-          public void process(CharSequence arg) {
-            output.parse(arg);
-          }
-        });
       }
       to.close();
+      final MROutputImpl output = new MROutputImpl(env, output(), errorsHandler);
+      CharSeqTools.processLines(from, new Processor<CharSequence>() {
+        @Override
+        public void process(CharSequence arg) {
+          output.parse(arg);
+        }
+      });
+
       process.waitFor();
       return this.jar = jar;
     } catch (IOException | InterruptedException e) {
