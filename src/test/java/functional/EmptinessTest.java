@@ -59,6 +59,7 @@ public final class EmptinessTest extends BaseMRTest {
 
     @MRMapMethod(input = SCHEMA + IN_TABLE_NAME_FULL, output = SCHEMA + OUT_TABLE_NAME)
     public void map(final String key, final String sub, final CharSequence value, MROutput output) {
+//      System.err.println("Hello!");
       // do nothing
     }
 

@@ -4,6 +4,7 @@ import com.spbsu.commons.func.Action;
 import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqTools;
+import com.spbsu.commons.util.Holder;
 import com.spbsu.commons.util.Pair;
 import solar.mr.MRRoutine;
 import solar.mr.MRRoutineBuilder;
@@ -32,7 +33,34 @@ public class MRRunner implements Runnable {
   public MRRunner() {
     this(new InputStreamReader(System.in, StreamTools.UTF),
          new OutputStreamWriter(System.out, StreamTools.UTF),
-         readFromStream(MRRunner.class.getResourceAsStream("/" + BUILDER_RESOURCE_NAME), ClassLoader.getSystemClassLoader()));
+         readFromStream(MRRunner.class.getResourceAsStream("/" + BUILDER_RESOURCE_NAME), MRRunner.class.getClassLoader()));
+  }
+
+  public MRRunner(Holder<byte[]> holder) {
+    final LineNumberReader in = new LineNumberReader(new InputStreamReader(System.in, StreamTools.UTF));
+    this.in = in;
+    this.out = new OutputStreamWriter(System.out, StreamTools.UTF);
+    final ClassLoader loader = getClass().getClassLoader();
+    try {
+      final byte[] serializedBuilder = CharSeqTools.parseBase64(in.readLine());
+//      System.err.println("holder: " + holder);
+      holder.setValue(serializedBuilder);
+      final ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(serializedBuilder)){
+        @Override
+        protected Class<?> resolveClass(final ObjectStreamClass desc) throws IOException, ClassNotFoundException {
+          try {
+//            System.err.println(desc.getName());
+            return loader.loadClass(desc.getName());
+          }
+          catch (ClassNotFoundException cnfe) {
+            return super.resolveClass(desc);
+          }
+        }
+      };
+      routineBuilder = (MRRoutineBuilder)is.readObject();
+    } catch (ClassNotFoundException | IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public MRRunner(Reader in, Writer out, MRRoutineBuilder builder) {
@@ -97,31 +125,12 @@ public class MRRunner implements Runnable {
       MRTools.buildClosureJar(MRRunner.class, args[1], new Action<Class>() {
         @Override
         public void invoke(Class aClass) {
-          final LineNumberReader in = new LineNumberReader(new InputStreamReader(System.in, StreamTools.UTF));
-          final OutputStreamWriter out = new OutputStreamWriter(System.out, StreamTools.UTF);
-          final ClassLoader loader = aClass.getClassLoader();
           try {
-            final byte[] serializedBuilder = CharSeqTools.parseBase64(in.readLine());
-            resourcesMap.put("/" + BUILDER_RESOURCE_NAME, serializedBuilder);
-            final ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(serializedBuilder)){
-              @Override
-              protected Class<?> resolveClass(final ObjectStreamClass desc) throws IOException, ClassNotFoundException {
-                try {
-                  return loader.loadClass(desc.getName());
-                }
-                catch (ClassNotFoundException cnfe) {
-                  return super.resolveClass(desc);
-                }
-              }
-            };
-            final Object builder = is.readObject();
-
-            ((Runnable)aClass.getConstructor(
-                    loader.loadClass(Reader.class.getName()),
-                    loader.loadClass(Writer.class.getName()),
-                    loader.loadClass(MRRoutineBuilder.class.getName())
-            ).newInstance(in, out, builder)).run();
-          } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | InvocationTargetException | NoSuchMethodException | IOException e) {
+            final Object serializedBuilderHolder = aClass.getClassLoader().loadClass(Holder.class.getName()).newInstance();
+            final Runnable runnable = (Runnable) aClass.getConstructor(serializedBuilderHolder.getClass()).newInstance(serializedBuilderHolder);
+            resourcesMap.put(BUILDER_RESOURCE_NAME, (byte[])serializedBuilderHolder.getClass().getMethod("getValue").invoke(serializedBuilderHolder));
+            runnable.run();
+          } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | ClassNotFoundException e) {
             throw new RuntimeException(e);
           }
         }

@@ -32,7 +32,7 @@ import sun.net.www.protocol.file.FileURLConnection;
 public class MRTools {
   public static final long FRESHNESS_TIMEOUT = TimeUnit.HOURS.toMillis(1);
   private static Logger LOG = Logger.getLogger(MRTools.class);
-  public static final String FORBIDEN = MREnv.class.getName().replace('.', '/');
+//  public static final String FORBIDEN = MREnv.class.getName().replace('.', '/');
   static {
     ClassPool.doPruning = true;
   }
@@ -122,7 +122,7 @@ public class MRTools {
               });
             }
             final URL resource = super.getResource(name);
-            kosherResource = resource != null && !name.contains(FORBIDEN);
+            kosherResource = resource != null;// && !name.contains(FORBIDEN);
             if (kosherResource && "jar".equals(resource.getProtocol())) {
               final JarURLConnection connection;
               connection = (JarURLConnection) resource.openConnection();
