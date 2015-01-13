@@ -132,9 +132,6 @@ public class MRRunner implements Runnable {
       MRTools.buildClosureJar(MRRunner.class, args[1], new Action<Class>() {
         @Override
         public void invoke(Class aClass) {
-          final LineNumberReader in = new LineNumberReader(new InputStreamReader(System.in, StreamTools.UTF));
-          final OutputStreamWriter out = new OutputStreamWriter(System.out, StreamTools.UTF);
-          final ClassLoader loader = aClass.getClassLoader();
           try {
             final Object serializedBuilderHolder = aClass.getClassLoader().loadClass(Holder.class.getName()).newInstance();
             final Runnable runnable = (Runnable) aClass.getConstructor(serializedBuilderHolder.getClass()).newInstance(serializedBuilderHolder);
