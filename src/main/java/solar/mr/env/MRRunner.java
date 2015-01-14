@@ -15,6 +15,7 @@ import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 
 /**
@@ -35,9 +36,6 @@ public class MRRunner implements Runnable {
          new OutputStreamWriter(System.out, StreamTools.UTF),
          readFromStream(MRRunner.class.getResourceAsStream("/" + BUILDER_RESOURCE_NAME), MRRunner.class.getClassLoader()));
   }
-  public MRRunner(InputStream in, OutputStream out) {
-    this.out = out;
-    this.in = new InputStreamReader(in, Charset.forName("UTF-8"));
 
   public MRRunner(Holder<byte[]> holder) {
     final LineNumberReader in = new LineNumberReader(new InputStreamReader(System.in, StreamTools.UTF));
