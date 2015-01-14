@@ -111,7 +111,7 @@ public class YtMREnv extends RemoteMREnv {
         continue;
 
       int index = ArrayTools.indexOf(shards[0].path(), paths);
-      if (shards[0].isAvailable())
+      if (index != -1 && shards[0].isAvailable())
         result[index] = shards[0];
     }
 
@@ -314,15 +314,13 @@ public class YtMREnv extends RemoteMREnv {
         options.add("--reduce-by key");
         options.add("--sort-by key");
         options.add("--reduce-memory-limit 2000");
-        options.add("--reducer");
-
         break;
       case MAP:
         options.add("map");
-        //noinspection fallthrough
-      default:
         options.add("--memory-limit 2000");
         break;
+      default:
+        throw new IllegalArgumentException("unsupported operation: " + builder.getRoutineType());
     }
 
     options.add("--format");
@@ -339,9 +337,25 @@ public class YtMREnv extends RemoteMREnv {
     }
 
     final File jarFile = builder.buildJar(this, errorsHandler);
+    switch (builder.getRoutineType()) {
+      case REDUCE:
+        options.add("--reduce-local-file");
+        break;
+      case MAP:
+        options.add("--local-file");
+        break;
+      default:
+        throw new IllegalArgumentException("Shouldn't get here");
+    }
+    options.add(jarFile.getAbsolutePath());
+
+    if (builder.getRoutineType() == MRRoutineBuilder.RoutineType.REDUCE) {
+      options.add("--reducer");
+    }
 
     options.add("'/usr/local/java8/bin/java -XX:-UsePerfData -Xmx1G -Xms1G -jar ");
     options.add(jarFile.getName()); /* please do not append to the rest of the command */
+    options.add("'");
 
     int inCount = 0;
     for(final MRTableShard sh:in) {
