@@ -15,7 +15,6 @@ import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.charset.Charset;
 import java.util.HashMap;
 
 /**
@@ -90,7 +89,6 @@ public class MRRunner implements Runnable {
       throw new RuntimeException(e);
     }
   }
-
 
   @Override
   public void run() {
