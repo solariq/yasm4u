@@ -305,7 +305,7 @@ public class YtMREnv extends RemoteMREnv {
   }
 
   @Override
-  public boolean execute(MRRoutineBuilder builder, final MRErrorsHandler errorsHandler)
+  public boolean execute(MRRoutineBuilder builder, final MRErrorsHandler errorsHandler, File jar)
   {
     final List<String> options = defaultOptions();
     switch (builder.getRoutineType()) {
@@ -336,7 +336,6 @@ public class YtMREnv extends RemoteMREnv {
       createTable(o); /* lazy materialization */
     }
 
-    final File jarFile = builder.buildJar(this, errorsHandler);
     switch (builder.getRoutineType()) {
       case REDUCE:
         options.add("--reduce-local-file");
@@ -347,14 +346,14 @@ public class YtMREnv extends RemoteMREnv {
       default:
         throw new IllegalArgumentException("Shouldn't get here");
     }
-    options.add(jarFile.getAbsolutePath());
+    options.add(jar.getAbsolutePath());
 
     if (builder.getRoutineType() == MRRoutineBuilder.RoutineType.REDUCE) {
       options.add("--reducer");
     }
 
     options.add("'/usr/local/java8/bin/java -XX:-UsePerfData -Xmx1G -Xms1G -jar ");
-    options.add(jarFile.getName()); /* please do not append to the rest of the command */
+    options.add(jar.getName()); /* please do not append to the rest of the command */
     options.add("'");
 
     int inCount = 0;

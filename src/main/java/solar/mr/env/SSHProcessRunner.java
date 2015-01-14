@@ -11,6 +11,7 @@ import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.system.RuntimeUtils;
+import org.apache.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -19,6 +20,7 @@ import org.jetbrains.annotations.Nullable;
  * Time: 12:28
  */
 public class SSHProcessRunner implements ProcessRunner {
+  private static Logger LOG = Logger.getLogger(SSHProcessRunner.class);
   private final String proxyHost;
   private final String mrBinaryPath;
   private Process process;
@@ -36,7 +38,7 @@ public class SSHProcessRunner implements ProcessRunner {
       if (process != null) {
         try {
           if (process.exitValue() != 0)
-            throw new RuntimeException("Unable to start proxy connection");
+            LOG.warn("SSH connection dropped, exit code " + process.exitValue());
         }
         catch (IllegalThreadStateException is) { // the process is alive
           return;

@@ -40,12 +40,12 @@ public abstract class MRRoutineBuilder implements Serializable {
     this.state = state;
   }
 
-  private void checkComplete() {
+  protected void checkComplete() {
     if (complete)
       throw new IllegalStateException("Can not modify complete builder");
   }
 
-  public boolean complete() {
+  protected boolean complete() {
     boolean prevState = this.complete;
     this.complete = true;
     return prevState;
@@ -76,74 +76,6 @@ public abstract class MRRoutineBuilder implements Serializable {
 //      throw new RuntimeException(e);
 //    }
 //  }
-
-  private File jar;
-  public File buildJar(MREnv env, MRErrorsHandler errorsHandler) {
-    complete();
-    if (jar != null)
-      return jar;
-    Process process = null;
-    try {
-      final File jar = File.createTempFile("yamr-routine-", ".jar");
-      //noinspection ResultOfMethodCallIgnored
-      jar.delete();
-      jar.deleteOnExit();
-      process = RuntimeUtils.runJvm(MRRunner.class, "--dump", jar.getAbsolutePath());
-      final ByteArrayOutputStream builderSerialized = new ByteArrayOutputStream();
-      try (final ObjectOutputStream outputStream = new ObjectOutputStream(builderSerialized)) {
-        outputStream.writeObject(this);
-      }
-      final Writer to = new OutputStreamWriter(process.getOutputStream(), StreamTools.UTF);
-      final Reader from = new InputStreamReader(process.getInputStream(), StreamTools.UTF);
-      to.append(CharSeqTools.toBase64(builderSerialized.toByteArray())).append("\n");
-      to.flush();
-
-      for (int i = 0; i < tablesIn.size(); i++) {
-        final MRTableShard inputShard = env.resolve(tablesIn.get(i));
-        env.sample(inputShard, new Processor<CharSequence>() {
-          @Override
-          public void process(CharSequence arg) {
-            try {
-              to.append(arg).append("\n");
-            } catch (IOException e) {
-              throw new RuntimeException(e);
-            }
-          }
-        });
-      }
-      to.close();
-      final MROutputImpl output = new MROutputImpl(env, output(), new MRErrorsHandler() {
-        @Override
-        public void error(String type, String cause, MRRecord record) {
-          throw new RuntimeException("Error during MR operation.\nType: " + type + "\tCause: " + cause + "\tRecord: [" + record + "]");
-        }
-
-        @Override
-        public void error(Throwable th, MRRecord record) {
-          throw new RuntimeException("Exception during processing: [" + record.toString() + "]", th);
-        }
-      });
-      CharSeqTools.processLines(from, new Processor<CharSequence>() {
-        @Override
-        public void process(CharSequence arg) {
-          output.parse(arg);
-        }
-      });
-
-      process.waitFor();
-      return this.jar = jar;
-    } catch (IOException | InterruptedException e) {
-      throw new RuntimeException(e);
-    }
-    finally {
-      if (process != null)
-        try {
-          StreamTools.transferData(process.getErrorStream(), System.err);
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-    }
-  }
 
   public String[] output() {
     complete();

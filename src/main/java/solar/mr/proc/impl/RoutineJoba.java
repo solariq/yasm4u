@@ -54,7 +54,6 @@ public class RoutineJoba implements Joba {
     builder.setMethodName(method.getName());
     builder.setType(type);
     builder.setRoutineClass(method.getDeclaringClass());
-    builder.complete();
     return wb.env().execute(builder, wb.errorsHandler());
   }
 

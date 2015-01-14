@@ -307,7 +307,7 @@ public class YaMREnv extends RemoteMREnv {
   }
 
   @Override
-  public boolean execute(MRRoutineBuilder builder, final MRErrorsHandler errorsHandler) {
+  public boolean execute(MRRoutineBuilder builder, final MRErrorsHandler errorsHandler, File jar) {
     final List<String> options = defaultOptions();
     MRTableShard[] in = resolveAll(builder.input());
     MRTableShard[] out = resolveAll(builder.output());
@@ -324,9 +324,8 @@ public class YaMREnv extends RemoteMREnv {
     final String errorsShardName = "temp/errors-" + Integer.toHexString(new FastRandom().nextInt());
     options.add("-dst");
     options.add(errorsShardName);
-    final File jarFile = builder.buildJar(this, errorsHandler);
     options.add("-file");
-    options.add(jarFile.getAbsolutePath());
+    options.add(jar.getAbsolutePath());
 
     switch (builder.getRoutineType()) {
       case MAP:
@@ -337,7 +336,7 @@ public class YaMREnv extends RemoteMREnv {
         break;
     }
 
-    options.add("java -XX:-UsePerfData -Xmx1G -Xms1G -jar " + jarFile.getName());
+    options.add("java -XX:-UsePerfData -Xmx1G -Xms1G -jar " + jar.getName());
     final int[] errorsCount = new int[]{0};
     executeCommand(options, defaultOutputProcessor, new Processor<CharSequence>() {
       String table;

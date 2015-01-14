@@ -19,6 +19,7 @@ import solar.mr.proc.Whiteboard;
 import solar.mr.proc.impl.WhiteboardImpl;
 import solar.mr.routines.MRRecord;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
@@ -31,17 +32,17 @@ import java.util.concurrent.ArrayBlockingQueue;
  * Time: 16:12
  */
 public class CompositeMREnv implements MREnv {
-  private final MREnv original;
+  private final RemoteMREnv original;
   private final LocalMREnv localCopy;
   private final Whiteboard copyState;
 
-  public CompositeMREnv(MREnv original, LocalMREnv localCopy) {
+  public CompositeMREnv(RemoteMREnv original, LocalMREnv localCopy) {
     this.original = original;
     this.localCopy = localCopy;
     copyState = new WhiteboardImpl(localCopy, "MREnvState(" + RuntimeUtils.bashEscape(original.name()) + ")", System.getenv("USER"));
   }
 
-  public CompositeMREnv(MREnv original) {
+  public CompositeMREnv(RemoteMREnv original) {
     this(original, new LocalMREnv(LocalMREnv.DEFAULT_HOME + "/" + RuntimeUtils.bashEscape(original.name())));
   }
 
@@ -53,7 +54,7 @@ public class CompositeMREnv implements MREnv {
     final MRTableShard[] localInBefore = reflect(in);
     final MRTableShard[] localInAfter = sync(in);
 
-    builder.buildJar(localCopy, errorsHandler);
+    final File jar = original.executeLocallyAndBuildJar(builder, localCopy);
 
     final MRTableShard[] localOutAfter = reflect(out);
 
@@ -81,7 +82,7 @@ public class CompositeMREnv implements MREnv {
           needToAddToSample.put(record.source, record.toString());
           errorsHandler.error(th, record);
         }
-      }))
+      }, jar))
         return false;
       final MRTableShard[] outAfter = original.resolveAll(paths(out));
       for(int i = 0; i < out.length; i++) {
