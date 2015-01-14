@@ -168,13 +168,13 @@ public class YtMREnv extends RemoteMREnv {
 
     final CharSequence[] listSeq = CharSeqTools.split(builder.trimmedSequence(), ' ');
 
-    /* uber-for */
-    final int[] index = new int[2];
+    result.clear();
+    for (int i = 0; i < listSeq.length; i += 1) {
+      if (listSeq[i].length() == 0)
+        continue;
 
-    index[1] = listSeq.length;
-    for (index[0] = 0; index[0] < listSeq.length; index[0] += 1) {
       result.add(new WhiteboardImpl.LazyTableShard(nodePath.substring(1) /* this is in Yt form prefixed with "//" */
-          + (index[0] != index[1] ? "/" + listSeq[index[0]].toString() : ""), this));
+          + (i != listSeq.length - 1 ? "/" + listSeq[i].toString() : ""), this));
     }
     return result.toArray(new MRTableShard[result.size()]);
   }
