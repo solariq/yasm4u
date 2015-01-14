@@ -260,7 +260,7 @@ public class CompositeMREnv implements MREnv {
   public void addListener(Action<? super ShardAlter> lst) {
     original.addListener(lst);
   }
-  
+
   @Override
   public String toString() {
     return "CompositeMREnv(" + original.toString() + "," + localCopy.toString() + ")";
