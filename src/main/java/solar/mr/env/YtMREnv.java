@@ -329,11 +329,11 @@ public class YtMREnv extends RemoteMREnv {
     MRTableShard[] out = resolveAll(builder.output());
 
 //    final MRTableShard[] realOut = new MRTableShard[out.length];
-    for(int i = 0; i < out.length; i++) {
+    for(final MRTableShard o: out) {
       options.add("--dst");
-      options.add(localPath(out[i]));
+      options.add(localPath(o));
 //      realOut[i] =
-      createTable(out[i]); /* lazy materialization */
+      createTable(o); /* lazy materialization */
     }
 
     final File jarFile = builder.buildJar(this, errorsHandler);
