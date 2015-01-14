@@ -36,12 +36,6 @@ public class MRRunner implements Runnable {
          readFromStream(MRRunner.class.getResourceAsStream("/" + BUILDER_RESOURCE_NAME), MRRunner.class.getClassLoader()));
   }
 
-  public MRRunner(Reader in, Writer out, MRRoutineBuilder builder) {
-    this.out = out;
-    this.in = in;
-    this.routineBuilder = builder;
-  }
-
   public MRRunner(Holder<byte[]> holder) {
     final LineNumberReader in = new LineNumberReader(new InputStreamReader(System.in, StreamTools.UTF));
     this.in = in;
@@ -63,7 +57,7 @@ public class MRRunner implements Runnable {
           }
         }
       };
-      return  (MRRoutineBuilder)is.readObject();
+      routineBuilder = (MRRoutineBuilder)is.readObject();
     } catch (ClassNotFoundException | IOException e) {
       throw new RuntimeException(e);
     }
