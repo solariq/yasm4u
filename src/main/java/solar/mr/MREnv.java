@@ -6,8 +6,7 @@ import java.io.Reader;
 
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.func.WeakListenerHolder;
-import javafx.util.Builder;
-import solar.mr.proc.State;
+
 
 /**
  * User: solar
