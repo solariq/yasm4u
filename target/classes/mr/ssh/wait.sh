@@ -12,13 +12,20 @@ status="alive";
 currentFile=$dir/0;
 while [ "dead" != "$status" ]; do
   read status file <<< $(ssh $remote "perl $runner next $pid $currentFile 2>>/tmp/runner-errors-$USER.txt")
+#  echo $status 1>&2;
   if [ "next" == "$status" ]; then
     ssh $remote cat $file;
     currentFile=$file;
   elif [ "alive" == "$status" ]; then
-    sleep 5;
+    sleep 1;
   fi
 done
+#echo exit 1 >&2;
+
 ssh $remote rm -rf $dir;
 
+#echo exit 2 >&2;
+
 gc;
+
+#echo exit 3 >&2;
