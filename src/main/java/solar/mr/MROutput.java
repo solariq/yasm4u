@@ -1,7 +1,5 @@
 package solar.mr;
 
-import java.util.List;
-
 /**
  * User: solar
  * Date: 23.09.14

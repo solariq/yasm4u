@@ -71,7 +71,7 @@ public abstract class RemoteMREnv extends WeakListenerHolderImpl<MREnv.ShardAlte
       process = RuntimeUtils.runJvm(MRRunner.class, "--dump", jar.getAbsolutePath());
       final ByteArrayOutputStream builderSerialized = new ByteArrayOutputStream();
       try (final ObjectOutputStream outputStream = new ObjectOutputStream(builderSerialized)) {
-        outputStream.writeObject(this);
+        outputStream.writeObject(builder);
       }
       final Writer to = new OutputStreamWriter(process.getOutputStream(), StreamTools.UTF);
       final Reader from = new InputStreamReader(process.getInputStream(), StreamTools.UTF);
@@ -117,10 +117,13 @@ public abstract class RemoteMREnv extends WeakListenerHolderImpl<MREnv.ShardAlte
       throw new RuntimeException(e);
     }
     finally {
-      if (process != null)
         try {
-          StreamTools.transferData(process.getErrorStream(), System.err);
-        } catch (IOException e) {
+          if (process != null) {
+            process.getOutputStream().close();
+            process.waitFor();
+            StreamTools.transferData(process.getErrorStream(), System.err);
+          }
+        } catch (IOException | InterruptedException e) {
           LOG.warn(e);
         }
     }
