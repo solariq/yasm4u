@@ -138,7 +138,7 @@ public class CompositeMREnv implements MREnv {
                 }
               }
               final int copied = Math.min(take.length() - offset, len);
-              take.copyToArray(off, cbuf, offset, copied);
+              take.copyToArray(offset, cbuf, off, copied);
               offset += copied;
               if (offset >= take.length())
                 take = null;
