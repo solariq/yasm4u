@@ -208,7 +208,7 @@ public class YaMREnv extends RemoteMREnv {
     options.add("-drop");
     options.add(localPath(shard));
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
-    final MRTableShard updatedShard = new MRTableShard(localPath(shard), false, false, "0", 0, 0, 0, System.currentTimeMillis());
+    final MRTableShard updatedShard = new MRTableShard(localPath(shard), true, false, "0", 0, 0, 0, System.currentTimeMillis());
     invoke(new ShardAlter(updatedShard, ShardAlter.AlterType.UPDATED));
     return updatedShard;
   }
@@ -300,7 +300,7 @@ public class YaMREnv extends RemoteMREnv {
     }
     for(int i = 0; i < result.length; i++) {
       if (result[i] == null)
-        result[i] = new MRTableShard(paths[i], false, false, "0", 0, 0, 0, time);
+        result[i] = new MRTableShard(paths[i], true, false, "0", 0, 0, 0, time);
       invoke(new ShardAlter(result[i], ShardAlter.AlterType.UPDATED));
     }
     return result;
