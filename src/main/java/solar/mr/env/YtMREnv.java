@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.Reader;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -93,7 +92,7 @@ public class YtMREnv extends RemoteMREnv {
     final Set<String> unknown = new HashSet<>();
     for(int i = 0; i < paths.length; i++) {
       final String path = paths[i];
-      final MRTableShard shard = shardsCache.get(path);
+      final MRTableShard shard = shardsCache.get("/" + path);
       if (shard != null) {
         if (time - shard.metaTS() < MRTools.FRESHNESS_TIMEOUT) {
           result[i] = shard;
@@ -119,7 +118,6 @@ public class YtMREnv extends RemoteMREnv {
       if (result[i] == null)
         result[i] = new MRTableShard(paths[i], false, false, "0", 0, 0, 0, System.currentTimeMillis());
       else {
-        shardsCache.put(paths[i], result[i]);
         invoke(new ShardAlter(result[i], ShardAlter.AlterType.UPDATED));
       }
     }
@@ -129,7 +127,7 @@ public class YtMREnv extends RemoteMREnv {
   @Override
   public MRTableShard[] list(String prefix) {
     final List<String> defaultOptionsEntity = defaultOptions();
-    final MRTableShard sh = shardsCache.get(prefix);
+    final MRTableShard sh = shardsCache.get("/" + prefix);
     final long time = System.currentTimeMillis();
     if (sh != null && time - sh.metaTS() < MRTools.FRESHNESS_TIMEOUT)
       return new  MRTableShard[]{sh};
@@ -152,7 +150,6 @@ public class YtMREnv extends RemoteMREnv {
       JsonParser getParser = JSONTools.parseJSON(getBuilder.sequence());
       extractTableFromJson(prefix, result, getParser);
       if (!result.isEmpty()) {
-        shardsCache.put(prefix, result.get(0));
         return new MRTableShard[]{result.get(0)};
       }
     } catch (IOException| ParseException e) {
@@ -180,8 +177,6 @@ public class YtMREnv extends RemoteMREnv {
   }
 
   private void extractTableFromJson(final String prefix, List<MRTableShard> result, JsonParser parser) throws IOException, ParseException {
-    final Calendar c = Calendar.getInstance();
-    final SimpleDateFormat formater = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'");
     final ObjectMapper mapper = new ObjectMapper();
 
     final JsonNode metaJSON = mapper.readTree(parser);
@@ -190,11 +185,9 @@ public class YtMREnv extends RemoteMREnv {
       final String name = metaJSON.get("key").asText(); /* it's a name in Yt */
       final long size = metaJSON.get("uncompressed_data_size").longValue();
       boolean sorted= metaJSON.has("sorted");
-      c.setTime(formater.parse(metaJSON.get("modification_time").asText()));
-      final long ts = c.getTimeInMillis();
       final long recordsCount = metaJSON.has("row_count") ? metaJSON.get("row_count").longValue() : 0;
       final String path = prefix.endsWith("/" + name)? prefix : prefix + "/" + name;
-      final MRTableShard sh = new MRTableShard(path, true, sorted, "" + size, size, recordsCount/10, recordsCount, ts);
+      final MRTableShard sh = new MRTableShard(path, true, sorted, "" + size, size, recordsCount/10, recordsCount, /*ts*/ System.currentTimeMillis());
       result.add(sh);
       invoke(new ShardAlter(sh, ShardAlter.AlterType.UPDATED));
     }
@@ -270,14 +263,13 @@ public class YtMREnv extends RemoteMREnv {
 
   public MRTableShard delete(final MRTableShard table) {
     final List<String> options = defaultOptions();
-
     options.add("remove");
-    options.add("-r");
+    options.add("-r ");
     options.add(localPath(table));
-    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
-    invoke(new ShardAlter(table));
-    shardsCache.clear(table.path());
-    return table;
+    executeCommand(options, defaultOutputProcessor , defaultErrorsProcessor , null);
+    final MRTableShard updatedShard = new MRTableShard(table.path(), false, false, "0", 0, 0, 0, System.currentTimeMillis());
+    invoke(new ShardAlter(updatedShard, ShardAlter.AlterType.UPDATED));
+    return updatedShard;
   }
 
   public MRTableShard sort(final MRTableShard table) {
