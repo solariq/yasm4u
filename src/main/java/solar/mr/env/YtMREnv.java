@@ -370,31 +370,8 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--dst");
     options.add(localPath(errorsShard));
 
+    executeCommand(options, defaultOutputProcessor, new YtResponseProcessor(defaultErrorsProcessor), null);
     final int[] errorsCount = new int[]{0};
-    executeCommand(options, defaultOutputProcessor, new Processor<CharSequence>() {
-      String table;
-      String key;
-      String subkey;
-      String value;
-      @Override
-      public void process(final CharSequence arg) {
-        errorsCount[0]++;
-        if (CharSeqTools.startsWith(arg, " table: ")) {
-          table = arg.subSequence(" table: ".length(), arg.length()).toString();
-        }
-        else if (CharSeqTools.startsWith(arg, " key: ")) {
-          key = arg.subSequence(" key: ".length(), arg.length()).toString();
-        }
-        else if (CharSeqTools.startsWith(arg, " subkey: ")) {
-          subkey = arg.subSequence(" subkey: ".length(), arg.length()).toString();
-        }
-        else if (CharSeqTools.startsWith(arg, " value(p): ")) {
-          value = arg.subSequence(" value(p): ".length(), arg.length()).toString();
-          errorsHandler.error("MR exec error", "Who knows", new MRRecord(table, key, subkey, value));
-        }
-        System.err.println(arg);
-      }
-    }, null);
     errorsCount[0] += read(errorsShard, new MRRoutine(new String[]{errorsShardName}, null, null) {
       @Override
       public void invoke(final MRRecord record) {
