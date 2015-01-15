@@ -130,7 +130,7 @@ public class SSHProcessRunner implements ProcessRunner {
               }
               break;
             default:
-              command.append(" ").append(opt);
+              command.append(" ").append(opt.replace("$", "."));
           }
         }
         if (input == null) {
