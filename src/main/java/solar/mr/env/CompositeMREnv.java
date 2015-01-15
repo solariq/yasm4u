@@ -155,29 +155,16 @@ public class CompositeMREnv implements MREnv {
       };
       readThread.setDaemon(true);
       readThread.start();
-      if (shard.length() < 10 * 1024 * 1024) {
-        original.read(shard, new Processor<CharSequence>() {
-          @Override
-          public void process(CharSequence arg) {
-            try {
-              readqueue.put(new CharSeqAdapter(arg));
-            } catch (InterruptedException e) {
-              throw new RuntimeException(e);
-            }
+      original.sample(shard, new Processor<CharSequence>() {
+        @Override
+        public void process(CharSequence arg) {
+          try {
+            readqueue.put(new CharSeqAdapter(arg));
+          } catch (InterruptedException e) {
+            throw new RuntimeException(e);
           }
-        });
-      } else {
-        original.sample(shard, new Processor<CharSequence>() {
-          @Override
-          public void process(CharSequence arg) {
-            try {
-              readqueue.put(new CharSeqAdapter(arg));
-            } catch (InterruptedException e) {
-              throw new RuntimeException(e);
-            }
-          }
-        });
-      }
+        }
+      });
       try {
         readqueue.put(CharSeq.EMPTY);
         readThread.join();
@@ -219,7 +206,8 @@ public class CompositeMREnv implements MREnv {
 
   @Override
   public void sample(MRTableShard shard, Processor<CharSequence> seq) {
-    original.read(shard, seq);
+    sync(shard);
+    localCopy.read(shard, seq);
   }
 
   @Override

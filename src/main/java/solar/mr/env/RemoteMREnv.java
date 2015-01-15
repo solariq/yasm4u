@@ -68,7 +68,7 @@ public abstract class RemoteMREnv extends WeakListenerHolderImpl<MREnv.ShardAlte
       //noinspection ResultOfMethodCallIgnored
       jar.delete();
       jar.deleteOnExit();
-      process = RuntimeUtils.runJvm(MRRunner.class, "--dump", jar.getAbsolutePath(), "-Xmx2g");
+      process = RuntimeUtils.runJvm(MRRunner.class, "--dump", jar.getAbsolutePath());
       final ByteArrayOutputStream builderSerialized = new ByteArrayOutputStream();
       try (final ObjectOutputStream outputStream = new ObjectOutputStream(builderSerialized)) {
         outputStream.writeObject(builder);
