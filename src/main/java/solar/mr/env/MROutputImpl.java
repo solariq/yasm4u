@@ -98,6 +98,7 @@ public class MROutputImpl implements MROutput {
         }
       }
     }, "MR output thread");
+    outputThread.setDaemon(true);
     outputThread.start();
   }
 

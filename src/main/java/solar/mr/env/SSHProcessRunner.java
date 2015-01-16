@@ -23,9 +23,9 @@ public class SSHProcessRunner implements ProcessRunner {
   private static Logger LOG = Logger.getLogger(SSHProcessRunner.class);
   private final String proxyHost;
   private final String mrBinaryPath;
-  private Process process;
-  private Writer toProxy;
-  private LineNumberReader fromProxy;
+  private volatile Process process;
+  private volatile Writer toProxy;
+  private volatile LineNumberReader fromProxy;
 
   public SSHProcessRunner(final String proxyHost, final String binaryPath) {
     this.proxyHost = proxyHost;
@@ -34,35 +34,44 @@ public class SSHProcessRunner implements ProcessRunner {
   }
 
   private void initProxyLink() {
-    try {
-      if (process != null) {
+    if (process != null) {
+      try {
+        if (process.exitValue() != 0)
+          LOG.warn("SSH connection dropped, exit code " + process.exitValue());
+      }
+      catch (IllegalThreadStateException is) { // the process is alive
+        return;
+      }
+    }
+    while (true) {
+      try {
+        process = Runtime.getRuntime().exec("ssh " + proxyHost + " bash -s");
+        toProxy = new OutputStreamWriter(process.getOutputStream(), Charset.forName("UTF-8"));
+        fromProxy = new LineNumberReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF-8")));
+        toProxy.append("echo Ok\n");
+        toProxy.flush();
+        if (fromProxy.readLine().equals("Ok"))
+          break;
+        toProxy.close();
+        fromProxy.close();
+        process.waitFor();
+      }
+      catch (Exception e) {
+        LOG.warn(e);
+      }
+    }
+    final Thread thread = new Thread() {
+      @Override
+      public void run() {
         try {
-          if (process.exitValue() != 0)
-            LOG.warn("SSH connection dropped, exit code " + process.exitValue());
-        }
-        catch (IllegalThreadStateException is) { // the process is alive
-          return;
+          StreamTools.transferData(process.getErrorStream(), System.err, true);
+        } catch (IOException e) {
+          e.printStackTrace();
         }
       }
-
-      process = Runtime.getRuntime().exec("ssh " + proxyHost + " bash -s");
-      final Thread thread = new Thread() {
-        @Override
-        public void run() {
-          try {
-            StreamTools.transferData(process.getErrorStream(), System.err, true);
-          } catch (IOException e) {
-            e.printStackTrace();
-          }
-        }
-      };
-      thread.setDaemon(true);
-      thread.start();
-      toProxy = new OutputStreamWriter(process.getOutputStream(), Charset.forName("UTF-8"));
-      fromProxy = new LineNumberReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF-8")));
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    };
+    thread.setDaemon(true);
+    thread.start();
   }
 
   @Override
