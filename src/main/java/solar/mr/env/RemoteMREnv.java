@@ -3,6 +3,7 @@ package solar.mr.env;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.func.impl.WeakListenerHolderImpl;
 import com.spbsu.commons.io.StreamTools;
+import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.system.RuntimeUtils;
 import com.spbsu.commons.util.cache.CacheStrategy;
@@ -112,6 +113,8 @@ public abstract class RemoteMREnv extends WeakListenerHolderImpl<MREnv.ShardAlte
       });
 
       process.waitFor();
+      output.interrupt();
+      output.join();
       return jar;
     } catch (IOException | InterruptedException e) {
       throw new RuntimeException(e);

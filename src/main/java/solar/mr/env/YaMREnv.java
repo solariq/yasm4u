@@ -44,9 +44,15 @@ public class YaMREnv extends RemoteMREnv {
     final List<String> options = new ArrayList<>();
     { // access settings
       options.add("-subkey");
+
       options.add("-tableindex");
+
       options.add("-opt");
       options.add("user=" + user);
+
+//      options.add("-opt");
+//      options.add("stderrlevel=5");
+
       options.add("-server");
       options.add(master);
     }

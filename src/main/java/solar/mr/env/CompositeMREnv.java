@@ -2,10 +2,7 @@ package solar.mr.env;
 
 import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
-import com.spbsu.commons.seq.CharSeq;
-import com.spbsu.commons.seq.CharSeqAdapter;
-import com.spbsu.commons.seq.CharSeqReader;
-import com.spbsu.commons.seq.CharSeqTools;
+import com.spbsu.commons.seq.*;
 import com.spbsu.commons.system.RuntimeUtils;
 import com.spbsu.commons.util.Holder;
 import com.spbsu.commons.util.MultiMap;
@@ -86,7 +83,7 @@ public class CompositeMREnv implements MREnv {
         return false;
       final MRTableShard[] outAfter = original.resolveAll(paths(out));
       for(int i = 0; i < out.length; i++) {
-        copyState.set("mr://" + out[i].path(), Pair.create(outAfter[i], localOutAfter[i]));
+        setCopy(outAfter[i], localOutAfter[i]);
       }
     }
     finally {
@@ -104,12 +101,12 @@ public class CompositeMREnv implements MREnv {
   }
 
   public MRTableShard[] sync(final MRTableShard... shards) {
-    MRTableShard[] result = new MRTableShard[shards.length];
+    final MRTableShard[] result = new MRTableShard[shards.length];
     for(int i = 0; i < shards.length; i++) {
       final MRTableShard shard = shards[i];
-      final Pair<MRTableShard,MRTableShard> remote2local = copyState.snapshot().get("mr://" + shard.path());
-      if (remote2local != null && shard.equals(remote2local.second)) {
-        result[i] = remote2local.second;
+      final MRTableShard local = localShard(shard);
+      if (local != null && local.isAvailable()) {
+        result[i] = local;
         continue;
       }
 
@@ -159,7 +156,7 @@ public class CompositeMREnv implements MREnv {
         @Override
         public void process(CharSequence arg) {
           try {
-            readqueue.put(new CharSeqAdapter(arg));
+            readqueue.put(new CharSeqComposite(arg, new CharSeqChar('\n')));
           } catch (InterruptedException e) {
             throw new RuntimeException(e);
           }
@@ -171,7 +168,7 @@ public class CompositeMREnv implements MREnv {
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
-      copyState.set("mr://" + shard.path(), Pair.create(shard, result[i] = localShardHolder.getValue()));
+      setCopy(shard, result[i] = localShardHolder.getValue());
     }
     return result;
   }
@@ -227,7 +224,35 @@ public class CompositeMREnv implements MREnv {
 
   @Override
   public MRTableShard delete(MRTableShard shard) {
+    final MRTableShard localShard = localShard(shard);
+    if (localShard != null)
+      localCopy.delete(localShard);
     return original.delete(shard);
+  }
+
+  private MRTableShard localShard(MRTableShard shard) {
+    final String key = "mr://" + shard.path();
+    final Pair<MRTableShard, MRTableShard> state = copyState.snapshot().get(key);
+    if (state == null)
+      return null;
+    final MRTableShard original = state.getFirst();
+    final MRTableShard local = state.getSecond();
+    if ((original.metaTS() < shard.metaTS() && !original.equals(shard)) ||
+        !local.equals(localCopy.resolve(local.path()))) {
+      setCopy(original, null);
+      return null;
+    }
+
+    return local;
+  }
+
+  private void setCopy(MRTableShard original, MRTableShard local) {
+    final String path = "mr://" + original.path();
+    if (local != null) {
+      copyState.set(path, Pair.create(original, local));
+      copyState.snapshot();
+    }
+    else copyState.remove(path);
   }
 
   @Override
