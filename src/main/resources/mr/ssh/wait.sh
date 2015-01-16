@@ -8,6 +8,15 @@ function cleanup() {
 
 trap 'cleanup; exit' SIGINT SIGQUIT SIGHUP
 
+status="notexists"
+typeset -i delay=2
+typeset -i tries=0
+while [ $status != "exists" ]; do
+  read status <<< $(ssh  $remote "if [ -f $runner ] ; then echo 'exists'; else echo 'notexists'; fi")
+  sleep delay*tries
+  tries=$tries+1
+done
+
 status="alive";
 currentFile=$dir/0;
 while [ "dead" != "$status" ]; do
