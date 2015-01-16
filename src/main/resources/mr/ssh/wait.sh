@@ -15,6 +15,9 @@ while [ $status != "exists" ]; do
   read status <<< $(ssh  $remote "if [ -f $runner ] ; then echo 'exists'; else echo 'notexists'; fi")
   sleep delay*tries
   tries=$tries+1
+  if [ $tries -ge 5 ]; then
+    exit 1
+   fi
 done
 
 status="alive";
