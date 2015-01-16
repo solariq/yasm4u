@@ -105,9 +105,10 @@ public class YtMREnv extends RemoteMREnv {
 
     for (final String u:unknown) {
       final MRTableShard[] shards = list(u);
-      assert shards.length <= 1;
-      if (shards.length != 1)
+      if (shards.length == 0) {
         continue;
+      }
+      assert shards.length == 1;
 
       int index = ArrayTools.indexOf(shards[0].path(), paths);
       if (index != -1 && shards[0].isAvailable())
@@ -161,7 +162,7 @@ public class YtMREnv extends RemoteMREnv {
     final String nodePath = path.substring(0, path.length() - 1);
     options.add(nodePath);
     final AppenderProcessor builder = new AppenderProcessor(" ");
-    executeCommand(options, builder, defaultErrorsProcessor, null);
+    executeCommand(options, new YtResponseProcessor(builder), defaultErrorsProcessor, null);
 
     final CharSequence[] listSeq = CharSeqTools.split(builder.trimmedSequence(), ' ');
 
