@@ -11,6 +11,7 @@ import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.func.types.SerializationRepository;
 import com.spbsu.commons.func.types.TypeConverter;
 import com.spbsu.commons.random.FastRandom;
+import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqReader;
 import com.spbsu.commons.seq.CharSeqTools;
@@ -109,8 +110,9 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
   @Override
   public <T> T get(final String resource) {
     try {
-      if (increment.containsKey(resource))
-        return (T)increment.get(resource);
+      final Object value = increment.get(resource);
+      if (value != null && value != CharSeq.EMPTY)
+        return (T) value;
       if (state.containsKey(resource))
         return (T)state.get(resource);
 
@@ -160,14 +162,15 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
 
   @Override
   public <T> void set(final String uri, final T data) {
-    if (data.equals(state.get(uri)))
-      return;
-    increment.put(uri, data);
+    if (data == CharSeq.EMPTY)
+      throw new IllegalArgumentException("User remove instead");
+    if (!data.equals(state.get(uri)))
+      increment.put(uri, data);
   }
 
   @Override
   public void remove(final String var) {
-    increment.put(var, "");
+    increment.put(var, CharSeq.EMPTY);
     env.append(myShard, new CharSeqReader(var + "\t\n"));
   }
 
@@ -232,19 +235,23 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
     // this will update all shards through notification mechanism
     env.resolveAll(shards.toArray(new String[shards.size()]));
 
-    final CharSeqBuilder builder = new CharSeqBuilder();
     for (Map.Entry<Object, Object> entry : increment.entrySet()) {
-      final Class<?> dataClass = entry.getValue().getClass();
-      final TypeConverter<Object, CharSequence> converter = (TypeConverter<Object, CharSequence>)marshaling.base.converter(dataClass, CharSequence.class);
-      final Class[] typeParameters = RuntimeUtils.findTypeParameters(converter.getClass(), TypeConverter.class);
-      builder.append((String)entry.getKey()).append('\t');
-      builder.append(typeParameters[0] != null ? typeParameters[0].getName() : dataClass.getName()).append('\t');
-      builder.append(converter.convert(entry.getValue())).append('\n');
-      if ("".equals(entry.getValue()))
+      if (CharSeq.EMPTY == entry.getValue())
         state.remove(entry.getKey());
       else
         state.put((String) entry.getKey(), entry.getValue());
     }
+
+    final CharSeqBuilder builder = new CharSeqBuilder();
+    for (Map.Entry<String, Object> entry : state.entrySet()) {
+      final Class<?> dataClass = entry.getValue().getClass();
+      final TypeConverter<Object, CharSequence> converter = (TypeConverter<Object, CharSequence>)marshaling.base.converter(dataClass, CharSequence.class);
+      final Class[] typeParameters = RuntimeUtils.findTypeParameters(converter.getClass(), TypeConverter.class);
+      builder.append(entry.getKey()).append('\t');
+      builder.append(typeParameters[0] != null ? typeParameters[0].getName() : dataClass.getName()).append('\t');
+      builder.append(converter.convert(entry.getValue())).append('\n');
+    }
+
     if (builder.length() > 0)
       env.write(myShard, new CharSeqReader(builder.build()));
     increment.clear();

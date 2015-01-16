@@ -23,9 +23,9 @@ public class SSHProcessRunner implements ProcessRunner {
   private static Logger LOG = Logger.getLogger(SSHProcessRunner.class);
   private final String proxyHost;
   private final String mrBinaryPath;
-  private Process process;
-  private Writer toProxy;
-  private LineNumberReader fromProxy;
+  private volatile Process process;
+  private volatile Writer toProxy;
+  private volatile LineNumberReader fromProxy;
 
   public SSHProcessRunner(final String proxyHost, final String binaryPath) {
     this.proxyHost = proxyHost;
@@ -61,6 +61,7 @@ public class SSHProcessRunner implements ProcessRunner {
       toProxy = new OutputStreamWriter(process.getOutputStream(), Charset.forName("UTF-8"));
       fromProxy = new LineNumberReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF-8")));
     } catch (IOException e) {
+      e.printStackTrace();
       throw new RuntimeException(e);
     }
   }
