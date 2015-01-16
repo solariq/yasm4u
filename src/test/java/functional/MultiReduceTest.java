@@ -176,10 +176,10 @@ public final class MultiReduceTest extends BaseMRTest {
 
   @After
   public void dropTables() {
-//    dropMRTable(env, IN_TABLE_NAME_1);
-//    dropMRTable(env, IN_TABLE_NAME_2);
-//    dropMRTable(env, OUT_TABLE_NAME_1);
-//    dropMRTable(env, OUT_TABLE_NAME_2);
+    dropMRTable(env, IN_TABLE_NAME_1);
+    dropMRTable(env, IN_TABLE_NAME_2);
+    dropMRTable(env, OUT_TABLE_NAME_1);
+    dropMRTable(env, OUT_TABLE_NAME_2);
   }
 
 }
