@@ -206,12 +206,23 @@ public class SSHProcessRunner implements ProcessRunner {
   private String transferFile(URL url, @Nullable String suffix, List<File> remoteResources) throws IOException, InterruptedException {
     toProxy.append("mktemp").append(suffix != null ? " --suffix " + suffix : "").append(";\n");
     toProxy.flush();
-    final File remoteResource = new File(fromProxy.readLine());
+    final String remoteTmpRunner = fromProxy.readLine();
+    //System.out.println("remoteTmpRunner = " + remoteTmpRunner);
+    final File remoteResource = new File(remoteTmpRunner);
     toProxy.append("rm -f ").append(remoteResource.getAbsolutePath()).append(";echo Ok;\n");
     toProxy.flush();
-    fromProxy.readLine();
+    final String outputResult = fromProxy.readLine();
+    //System.out.println("outputResult = " + outputResult);
     if ("file".equals(url.getProtocol())) {
-      Runtime.getRuntime().exec("scp " + url.getFile() + " " + proxyHost + ":" + remoteResource.getAbsolutePath()).waitFor();
+      int rc = 1;
+      int delay = 1000;
+      int tries = 0;
+      while (rc != 0) {
+        rc = Runtime.getRuntime().exec("scp " + url.getFile() + " " + proxyHost + ":" + remoteResource.getAbsolutePath()).waitFor();
+        if (rc != 0) {
+          Thread.sleep(delay * tries++);
+        }
+      }
     }
     else {
       final Process exec = Runtime.getRuntime().exec("ssh proxyHost 'bash cat - > " + remoteResource.getAbsolutePath() + "'");
