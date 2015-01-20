@@ -36,7 +36,7 @@ public class CompositeMREnv implements MREnv {
   public CompositeMREnv(RemoteMREnv original, LocalMREnv localCopy) {
     this.original = original;
     this.localCopy = localCopy;
-    copyState = new WhiteboardImpl(localCopy, "MREnvState(" + RuntimeUtils.bashEscape(original.name()) + ")", System.getenv("USER"));
+    copyState = new WhiteboardImpl(localCopy, "MREnvState(" + RuntimeUtils.bashEscape(original.name()) + ")", WhiteboardImpl.USER);
   }
 
   public CompositeMREnv(RemoteMREnv original) {
@@ -232,7 +232,16 @@ public class CompositeMREnv implements MREnv {
 
   private MRTableShard localShard(MRTableShard shard) {
     final String key = "mr://" + shard.path();
-    final Pair<MRTableShard, MRTableShard> state = copyState.snapshot().get(key);
+    final Object resolved = copyState.snapshot().get(key);
+    if (!(resolved instanceof Pair)) {
+      /**
+       * This is HACK! Should be detected why not Pair here!
+       */
+      assert false;
+      return null;
+    }
+
+    final Pair<MRTableShard, MRTableShard> state = (Pair<MRTableShard, MRTableShard>)resolved;
     if (state == null)
       return null;
     final MRTableShard original = state.getFirst();
