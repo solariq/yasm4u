@@ -30,6 +30,8 @@ import solar.mr.MRTableShard;
  * Time: 10:23
  */
 public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREnv.ShardAlter> {
+
+  public final static String USER = System.getProperty("mr.user", System.getProperty("user.name"));
   private final MREnv env;
   private final String user;
   private final Properties increment = new Properties();
@@ -94,7 +96,7 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
   }
 
   public WhiteboardImpl(MREnv env, String name) {
-    this(env, name, System.getenv("USER"));
+    this(env, name, USER);
   }
 
   @Override
