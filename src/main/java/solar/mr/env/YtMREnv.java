@@ -345,12 +345,13 @@ public class YtMREnv extends RemoteMREnv {
       options.add("--reducer");
     }
 
-    options.add("'(/usr/local/java8/bin/java ");
+    options.add("'/usr/local/java8/bin/java ");
     //options.add(" -Dcom.sun.management.jmxremote.port=50042 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false");
     options.add("-XX:+UnlockDiagnosticVMOptions -XX:+LogVMOutput -XX:LogFile=/dev/stderr ");
     options.add("-XX:-UsePerfData -Xmx1G -Xms1G -jar ");
     options.add(jar.getName()); /* please do not append to the rest of the command */
-    options.add("| sed -ne \'/^d/p\' -ne \'/\\\\t/p\' )'");
+    options.add("'");
+    //options.add("| sed -ne \'/^d/p\' -ne \'/\\t/p\' )'");
     //options.add("1>&2'");
 
     int inCount = 0;
