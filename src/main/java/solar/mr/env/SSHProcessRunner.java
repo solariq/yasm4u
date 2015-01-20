@@ -13,6 +13,7 @@ import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.system.RuntimeUtils;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
+import solar.mr.proc.impl.WhiteboardImpl;
 
 /**
  * User: solar
@@ -148,7 +149,7 @@ public class SSHProcessRunner implements ProcessRunner {
         if (input == null) {
           final String runner = transferFile(SSHProcessRunner.class.getResource("/mr/ssh/runner.pl"), ".pl", remoteResources);
           final StringBuilder finalCommand = new StringBuilder();
-          finalCommand.append("perl ").append(runner).append(" run ").append(command).append(" 2>>/tmp/runner-errors-" + System.getenv("USER") + ".txt\n");
+          finalCommand.append("perl ").append(runner).append(" run ").append(command).append(" 2>>/tmp/runner-errors-" + WhiteboardImpl.USER + ".txt\n");
           println(finalCommand.toString());
           toProxy.append(finalCommand);
           toProxy.flush();
