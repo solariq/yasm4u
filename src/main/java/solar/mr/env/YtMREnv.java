@@ -94,7 +94,7 @@ public class YtMREnv extends RemoteMREnv {
       final String path = paths[i];
       final MRTableShard shard = shardsCache.get("/" + path);
       if (shard != null) {
-        if (time - shard.metaTS() < MRTools.FRESHNESS_TIMEOUT) {
+        if (time - shard.metaTS() < MRTools.FRESHNESS_TIMEOUT && shard.isAvailable()) {
           result[i] = shard;
           continue;
         }
@@ -128,10 +128,6 @@ public class YtMREnv extends RemoteMREnv {
   @Override
   public MRTableShard[] list(String prefix) {
     final List<String> defaultOptionsEntity = defaultOptions();
-    final MRTableShard sh = shardsCache.get("/" + prefix);
-    final long time = System.currentTimeMillis();
-    if (sh != null && time - sh.metaTS() < MRTools.FRESHNESS_TIMEOUT)
-      return new  MRTableShard[]{sh};
 
     defaultOptionsEntity.add("get");
     defaultOptionsEntity.add("--format");
@@ -185,7 +181,7 @@ public class YtMREnv extends RemoteMREnv {
     if (typeNode != null && !typeNode.isMissingNode() && typeNode.textValue().equals("table"))  {
       final String name = metaJSON.get("key").asText(); /* it's a name in Yt */
       final long size = metaJSON.get("uncompressed_data_size").longValue();
-      boolean sorted= metaJSON.has("sorted");
+      boolean sorted= metaJSON.get("sorted").asBoolean();
       final long recordsCount = metaJSON.has("row_count") ? metaJSON.get("row_count").longValue() : 0;
       final String path = prefix.endsWith("/" + name)? prefix : prefix + "/" + name;
       final MRTableShard sh = new MRTableShard(path, true, sorted, "" + size, size, recordsCount/10, recordsCount, /*ts*/ System.currentTimeMillis());
@@ -277,14 +273,16 @@ public class YtMREnv extends RemoteMREnv {
     if (table.isSorted())
       return table;
     final List<String> options = defaultOptions();
+    final MRTableShard newShard = new MRTableShard(table.path(), true, true, table.isAvailable()? table.crc() : resolve(table.path()).crc(), table.length(), table.keysCount(), table.recordsCount(), System.currentTimeMillis());
     options.add("sort");
     options.add("--src");
     options.add(localPath(table));
     options.add("--dst");
     options.add(localPath(table));
-    options.add("--sort_by key");
-    invoke(new ShardAlter(table, ShardAlter.AlterType.CHANGED));
-    return table;
+    options.add("--sort-by key");
+    executeCommand(options, defaultOutputProcessor , defaultErrorsProcessor , null);
+    invoke(new ShardAlter(newShard, ShardAlter.AlterType.CHANGED));
+    return newShard;
   }
 
   @Override
@@ -303,56 +301,37 @@ public class YtMREnv extends RemoteMREnv {
     final List<String> options = defaultOptions();
     switch (builder.getRoutineType()) {
       case REDUCE:
-        options.add("map-reduce");
+        options.add("reduce");
         options.add("--reduce-by key");
-        options.add("--sort-by key");
-        options.add("--reduce-memory-limit 2000");
         break;
       case MAP:
         options.add("map");
-        options.add("--memory-limit 2000");
+        options.add("--spec '{\"data_size_per_job\"= 10000000}'");
         break;
       default:
         throw new IllegalArgumentException("unsupported operation: " + builder.getRoutineType());
     }
-
+    options.add("--memory-limit 2000");
     options.add("--format");
     options.add("\"<has_subkey=true;enable_table_index=true>yamr\"");
     MRTableShard[] in = resolveAll(builder.input());
     MRTableShard[] out = resolveAll(builder.output());
 
-//    final MRTableShard[] realOut = new MRTableShard[out.length];
     for(final MRTableShard o: out) {
       options.add("--dst");
       options.add(localPath(o));
-//      realOut[i] =
       createTable(o); /* lazy materialization */
     }
 
-    switch (builder.getRoutineType()) {
-      case REDUCE:
-        options.add("--reduce-local-file");
-        break;
-      case MAP:
-        options.add("--local-file");
-        break;
-      default:
-        throw new IllegalArgumentException("Shouldn't get here");
-    }
+    options.add("--local-file");
     options.add(jar.getAbsolutePath());
 
-    if (builder.getRoutineType() == MRRoutineBuilder.RoutineType.REDUCE) {
-      options.add("--reducer");
-    }
-
-    options.add("'/usr/local/java8/bin/java ");
+    options.add("'(/usr/local/java8/bin/java ");
     //options.add(" -Dcom.sun.management.jmxremote.port=50042 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false");
     options.add("-XX:+UnlockDiagnosticVMOptions -XX:+LogVMOutput -XX:LogFile=/dev/stderr ");
     options.add("-XX:-UsePerfData -Xmx1G -Xms1G -jar ");
     options.add(jar.getName()); /* please do not append to the rest of the command */
-    options.add("'");
-    //options.add("| sed -ne \'/^d/p\' -ne \'/\\t/p\' )'");
-    //options.add("1>&2'");
+    options.add("| sed -ne \"/^[0-9]/p\" -ne \"/\\t/p\" )'");
 
     int inCount = 0;
     for(final MRTableShard sh:in) {
