@@ -25,17 +25,28 @@ public class AnnotatedMRProcess extends CompositeJobaBuilder {
   public AnnotatedMRProcess(final Class<?> processDescription, Whiteboard wb) {
     super(processDescription.getName().replace('$', '.'), resolveNames(processDescription.getAnnotation(MRProcessClass.class).goal(), wb));
     final Method[] methods = processDescription.getMethods();
-    for (int i = 0; i < methods.length; i++) {
-      final Method current = methods[i];
+    int ignoredMethods = 0;
+    for (final Method current:methods) {
       final MRMapMethod mapAnn = current.getAnnotation(MRMapMethod.class);
-      if (mapAnn != null)
+      if (mapAnn != null) {
         addJob(new RoutineJoba(resolveNames(mapAnn.input(), wb), resolveNames(mapAnn.output(), wb), current, MRRoutineBuilder.RoutineType.MAP));
+        continue;
+      }
       final MRReduceMethod reduceAnn = current.getAnnotation(MRReduceMethod.class);
-      if (reduceAnn != null)
+      if (reduceAnn != null) {
         addJob(new RoutineJoba(resolveNames(reduceAnn.input(), wb), resolveNames(reduceAnn.output(), wb), current, MRRoutineBuilder.RoutineType.REDUCE));
+        continue;
+      }
       final MRRead readAnn = current.getAnnotation(MRRead.class);
-      if (readAnn != null)
+      if (readAnn != null) {
         addJob(new ReadJoba(resolveNames(new String[]{readAnn.input()}, wb), readAnn.output(), current));
+        continue;
+      }
+      ignoredMethods++;
+    }
+    if (ignoredMethods == methods.length) {
+      /* poka-yoke */
+      throw new IllegalArgumentException("No annotated methods");
     }
     this.wb = wb;
   }
