@@ -25,6 +25,14 @@ public class AnnotatedMRProcess extends CompositeJobaBuilder {
   public AnnotatedMRProcess(final Class<?> processDescription, Whiteboard wb) {
     super(processDescription.getName().replace('$', '.'), resolveNames(processDescription.getAnnotation(MRProcessClass.class).goal(), wb));
     final Method[] methods = processDescription.getMethods();
+    try {
+      /* poka-yoke */
+      processDescription.getConstructor(State.class);
+    }
+    catch (NoSuchMethodException nsme){
+      throw new IllegalArgumentException("Missed " + processDescription.getName() + "(State)");
+    }
+
     int ignoredMethods = 0;
     for (final Method current:methods) {
       final MRMapMethod mapAnn = current.getAnnotation(MRMapMethod.class);
