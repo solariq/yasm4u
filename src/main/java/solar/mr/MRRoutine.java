@@ -13,6 +13,9 @@ import solar.mr.routines.MRRecord;
 * Time: 11:19
 */
 public abstract class MRRoutine implements Processor<CharSequence>, Action<MRRecord> {
+
+  public final int MAX_OPERATION_TIME = 60;
+
   protected final MROutput output;
   private final State state;
   private final String[] inputTables;

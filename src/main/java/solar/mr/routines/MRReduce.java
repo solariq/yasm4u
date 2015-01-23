@@ -2,7 +2,7 @@ package solar.mr.routines;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.*;
 
 
 import solar.mr.MROutput;
@@ -66,7 +66,20 @@ public abstract class MRReduce extends MRRoutine {
               }
             };
             try {
-              reduce(key, reduceIterator);
+              final ExecutorService executor = Executors.newSingleThreadExecutor();
+              try {
+                final Future future = executor.submit(new Runnable() {
+                  @Override
+                  public void run() {
+                    reduce(key, reduceIterator);
+                  }
+                });
+                future.get(MAX_OPERATION_TIME, TimeUnit.SECONDS);
+              } catch (TimeoutException e) {
+                throw new RuntimeException("Reduce is too slow for key: " + key, e);
+              } finally {
+                executor.shutdownNow();
+              }
             } catch (Exception e) {
               if (lastRetrieved != null) {
                 output.error(e, lastRetrieved);
@@ -107,7 +120,7 @@ public abstract class MRReduce extends MRRoutine {
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
-      reduceThread.interrupt();
+      //reduceThread.interrupt();
       reduceThread.join();
     } catch (InterruptedException e) {
       throw new RuntimeException(e);

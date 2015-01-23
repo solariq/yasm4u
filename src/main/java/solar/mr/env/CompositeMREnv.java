@@ -237,7 +237,7 @@ public class CompositeMREnv implements MREnv {
       /**
        * This is HACK! Should be detected why not Pair here!
        */
-      assert false;
+      //assert false;
       return null;
     }
 
