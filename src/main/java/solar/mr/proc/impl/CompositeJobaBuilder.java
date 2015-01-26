@@ -4,6 +4,7 @@ import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import org.jetbrains.annotations.Nullable;
 import solar.mr.proc.Joba;
+import solar.mr.proc.Routine;
 import solar.mr.proc.Whiteboard;
 
 import java.util.*;
@@ -17,6 +18,7 @@ public class CompositeJobaBuilder {
   private final String name;
   private final String[] goals;
   private final List<Joba> jobs = new ArrayList<>();
+  private final List<Routine> routines = new ArrayList<>();
 
   public CompositeJobaBuilder(final String name, final String[] goals) {
     this.name = name;
@@ -31,12 +33,16 @@ public class CompositeJobaBuilder {
     jobs.add(job);
   }
 
+  public void addRoutine(Routine routine) {
+    routines.add(routine);
+  }
+
   @Nullable
   public Joba build() {
     final String[] produces = Arrays.copyOf(goals, goals.length);
     final List<Joba> unmergedJobs = unmergeJobs(this.jobs);
     final List<String> consumesLst = new ArrayList<>();
-    final List<Joba> plan = generateExecutionPlan(unmergedJobs, consumesLst);
+    final List<Joba> plan = generateExecutionPlan(unmergedJobs, routines, consumesLst, goals);
     if (plan == null)
       return null;
     final String[] consumes = consumesLst.toArray(new String[consumesLst.size()]);
@@ -79,20 +85,19 @@ public class CompositeJobaBuilder {
     public PossibleState next(Joba job) {
       final List<Joba> nextPlan = new ArrayList<>(plan);
       nextPlan.add(job);
+
       return new PossibleState(nextPlan, weight + 1);
     }
   }
   /** need to implement Dijkstra's algorithm on state machine in case of several alternative routes
    * @param jobs available moves to make plan
-   * @param consumesLst*/
+   */
    @Nullable
-   private List<Joba> generateExecutionPlan(final Collection<Joba> jobs, Collection<String> consumesLst) {
-    final String[] universe;
-    final TObjectIntMap<String> resourceIndices = new TObjectIntHashMap<>();
-    final Map<BitSet, PossibleState> states = new HashMap<>();
-    final TreeSet<BitSet> order = new TreeSet<>(new Comparator<BitSet>() {
+   private static List<Joba> generateExecutionPlan(final Collection<Joba> jobs, final List<Routine> routines, final Collection<String> consumesLst, String[] goals) {
+    final Map<Set<String>, PossibleState> states = new HashMap<>();
+    final TreeSet<Set<String>> order = new TreeSet<>(new Comparator<Set<String>>() {
       @Override
-      public int compare(BitSet o1, BitSet o2) {
+      public int compare(Set<String> o1, Set<String> o2) {
         return Double.compare(states.get(o1).weight, states.get(o2).weight);
       }
     });
@@ -104,27 +109,14 @@ public class CompositeJobaBuilder {
         consumes.addAll(Arrays.asList(job.consumes()));
         produces.addAll(Arrays.asList(job.produces()));
       }
-      final Set<String> universeSet = new HashSet<>();
-      universeSet.addAll(produces);
-      universeSet.addAll(consumes);
-      universeSet.addAll(Arrays.asList(goals));
-      universe = universeSet.toArray(new String[universeSet.size()]);
-      for(int i = 0; i < universe.length; i++) {
-        resourceIndices.put(universe[i], i);
-      }
 
-      final BitSet initialState = new BitSet(universe.length);
       consumes.removeAll(produces);
-
-      for (final String consume : consumes) {
-        consumesLst.add(consume);
-        initialState.set(resourceIndices.get(consume), true);
-      }
+      final Set<String> initialState = new HashSet<>(consumes);
       states.put(initialState, new PossibleState(new ArrayList<Joba>(), 0.));
       order.add(initialState);
     }
 
-    BitSet current;
+    Set<String> current;
     PossibleState best = null;
     double bestScore = Double.POSITIVE_INFINITY;
     while ((current = order.pollFirst()) != null) {
@@ -133,7 +125,7 @@ public class CompositeJobaBuilder {
         continue;
       boolean isFinal = true;
       for(int i = 0; isFinal && i < goals.length; i++) {
-        if (!current.get(resourceIndices.get(goals[i])))
+        if (!current.contains(goals[i]))
           isFinal = false;
       }
       if (isFinal) {
@@ -143,22 +135,48 @@ public class CompositeJobaBuilder {
       }
 
       for (final Joba job : jobs) {
-        boolean available = true;
-        for (final String resource : job.consumes()) {
-          if (!current.get(resourceIndices.get(resource)))
-            available = false;
-        }
-        if (!available)
+        if (!current.containsAll(Arrays.asList(job.consumes())))
           continue;
-        final BitSet next = (BitSet)current.clone();
-        for (final String resource : job.produces()) {
-          next.set(resourceIndices.get(resource), true);
-        }
+        final Set<String> next = new HashSet<>(current);
+        next.addAll(Arrays.asList(job.produces()));
         final PossibleState nextState = currentState.next(job);
         final PossibleState knownState = states.get(next);
         if (knownState == null || knownState.weight > nextState.weight) {
           states.put(next, nextState);
           order.add(next);
+        }
+      }
+      for (final Routine routine : routines) {
+        @SuppressWarnings("unchecked")
+        final List<String>[] variants = (List<String>[])new List[routine.dim()];
+        for (final String resource : current) {
+          for (int i = 0; i < routine.dim(); i++) {
+            if (routine.isRelevant(resource, i))
+              variants[i].add(resource);
+          }
+        }
+
+        int variantsCount = 1;
+        for(int i = 0; i < variants.length; i++) {
+          variantsCount *= variants[i].size();
+        }
+
+        for (int v = 0; v < variantsCount; v++) {
+          final String[] variant = new String[routine.dim()];
+          int currentVar = v;
+          for (int i = 0; i < variants.length; i++) {
+            variant[i] = variants[i].get(currentVar % variants[i].size());
+            currentVar /= variants[i].size();
+          }
+          final Joba job = routine.build(variant);
+          final Set<String> next = new HashSet<>(current);
+          next.addAll(Arrays.asList(job.produces()));
+          final PossibleState nextState = currentState.next(job);
+          final PossibleState knownState = states.get(next);
+          if (knownState == null || knownState.weight > nextState.weight) {
+            states.put(next, nextState);
+            order.add(next);
+          }
         }
       }
     }
