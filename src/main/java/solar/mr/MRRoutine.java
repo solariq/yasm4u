@@ -38,7 +38,7 @@ public abstract class MRRoutine implements Processor<CharSequence>, Action<MRRec
     int parts = CharSeqTools.trySplit(record, '\t', split);
     if (parts == 1) // switch table record
       currentInputIndex = CharSeqTools.parseInt(split[0]);
-    else if (split.length < 3)
+    else if (parts < 3)
       output.error("Illegal record", "Contains 2 fields only!", new MRRecord(currentTable(), split[0].toString(), "", split[1]));
     else {
       final MRRecord mrRecord = new MRRecord(currentTable(), split[0].toString(), split[1].toString(), split[2]);

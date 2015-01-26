@@ -110,48 +110,54 @@ public class YaMREnv extends RemoteMREnv {
 
   @Override
   public MRTableShard[] list(String prefix) {
-    final List<MRTableShard> result = new ArrayList<>();
     final List<String> options = defaultOptions();
     options.add("-list");
     options.add("-prefix");
     options.add(localPath(new WhiteboardImpl.LazyTableShard(prefix,this)));
     options.add("-jsonoutput");
-    final CharSeqBuilder builder = new CharSeqBuilder();
-    executeCommand(options, new Processor<CharSequence>() {
-      @Override
-      public void process(final CharSequence arg) {
-        builder.append(arg);
-      }
-    }, defaultErrorsProcessor, null);
-    final CharSeq build = builder.build();
+    CharSeq build = null;
     try {
-      JsonParser parser = JSONTools.parseJSON(build);
-      ObjectMapper mapper = new ObjectMapper();
-      JsonToken next = parser.nextToken();
-      assert JsonToken.START_ARRAY.equals(next);
-      next = parser.nextToken();
-      while (!JsonToken.END_ARRAY.equals(next)) {
-        final JsonNode metaJSON = mapper.readTree(parser);
-        final JsonNode nameNode = metaJSON.get("name");
-        if (nameNode != null && !nameNode.isMissingNode()) {
-          final String name = nameNode.textValue();
-          final long size = metaJSON.get("full_size").longValue();
-          final String sorted = metaJSON.has("sorted") ? metaJSON.get("sorted").toString() : "0";
-//          final long ts = metaJSON.has("mod_time") ? metaJSON.get("mod_time").longValue() : System.currentTimeMillis();
-          final long recordsCount = metaJSON.has("records") ? metaJSON.get("records").longValue() : 0;
-          result.add(new MRTableShard(name, true, "1".equals(sorted), "" + size, size, recordsCount/10, recordsCount, System.currentTimeMillis()));
-        }
+      executeCommand:
+      while(true) {
+        final List<MRTableShard> result = new ArrayList<>();
+        final CharSeqBuilder builder = new CharSeqBuilder();
+        executeCommand(options, new Processor<CharSequence>() {
+          @Override
+          public void process(final CharSequence arg) {
+            builder.append(arg);
+          }
+        }, defaultErrorsProcessor, null);
+        build = builder.build();
+        JsonParser parser = JSONTools.parseJSON(build);
+        ObjectMapper mapper = new ObjectMapper();
+        JsonToken next = parser.nextToken();
+        assert JsonToken.START_ARRAY.equals(next);
         next = parser.nextToken();
+        while (!JsonToken.END_ARRAY.equals(next)) {
+          final JsonNode metaJSON = mapper.readTree(parser);
+          if (metaJSON == null)
+            continue executeCommand;
+          final JsonNode nameNode = metaJSON.get("name");
+          if (nameNode != null && !nameNode.isMissingNode()) {
+            final String name = nameNode.textValue();
+            final long size = metaJSON.get("full_size").longValue();
+            final String sorted = metaJSON.has("sorted") ? metaJSON.get("sorted").toString() : "0";
+//          final long ts = metaJSON.has("mod_time") ? metaJSON.get("mod_time").longValue() : System.currentTimeMillis();
+            final long recordsCount = metaJSON.has("records") ? metaJSON.get("records").longValue() : 0;
+            result.add(new MRTableShard(name, true, "1".equals(sorted), "" + size, size, recordsCount / 10, recordsCount, System.currentTimeMillis()));
+          }
+          next = parser.nextToken();
+        }
+        for (int i = 0; i < result.size(); i++) {
+          final MRTableShard shard = result.get(i);
+          shardsCache.put(shard.path(), shard);
+        }
+
+        return result.toArray(new MRTableShard[result.size()]);
       }
     } catch (IOException e) {
       throw new RuntimeException("Error parsing JSON from server: " + build, e);
     }
-    for (int i = 0; i < result.size(); i++) {
-      final MRTableShard shard = result.get(i);
-      shardsCache.put(shard.path(), shard);
-    }
-
-    return result.toArray(new MRTableShard[result.size()]);
   }
 
   @Override
