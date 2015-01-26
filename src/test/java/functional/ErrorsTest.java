@@ -74,7 +74,7 @@ public final class ErrorsTest extends BaseMRTest {
 
   @Test
   public void exceptionInMapShouldThrowException() {
-    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(MapError.class, env);
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(MapException.class, env);
     mrProcess.wb().wipe();
     try {
       mrProcess.execute();
@@ -155,6 +155,69 @@ public final class ErrorsTest extends BaseMRTest {
       mrProcess.execute();
     } catch (RuntimeException e) {
       assertTrue(false);
+    }
+    mrProcess.wb().wipe();
+  }
+
+  @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME)
+  public static final class MapEndless {
+
+    public MapEndless(State state) {
+    }
+
+    @MRMapMethod(input = SCHEMA + IN_TABLE_NAME, output = SCHEMA + OUT_TABLE_NAME)
+    public void map(final String key, final String sub, final CharSequence value, MROutput output) {
+      long i = 0;
+      while (true) {
+        i++;
+        if (false) {
+          break;
+        }
+      }
+      output.add(key, sub, String.valueOf(i));;
+    }
+  }
+
+  //2@Test
+  public void endlessMapShouldBeKilledByForce() {
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(MapEndless.class, env);
+    mrProcess.wb().wipe();
+    try {
+      mrProcess.execute();
+      assertTrue(false);
+    } catch (RuntimeException expected) {
+    }
+    mrProcess.wb().wipe();
+  }
+
+  @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME)
+  public static final class ReduceEndless {
+
+    public ReduceEndless(State state) {
+    }
+
+    @MRReduceMethod(input = SCHEMA + IN_TABLE_NAME, output = SCHEMA + OUT_TABLE_NAME)
+    public void reduce(final String key, final Iterator<MRRecord> reduce, final MROutput output) {
+      reduce.next();
+      long i = 0;
+      while (true) {
+        i++;
+        if (false) {
+          break;
+        }
+      }
+      output.add(key, "#", String.valueOf(i));;
+    }
+  }
+
+  //@Test
+  public void endlessReduceShouldBeKilledByForce() {
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(ReduceEndless.class, env);
+    mrProcess.wb().wipe();
+    try {
+      mrProcess.execute();
+      assertTrue(false);
+    } catch (RuntimeException expected) {
     }
     mrProcess.wb().wipe();
   }
