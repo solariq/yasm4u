@@ -31,7 +31,11 @@ public abstract class MRReduce extends MRRoutine {
         while (true) {
           try {
             if (record == null)
-              record = recordsQueue.take();
+              record = recordsQueue.poll(MAX_OPERATION_TIME, TimeUnit.SECONDS);
+              if (record == null) {
+                System.err.println("REduce(poll(1)) is too slow for key: " + record.key);
+                throw new RuntimeException("key: " + record.key);
+              }
             if (record == EOF)
               return;
             final String key = record.key;
@@ -40,8 +44,13 @@ public abstract class MRReduce extends MRRoutine {
               public boolean hasNext() {
                 while (record == null) {
                   try {
-                    record = recordsQueue.take();
+                    record = recordsQueue.poll(MAX_OPERATION_TIME, TimeUnit.SECONDS);
+                    if (record == null) {
+                      System.err.println("Reduce(poll(2)) is too slow for key: " + record.key);
+                      throw new RuntimeException("key: " + record.key);
+                    }
                   } catch (InterruptedException e) {
+
                     // skip, need to empty queue
                   }
                 }
@@ -66,20 +75,7 @@ public abstract class MRReduce extends MRRoutine {
               }
             };
             try {
-              final ExecutorService executor = Executors.newSingleThreadExecutor();
-              try {
-                final Future future = executor.submit(new Runnable() {
-                  @Override
-                  public void run() {
                     reduce(key, reduceIterator);
-                  }
-                });
-                future.get(MAX_OPERATION_TIME, TimeUnit.SECONDS);
-              } catch (TimeoutException e) {
-                throw new RuntimeException("Reduce is too slow for key: " + key, e);
-              } finally {
-                executor.shutdownNow();
-              }
             } catch (Exception e) {
               if (lastRetrieved != null) {
                 output.error(e, lastRetrieved);
@@ -120,7 +116,7 @@ public abstract class MRReduce extends MRRoutine {
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
-      //reduceThread.interrupt();
+      reduceThread.interrupt();
       reduceThread.join();
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
