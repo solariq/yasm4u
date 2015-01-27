@@ -14,7 +14,6 @@ import java.util.concurrent.*;
 public abstract class MRMap extends MRRoutine {
   public MRMap(final String[] inputTables, final MROutput output, final State state) {
     super(inputTables, output, state);
-    System.err.println("MAP: user :" + state.get("var:mr.user"));
   }
 
   @Override
