@@ -15,12 +15,10 @@ import solar.mr.*;
 import solar.mr.proc.impl.WhiteboardImpl;
 import solar.mr.routines.MRRecord;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.LineNumberReader;
-import java.io.Reader;
+import java.io.*;
 import java.text.ParseException;
 import java.util.*;
+import java.util.concurrent.Exchanger;
 
 /**
  * User: solar
@@ -76,7 +74,7 @@ public class YtMREnv extends RemoteMREnv {
     options.add("read");
     options.add("--format");
     options.add("\"<has_subkey=true>yamr\"");
-    options.add(localPath(table) + "[:#100]");
+    options.add(localPath(table) + "[:#10]");
     executeCommand(options, new YtResponseProcessor(new Processor<CharSequence>() {
       @Override
       public void process(final CharSequence arg) {
@@ -273,6 +271,10 @@ public class YtMREnv extends RemoteMREnv {
     if (table.isSorted())
       return table;
     final List<String> options = defaultOptions();
+    if (!table.isAvailable()
+        && !resolve(table.path()).isAvailable())
+        return table;
+
     final MRTableShard newShard = new MRTableShard(table.path(), true, true, table.isAvailable()? table.crc() : resolve(table.path()).crc(), table.length(), table.keysCount(), table.recordsCount(), System.currentTimeMillis());
     options.add("sort");
     options.add("--src");
@@ -303,10 +305,12 @@ public class YtMREnv extends RemoteMREnv {
       case REDUCE:
         options.add("reduce");
         options.add("--reduce-by key");
+        //options.add("--spec '{\"weight\"=5}'");
+        options.add("--spec '{\"weight\"=5;\"job_io\" = {\"table_writer\" = {\"max_row_weight\" = 32000000}}}'");
         break;
       case MAP:
         options.add("map");
-        options.add("--spec '{\"data_size_per_job\"= 10000000}'");
+        options.add("--spec '{\"weight\"=5;\"job_io\" = {\"table_writer\" = {\"max_row_weight\" = 32000000}}}'");
         break;
       default:
         throw new IllegalArgumentException("unsupported operation: " + builder.getRoutineType());
@@ -326,12 +330,13 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--local-file");
     options.add(jar.getAbsolutePath());
 
-    options.add("'(/usr/local/java8/bin/java ");
+    options.add("'/usr/local/java8/bin/java ");
     //options.add(" -Dcom.sun.management.jmxremote.port=50042 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false");
-    options.add("-XX:+UnlockDiagnosticVMOptions -XX:+LogVMOutput -XX:LogFile=/dev/stderr ");
+    //options.add("-Xint -XX:+UnlockDiagnosticVMOptions -XX:+LogVMOutput -XX:LogFile=/dev/stderr ");
     options.add("-XX:-UsePerfData -Xmx1G -Xms1G -jar ");
     options.add(jar.getName()); /* please do not append to the rest of the command */
-    options.add("| sed -ne \"/^[0-9]/p\" -ne \"/\\t/p\" )'");
+    //options.add("| sed -ne \"/^[0-9]\\*\\$/p\" -ne \"/\\t/p\" )'");
+    options.add("'");
 
     int inCount = 0;
     for(final MRTableShard sh:in) {
@@ -362,8 +367,14 @@ public class YtMREnv extends RemoteMREnv {
       public void invoke(final MRRecord record) {
         CharSequence[] parts = CharSeqTools.split(record.value, '\t', new CharSequence[4]);
         errorsHandler.error(record.key, record.sub, new MRRecord(parts[0].toString(), parts[1].toString(), parts[2].toString(), parts[3]));
-        System.err.println(record.value);
-        System.err.println(record.key + "\t" + record.sub.replace("\\n", "\n").replace("\\t", "\t"));
+        try {
+          final Exception e = (Exception)new ObjectInputStream(new ByteArrayInputStream(CharSeqTools.parseBase64(parts[1]))).readObject();
+          e.printStackTrace(System.err);
+        } catch (IOException e1) {
+          e1.printStackTrace();
+        } catch (Exception ignored) {}
+        /* System.err.println(record.value);
+        System.err.println(record.key + "\t" + record.sub.replace("\\n", "\n").replace("\\t", "\t")); */
       }
     });
     delete(errorsShard);
