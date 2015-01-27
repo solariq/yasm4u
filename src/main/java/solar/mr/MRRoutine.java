@@ -7,6 +7,9 @@ import com.spbsu.commons.seq.CharSeqTools;
 import solar.mr.proc.State;
 import solar.mr.routines.MRRecord;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 /**
 * User: solar
 * Date: 23.09.14
@@ -14,7 +17,7 @@ import solar.mr.routines.MRRecord;
 */
 public abstract class MRRoutine implements Processor<CharSequence>, Action<MRRecord> {
 
-  public final int MAX_OPERATION_TIME = 60;
+  public final int MAX_OPERATION_TIME = 600;
 
   protected final MROutput output;
   private final State state;
