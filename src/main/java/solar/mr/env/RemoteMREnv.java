@@ -123,6 +123,7 @@ public abstract class RemoteMREnv extends WeakListenerHolderImpl<MREnv.ShardAlte
         try {
           if (process != null) {
             process.getOutputStream().close();
+            process.getInputStream().close();
             process.waitFor();
             StreamTools.transferData(process.getErrorStream(), System.err);
           }
