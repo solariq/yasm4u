@@ -5,6 +5,7 @@
 !.idea/projectCodeStyle.xml
 !.idea/vcs.xml
 !.idea/sqldialects.xml
+target/*
 *.iml
 *.ipr
 *.iws
