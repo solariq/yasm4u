@@ -202,6 +202,9 @@ public class YtMREnv extends RemoteMREnv {
     for (final MRTableShard sh:from){
       final List<String> options = defaultOptions();
       options.add("merge");
+      // is sorted enough?
+      //options.add("--spec '{\"combine_chunks\"=true;\"merge_by\"=[\"key\"];\"mode\"=\"sorted\"}'");
+      options.add("--spec '{\"combine_chunks\"=true;}'");
       options.add("--src");
       options.add(localPath(sh));
       options.add("--dst");
@@ -282,6 +285,7 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--dst");
     options.add(localPath(table));
     options.add("--sort-by key");
+    options.add("--spec '{\"weight\"=5;\"sort_job_io\" = {\"table_writer\" = {\"max_row_weight\" = 90000000}};\"merge_job_io\" = {\"table_writer\" = {\"max_row_weight\" = 90000000}}}'");
     executeCommand(options, defaultOutputProcessor , defaultErrorsProcessor , null);
     invoke(new ShardAlter(newShard, ShardAlter.AlterType.CHANGED));
     return newShard;
@@ -306,16 +310,15 @@ public class YtMREnv extends RemoteMREnv {
         options.add("reduce");
         options.add("--reduce-by key");
         //options.add("--spec '{\"weight\"=5}'");
-        options.add("--spec '{\"weight\"=5;\"job_io\" = {\"table_writer\" = {\"max_row_weight\" = 32000000}}}'");
         break;
       case MAP:
         options.add("map");
-        options.add("--spec '{\"weight\"=5;\"job_io\" = {\"table_writer\" = {\"max_row_weight\" = 32000000}}}'");
         break;
       default:
         throw new IllegalArgumentException("unsupported operation: " + builder.getRoutineType());
     }
-    options.add("--memory-limit 2000");
+    options.add("--spec '{\"weight\"=5;\"job_io\" = {\"table_writer\" = {\"max_row_weight\" = 90000000}}}'");
+    options.add("--memory-limit 3000");
     options.add("--format");
     options.add("\"<has_subkey=true;enable_table_index=true>yamr\"");
     MRTableShard[] in = resolveAll(builder.input());
@@ -333,7 +336,7 @@ public class YtMREnv extends RemoteMREnv {
     options.add("'/usr/local/java8/bin/java ");
     //options.add(" -Dcom.sun.management.jmxremote.port=50042 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false");
     //options.add("-Xint -XX:+UnlockDiagnosticVMOptions -XX:+LogVMOutput -XX:LogFile=/dev/stderr ");
-    options.add("-XX:-UsePerfData -Xmx1G -Xms1G -jar ");
+    options.add("-XX:-UsePerfData -Xmx2G -Xms2G -jar ");
     options.add(jar.getName()); /* please do not append to the rest of the command */
     //options.add("| sed -ne \"/^[0-9]\\*\\$/p\" -ne \"/\\t/p\" )'");
     options.add("'");
@@ -366,15 +369,15 @@ public class YtMREnv extends RemoteMREnv {
       @Override
       public void invoke(final MRRecord record) {
         CharSequence[] parts = CharSeqTools.split(record.value, '\t', new CharSequence[4]);
-        errorsHandler.error(record.key, record.sub, new MRRecord(parts[0].toString(), parts[1].toString(), parts[2].toString(), parts[3]));
+        /*errorsHandler.error(record.key, record.sub, new MRRecord(parts[0].toString(), parts[1].toString(), parts[2].toString(), parts[3]));
         try {
           final Exception e = (Exception)new ObjectInputStream(new ByteArrayInputStream(CharSeqTools.parseBase64(parts[1]))).readObject();
           e.printStackTrace(System.err);
         } catch (IOException e1) {
           e1.printStackTrace();
-        } catch (Exception ignored) {}
-        /* System.err.println(record.value);
-        System.err.println(record.key + "\t" + record.sub.replace("\\n", "\n").replace("\\t", "\t")); */
+        } catch (Exception ignored) {}*/
+        System.err.println(record.value);
+        System.err.println(record.key + "\t" + record.sub.replace("\\n", "\n").replace("\\t", "\t"));
       }
     });
     delete(errorsShard);
