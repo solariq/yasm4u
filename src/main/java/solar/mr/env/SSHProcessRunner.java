@@ -46,13 +46,15 @@ public class SSHProcessRunner implements ProcessRunner {
     }
     while (true) {
       try {
-        process = Runtime.getRuntime().exec("ssh " + proxyHost + " bash -s");
+        process = Runtime.getRuntime().exec("ssh -o PasswordAuthentication=no " + proxyHost + " bash -s");
         toProxy = new OutputStreamWriter(process.getOutputStream(), Charset.forName("UTF-8"));
         fromProxy = new LineNumberReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF-8")));
+        LineNumberReader error = new LineNumberReader(new InputStreamReader(process.getErrorStream(), Charset.forName("UTF-8")));
         toProxy.append("echo Ok\n");
         toProxy.flush();
         if (fromProxy.readLine().equals("Ok"))
           break;
+        error.close();
         toProxy.close();
         fromProxy.close();
         process.waitFor();
@@ -170,7 +172,7 @@ public class SSHProcessRunner implements ProcessRunner {
           waitCmd.append("\n");
           waitCmd.append("function gc() {\n");
           for (final File remoteResource : remoteResources) {
-            waitCmd.append("  ssh ").append(proxyHost).append(" rm -rf ").append(remoteResource.getAbsolutePath()).append(";\n");
+            waitCmd.append("  ssh -o PasswordAuthentication=no ").append(proxyHost).append(" rm -rf ").append(remoteResource.getAbsolutePath()).append(";\n");
           }
           waitCmd.append("}\n");
           waitCmd.append(StreamTools.readStream(SSHProcessRunner.class.getResourceAsStream("/mr/ssh/wait.sh")));
@@ -178,7 +180,7 @@ public class SSHProcessRunner implements ProcessRunner {
           return Runtime.getRuntime().exec("bash " + tempFile.getAbsolutePath());
         }
         else {
-          final Process process = Runtime.getRuntime().exec("ssh " + proxyHost + " bash -s");
+          final Process process = Runtime.getRuntime().exec("ssh -o PasswordAuthentication=no " + proxyHost + " bash -s");
           final OutputStream toProxy = process.getOutputStream();
           final LineNumberReader fromProxy = new LineNumberReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF-8")));
 
@@ -226,7 +228,7 @@ public class SSHProcessRunner implements ProcessRunner {
       }
     }
     else {
-      final Process exec = Runtime.getRuntime().exec("ssh proxyHost 'bash cat - > " + remoteResource.getAbsolutePath() + "'");
+      final Process exec = Runtime.getRuntime().exec("ssh -o PasswordAuthentication=no proxyHost 'bash cat - > " + remoteResource.getAbsolutePath() + "'");
       final InputStream in = url.openStream();
       final OutputStream out = exec.getOutputStream();
       StreamTools.transferData(in, out);
