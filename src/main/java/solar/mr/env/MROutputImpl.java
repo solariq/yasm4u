@@ -11,6 +11,7 @@ import solar.mr.routines.MRRecord;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.LinkedTransferQueue;
 
 /**
@@ -20,34 +21,29 @@ import java.util.concurrent.LinkedTransferQueue;
 */
 public class MROutputImpl implements MROutput {
   private static Logger LOG = Logger.getLogger(MROutputImpl.class);
-  private final LinkedTransferQueue<Pair<Integer, CharSequence>> queue = new LinkedTransferQueue<>();
+  private final LinkedBlockingQueue<Pair<Integer, CharSequence>> queue = new LinkedBlockingQueue<>();
   private final String[] outTables;
   private final int errorTable;
   private final Thread outputThread;
   private final MRErrorsHandler errorsHandler;
   private int lastActiveTable = 0;
 
-  public MROutputImpl(final Writer out, String[] outputTables) {
+  public MROutputImpl(final Writer outF, String[] outputTables) {
     this.outTables = outputTables;
     this.errorsHandler = null;
     this.errorTable = outputTables.length;
     outputThread = new Thread(new Runnable() {
       @Override
       public void run() {
-        try {
-          try {
-            //noinspection InfiniteLoopStatement
-            Pair<Integer, CharSequence> next;
-            while ((next = queue.take()) != MRRunner.STOP) {
-              if (next.getFirst() != lastActiveTable) {
-                out.append(next.getFirst().toString()).append('\n');
-                lastActiveTable = next.getFirst();
-              }
-              out.append(next.getSecond()).append('\n');
+        try (Writer out = outF) {
+          //noinspection InfiniteLoopStatement
+          Pair<Integer, CharSequence> next;
+          while ((next = queue.take()) != MRRunner.STOP) {
+            if (next.getFirst() != lastActiveTable) {
+              out.append(next.getFirst().toString()).append('\n');
+              lastActiveTable = next.getFirst();
             }
-          }
-          finally {
-            out.close();
+            out.append(next.getSecond()).append('\n');
           }
         }
         catch (IOException e) {
@@ -164,11 +160,19 @@ public class MROutputImpl implements MROutput {
   private void push(int tableNo, CharSequence record) {
     if (!outputThread.isAlive() && !outputThread.isInterrupted())
       outputThread.start();
-    queue.add(new Pair<>(tableNo, record));
+    try {
+      queue.put(new Pair<>(tableNo, record));
+    } catch (InterruptedException ignored) {
+      throw new RuntimeException(ignored);
+    }
   }
 
   public void interrupt() {
-    queue.add(MRRunner.STOP);
+    try {
+      queue.put(MRRunner.STOP);
+    } catch (InterruptedException ignored) {
+      throw new RuntimeException(ignored);
+    }
   }
 
   public void join() {

@@ -46,11 +46,9 @@ public abstract class MRReduce extends MRRoutine {
                   try {
                     record = recordsQueue.poll(MAX_OPERATION_TIME, TimeUnit.SECONDS);
                     if (record == null) {
-                      System.err.println("Reduce(poll(2)) is too slow for key: " + record.key);
-                      throw new RuntimeException("key: " + record.key);
+                      throw new RuntimeException("key: " + key);
                     }
                   } catch (InterruptedException e) {
-
                     // skip, need to empty queue
                   }
                 }
@@ -116,7 +114,6 @@ public abstract class MRReduce extends MRRoutine {
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
-      reduceThread.interrupt();
       reduceThread.join();
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
