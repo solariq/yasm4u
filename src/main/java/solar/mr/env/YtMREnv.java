@@ -26,6 +26,8 @@ import java.util.concurrent.Exchanger;
  * Time: 17:08
  */
 public class YtMREnv extends RemoteMREnv {
+
+  private static int MAX_ROW_WEIGTH = 128000000;
   public YtMREnv(final ProcessRunner runner, final String tag, final String master) {
     super(runner, tag, master);
   }
@@ -285,7 +287,11 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--dst");
     options.add(localPath(table));
     options.add("--sort-by key");
-    options.add("--spec '{\"weight\"=5;\"sort_job_io\" = {\"table_writer\" = {\"max_row_weight\" = 90000000}};\"merge_job_io\" = {\"table_writer\" = {\"max_row_weight\" = 90000000}}}'");
+    options.add("--spec '{\"weight\"=5;\"sort_job_io\" = {\"table_writer\" = {\"max_row_weight\" = "
+        + MAX_ROW_WEIGTH
+        + "}};\"merge_job_io\" = {\"table_writer\" = {\"max_row_weight\" = "
+        + MAX_ROW_WEIGTH
+        + "}}}'");
     executeCommand(options, defaultOutputProcessor , defaultErrorsProcessor , null);
     invoke(new ShardAlter(newShard, ShardAlter.AlterType.CHANGED));
     return newShard;
@@ -317,7 +323,7 @@ public class YtMREnv extends RemoteMREnv {
       default:
         throw new IllegalArgumentException("unsupported operation: " + builder.getRoutineType());
     }
-    options.add("--spec '{\"weight\"=5;\"job_io\" = {\"table_writer\" = {\"max_row_weight\" = 90000000}}}'");
+    options.add("--spec '{\"weight\"=5;\"job_io\" = {\"table_writer\" = {\"max_row_weight\" = " + MAX_ROW_WEIGTH + "}}}'");
     options.add("--memory-limit 3000");
     options.add("--format");
     options.add("\"<has_subkey=true;enable_table_index=true>yamr\"");
