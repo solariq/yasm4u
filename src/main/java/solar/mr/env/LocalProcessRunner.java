@@ -23,7 +23,8 @@ public class LocalProcessRunner implements ProcessRunner {
     final ArrayList<String> command = new ArrayList<>();
     command.add(binaryPath);
     for (final String o:options) {
-      command.add(o.replace("$", "."));
+        for (final String part:o.replace("$", ".").split(" "))
+	    command.add(part);
     }
 
     final ArrayList<String> envp = new ArrayList<>();
@@ -31,7 +32,7 @@ public class LocalProcessRunner implements ProcessRunner {
       envp.add(e.getKey() + "=" + e.getValue());
     }
     try {
-
+	println(command);
       final Process process = Runtime.getRuntime().exec(command.toArray(new String[command.size()]), envp.toArray(new String[envp.size()]));
       if (input != null) {
         StreamTools.transferData(input, process.getOutputStream());
@@ -41,5 +42,15 @@ public class LocalProcessRunner implements ProcessRunner {
     catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+  
+  private void println(final List<String>command) {
+      StringBuffer cmdString = new StringBuffer();
+      for (final String c:command) {
+	  //cmdString.append("'").append(c).append("'").append(" ");
+	  cmdString.append(c).append(" ");
+      }
+
+      System.out.println(System.currentTimeMillis() + ":" + cmdString);
   }
 }
