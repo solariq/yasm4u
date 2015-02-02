@@ -41,9 +41,26 @@ public class LocalProcessRunner implements ProcessRunner {
 
     final ArrayList<String> command = new ArrayList<>();
     command.add(binaryPath);
-    for (final String o:options) {
-        for (final String part:o.replace("$", ".").split(" "))
-	    command.add(part);
+    boolean quotate = false;
+    for (int i = 0; i < options.size(); ++i) {
+      final String opt = options.get(i);
+      final String newOpt;
+      switch(opt) {
+        case "-map":
+        case "-reduce":
+        case "-reducews":
+          quotate = true;
+          newOpt = opt;
+          break;
+        default:
+          newOpt = opt.replace("$", ".");
+      }
+      if (quotate) {
+        command.add("'" + newOpt + "'");
+        quotate = false;
+      }
+      else
+        command.add(newOpt);
     }
 
     final StringBuilder sb = new StringBuilder();
