@@ -10,7 +10,6 @@ import java.util.List;
 import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqTools;
-import com.spbsu.commons.system.RuntimeUtils;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import solar.mr.proc.impl.WhiteboardImpl;
@@ -52,7 +51,8 @@ public class SSHProcessRunner implements ProcessRunner {
         LineNumberReader error = new LineNumberReader(new InputStreamReader(process.getErrorStream(), Charset.forName("UTF-8")));
         toProxy.append("echo Ok\n");
         toProxy.flush();
-        if (fromProxy.readLine().equals("Ok"))
+        final String response = fromProxy.readLine();
+        if (response != null && response.equals("Ok"))
           break;
         error.close();
         toProxy.close();
@@ -60,7 +60,7 @@ public class SSHProcessRunner implements ProcessRunner {
         process.waitFor();
       }
       catch (Exception e) {
-        LOG.warn(e);
+        throw new RuntimeException(e);
       }
     }
     final Thread thread = new Thread() {

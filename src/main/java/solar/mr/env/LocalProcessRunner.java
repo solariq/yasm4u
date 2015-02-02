@@ -31,7 +31,8 @@ public class LocalProcessRunner implements ProcessRunner {
       fromShell = new LineNumberReader(new InputStreamReader(shell.getInputStream(), Charset.forName("UTF-8")));
       toShell.append("echo Ok\n");
       toShell.flush();
-      if (!"Ok".equals(fromShell.readLine())){
+      final String response = fromShell.readLine();
+      if (response == null || !"Ok".equals(response)){
         throw new RuntimeException("shell service isn't lunched!!!");
       }
     } catch (IOException e) {
