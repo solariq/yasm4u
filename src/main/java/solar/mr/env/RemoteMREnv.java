@@ -159,7 +159,8 @@ public abstract class RemoteMREnv extends WeakListenerHolderImpl<MREnv.ShardAlte
           }
         }
       });
-      exec.getOutputStream().close();
+      if (exec.getOutputStream() != null)
+        exec.getOutputStream().close();
       outThread.start();
       errThread.start();
       exec.waitFor();
