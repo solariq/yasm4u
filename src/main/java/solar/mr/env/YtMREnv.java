@@ -155,7 +155,7 @@ public class YtMREnv extends RemoteMREnv {
 
     final List<String> options = defaultOptions();
     options.add("list");
-    final String nodePath = path.substring(0, path.length() - 1);
+    final String nodePath = path.substring(0, path.endsWith("/")?path.length() - 1: path.length());
     options.add(nodePath);
     final AppenderProcessor builder = new AppenderProcessor(" ");
     executeCommand(options, new YtResponseProcessor(builder), defaultErrorsProcessor, null);
