@@ -7,8 +7,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import solar.mr.proc.AnnotatedMRProcess;
 import solar.mr.proc.State;
+import solar.mr.proc.impl.MRPath;
 import solar.mr.proc.tags.MRProcessClass;
 import solar.mr.proc.tags.MRRead;
+import solar.mr.routines.MRRecord;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -24,7 +26,7 @@ import static solar.mr.MRTestUtils.*;
 @RunWith(Parameterized.class)
 public final class SimpleReadWriteTest extends BaseMRTest {
 
-  private final Record[] RECORDS = createRecords(3);
+  private final MRRecord[] RECORDS = createRecords(3);
 
   private static final String TABLE_NAME = TABLE_NAME_PREFIX + "SimpleReadWriteTest-" + SALT;
   private static final String SEPARATOR = "#";
@@ -35,9 +37,9 @@ public final class SimpleReadWriteTest extends BaseMRTest {
     writeRecords(env, TABLE_NAME, RECORDS);
   }
 
-  private void checkRecords(List<Record> records) {
+  private void checkRecords(List<MRRecord> records) {
     assertEquals(3, records.size());
-    for(Record record: RECORDS) {
+    for(MRRecord record: RECORDS) {
       assertTrue(records.contains(record));
     }
   }
@@ -54,13 +56,12 @@ public final class SimpleReadWriteTest extends BaseMRTest {
     }
 
     @MRRead(input = SCHEMA + TABLE_NAME, output = RESULT)
-    public String read(Iterator<CharSequence> lines) {
-      StringBuilder sb = new StringBuilder();
+    public List<MRRecord> read(Iterator<MRRecord> lines) {
+      final List<MRRecord> result = new ArrayList<>();
       while(lines.hasNext()) {
-        sb.append(new Record(lines.next()));
-        sb.append(SEPARATOR);
+        result.add(lines.next());
       }
-      return sb.toString();
+      return result;
     }
 
   }
@@ -68,17 +69,12 @@ public final class SimpleReadWriteTest extends BaseMRTest {
   @Test
   public void readingFromProcessShouldWork() {
     final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(Reader.class, env);
-    String recordsData = mrProcess.result();
-    List<Record> records = new ArrayList<>();
-    for(String record: recordsData.split(SEPARATOR)) {
-      records.add(new Record(record));
-    }
-    checkRecords(records);
+    checkRecords(mrProcess.<List<MRRecord>>result());
   }
 
   @After
   public void dropTable() {
-    dropMRTable(env, TABLE_NAME);
+    env.delete(MRPath.createFromURI(TABLE_NAME));
   }
 
 }

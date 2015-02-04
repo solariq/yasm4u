@@ -8,8 +8,10 @@ import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
 import solar.mr.proc.AnnotatedMRProcess;
 import solar.mr.proc.State;
+import solar.mr.proc.impl.MRPath;
 import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
+import solar.mr.routines.MRRecord;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -26,9 +28,9 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public abstract class AsteriskTest extends BaseMRTest {
 
-  private final Record[] RECORDS_1 = createRecords(10, 3);
-  private final Record[] RECORDS_2 = createRecords(20, 3);
-  private final Record[] RECORDS_3 = createRecords(30, 3);
+  private final MRRecord[] RECORDS_1 = createRecords(10, 3);
+  private final MRRecord[] RECORDS_2 = createRecords(20, 3);
+  private final MRRecord[] RECORDS_3 = createRecords(30, 3);
 
   private static final String IN_TABLES = TABLE_NAME_PREFIX + "AsteriskTest/";
   private static final String IN_TABLE_NAME_1 = IN_TABLES + "AsteriskTest-1-1-" + SALT;
@@ -62,9 +64,9 @@ public abstract class AsteriskTest extends BaseMRTest {
     mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
-    List<Record> records = readRecords(env, OUT_TABLE_NAME);
+    List<MRRecord> records = readRecords(env, OUT_TABLE_NAME);
     assertEquals(RECORDS_1.length + RECORDS_2.length + RECORDS_3.length, records.size());
-    Set<Record> recordsSet = new HashSet<>(Arrays.asList(RECORDS_1));
+    Set<MRRecord> recordsSet = new HashSet<>(Arrays.asList(RECORDS_1));
     recordsSet.addAll(Arrays.asList(RECORDS_2));
     recordsSet.addAll(Arrays.asList(RECORDS_3));
     assertTrue(recordsSet.containsAll(records));
@@ -72,10 +74,10 @@ public abstract class AsteriskTest extends BaseMRTest {
 
   @After
   public void dropTable() {
-    dropMRTable(env, IN_TABLE_NAME_1);
-    dropMRTable(env, IN_TABLE_NAME_2);
-    dropMRTable(env, IN_TABLE_NAME_3);
-    dropMRTable(env, OUT_TABLE_NAME);
+    env.delete(MRPath.createFromURI(IN_TABLE_NAME_1));
+    env.delete(MRPath.createFromURI(IN_TABLE_NAME_2));
+    env.delete(MRPath.createFromURI(IN_TABLE_NAME_3));
+    env.delete(MRPath.createFromURI(OUT_TABLE_NAME));
   }
 
 }

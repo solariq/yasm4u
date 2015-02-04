@@ -3,6 +3,7 @@ package solar.mr.routines;
 import solar.mr.MROutput;
 import solar.mr.MRRoutine;
 import solar.mr.proc.State;
+import solar.mr.proc.impl.MRPath;
 
 /**
 * User: solar
@@ -10,14 +11,16 @@ import solar.mr.proc.State;
 * Time: 11:19
 */
 public abstract class MRMap extends MRRoutine {
-  public MRMap(final String[] inputTables, final MROutput output, final State state) {
+  protected MROutput output;
+  public MRMap(final MRPath[] inputTables, final MROutput output, final State state) {
     super(inputTables, output, state);
+    this.output = output;
   }
 
   @Override
-  public final void invoke(MRRecord rec) {
-    map(rec.key, rec.sub, rec.value);
+  public final void process(MRRecord rec) {
+    map(rec.source, rec.sub, rec.value, rec.key);
   }
 
-  public abstract void map(String key, String sub, CharSequence value);
+  public abstract void map(MRPath table, String sub, CharSequence value, String key);
 }

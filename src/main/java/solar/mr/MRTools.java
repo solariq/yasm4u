@@ -20,6 +20,7 @@ import javassist.CtClass;
 import javassist.bytecode.ConstPool;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import solar.mr.proc.impl.MRPath;
 import sun.net.www.protocol.file.FileURLConnection;
 
 /**
@@ -170,8 +171,8 @@ public class MRTools {
     }
   }
 
-  public static MRTableShard updateTableShard(MRTableShard shard, boolean sorted, CounterInputStream cis) {
-    return new MRTableShard(shard.path(), true, sorted,
+  public static MRTableState updateTableShard(String path, boolean sorted, CounterInputStream cis) {
+    return new MRTableState(path, true, sorted,
             "" + cis.totalLength(), cis.totalLength(), cis.keysCount(), cis.recordsCount(),
             System.currentTimeMillis());
   }

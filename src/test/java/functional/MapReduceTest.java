@@ -8,6 +8,7 @@ import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
 import solar.mr.proc.AnnotatedMRProcess;
 import solar.mr.proc.State;
+import solar.mr.proc.impl.MRPath;
 import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
 import solar.mr.proc.tags.MRReduceMethod;
@@ -25,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public final class MapReduceTest extends BaseMRTest {
 
-  private final Record[] RECORDS = createRecords(50); // should be odd
+  private final MRRecord[] RECORDS = createRecords(50); // should be odd
 
   private static final String IN_TABLE_NAME = TABLE_NAME_PREFIX + "MapReduceTest-1-" + SALT;
   private static final String TEMP_TABLE_NAME = "MapReduceTest-1-" + SALT;
@@ -72,7 +73,7 @@ public final class MapReduceTest extends BaseMRTest {
     mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
-    List<Record> records = readRecords(env, OUT_TABLE_NAME);
+    List<MRRecord> records = readRecords(env, OUT_TABLE_NAME);
     assertEquals(2, records.size());
     assertEquals("" + RECORDS.length / 2, records.get(0).value);
     assertEquals("" + RECORDS.length / 2, records.get(1).value);
@@ -80,8 +81,8 @@ public final class MapReduceTest extends BaseMRTest {
 
   @After
   public void dropTable() {
-    dropMRTable(env, IN_TABLE_NAME);
-    dropMRTable(env, OUT_TABLE_NAME);
+    env.delete(MRPath.createFromURI(IN_TABLE_NAME));
+    env.delete(MRPath.createFromURI(OUT_TABLE_NAME));
   }
 
 }

@@ -1,15 +1,19 @@
 package solar.mr;
 
 import com.spbsu.commons.func.Processor;
-import com.spbsu.commons.seq.CharSeqTools;
-import org.jetbrains.annotations.NotNull;
-import solar.mr.proc.impl.WhiteboardImpl;
+import com.spbsu.commons.seq.CharSeqBuilder;
+import com.spbsu.commons.seq.CharSeqReader;
+import solar.mr.proc.impl.MRPath;
+import solar.mr.routines.MRRecord;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 
 /**
  * Created by inikifor on 02.12.14.
@@ -18,123 +22,78 @@ public final class MRTestUtils {
 
   private MRTestUtils() {}
 
-  public static void writeRecords(MREnv env, String path, Record... records) {
+  public static void writeRecords(MREnv env, String uri, MRRecord... records) {
     final StringBuilder sb = new StringBuilder();
-    for (Record record: records) {
-      sb.append(record + "\n");
+    for (MRRecord record: records) {
+      sb.append(record).append("\n");
     }
     try (Reader reader = new InputStreamReader(new ByteArrayInputStream(sb.toString().getBytes("UTF-8")))){
-      env.write(pathToShard(env, path), reader);
+      env.write(MRPath.createFromURI(uri), reader);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
 
-  /**
-   * List tables(paths) that have specified prefix
-   *
-   * @param env MREnv instance
-   * @param pathPrefix pathPrefix
-   * @return List of table paths, empty list of no tables with specified prefix
-   */
-  public static List<String> listTables(MREnv env, String pathPrefix) {
-    final MRTableShard[] list = env.list(pathPrefix);
-    List<String> result = new ArrayList<>();
-    for (MRTableShard mrTableShard : list) {
-      result.add(mrTableShard.path());
-    }
-    return result;
-  }
-
-  public static List<Record> readRecords(MREnv env, final String path) {
-    final List<Record> result = new ArrayList<>();
-    env.read(pathToShard(env, path), new Processor<CharSequence>() {
+  public static List<MRRecord> readRecords(MREnv env, final String path) {
+    final List<MRRecord> result = new ArrayList<>();
+    env.read(MRPath.create(path), new Processor<MRRecord>() {
       @Override
-      public void process(CharSequence record) {
-          result.add(new Record(record));
+      public void process(MRRecord record) {
+          result.add(record);
       }
     });
     return result;
   }
 
-  public static void dropMRTable(MREnv env, String path) {
-    env.delete(pathToShard(env, path));
+  public static List<MRRecord> readRecords(MREnv env, final MRPath path) {
+    final List<MRRecord> result = new ArrayList<>();
+    env.read(path, new Processor<MRRecord>() {
+      @Override
+      public void process(MRRecord record) {
+          result.add(record);
+      }
+    });
+    return result;
   }
 
-  public static final Record[] createRecordsWithKeys(int kn, String... keys) {
+  public static MRRecord[] createRecordsWithKeys(int kn, String... keys) {
     return createRecordsWithKeys(kn, 0, keys);
   }
 
-  public static final Record[] createRecordsWithKeys(int kn, int start, String... keys) {
-    Record[] result = new Record[kn * keys.length];
+  public static MRRecord[] createRecordsWithKeys(int kn, int start, String... keys) {
+    MRRecord[] result = new MRRecord[kn * keys.length];
     int k = 0;
     for(String key: keys) {
       for(int i=start; i<start+kn; i++) {
-        result[k * kn + i - start] = new Record(key, "subkey" + i, "value" + i);
+        result[k * kn + i - start] = new MRRecord(MRPath.create("/dev/null"), key, "subkey" + i, "value" + i);
       }
       k++;
     }
     return result;
   }
 
-  public static final Record[] createRecords(int start, int n) {
-    Record[] result = new Record[n];
+  public static MRRecord[] createRecords(int start, int n) {
+    MRRecord[] result = new MRRecord[n];
     for(int i=start; i<start+n; i++) {
-      result[i-start] = new Record("key" + i, "subkey" + i, "value" + i);
+      result[i-start] = new MRRecord(MRPath.create("/dev/null"), "key" + i, "subkey" + i, "value" + i);
     }
     return result;
   }
 
-  public static final Record[] createRecords(int n) {
+  public static MRRecord[] createRecords(int n) {
     return createRecords(0, n);
   }
 
-  private static MRTableShard pathToShard(MREnv env, String path) {
-    return env.resolve(path);
-//    return new WhiteboardImpl.LazyTableShard(path, env);
-    //return new MRTableShard(path, env, true, false, "0", 0, 0, 0, System.currentTimeMillis());
-  }
-
-  public static final class Record {
-    public final String key;
-    public final String subkey;
-    public final String value;
-
-    public Record(@NotNull CharSequence record) {
-      final CharSequence[] split = new CharSequence[3];
-      CharSeqTools.trySplit(record, '\t', split);
-      if (split.length < 3) {
-        throw new RuntimeException("Cannot parse record!");
-      } else {
-        key = split[0].toString();
-        subkey = split[1].toString();
-        value = split[2].toString();
-      }
+  public static void writeRecords(MREnv env, MRRecord... mrRecord) {
+    final Map<MRPath, CharSeqBuilder> toWrite = new HashMap<>();
+    for (MRRecord record : mrRecord) {
+      CharSeqBuilder builder = toWrite.get(record.source);
+      if (builder == null)
+        toWrite.put(record.source, builder = new CharSeqBuilder());
+      builder.append(record.toString()).append("\n");
     }
-
-    public Record(@NotNull String key, @NotNull String subkey, @NotNull String value) {
-      this.key = key;
-      this.subkey = subkey;
-      this.value = value;
-    }
-
-    @Override
-    public String toString() {
-      return String.format("%s\t%s\t%s", key, subkey, value);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      Record record = (Record) o;
-      return Arrays.equals(new String[] {key, subkey, value}, new String[] {record.key, record.subkey, record.value});
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(key, subkey, value);
+    for (Map.Entry<MRPath, CharSeqBuilder> entry : toWrite.entrySet()) {
+      env.write(entry.getKey(), new CharSeqReader(entry.getValue().build()));
     }
   }
-
 }

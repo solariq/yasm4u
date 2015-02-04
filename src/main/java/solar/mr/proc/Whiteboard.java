@@ -12,6 +12,8 @@ import solar.mr.MRErrorsHandler;
 public interface Whiteboard extends State {
   State snapshot();
 
+
+  /**TODO: make restrictions on data type, based on key resource protocol */
   <T> void set(String var, T data);
   void remove(String var);
 

@@ -11,10 +11,11 @@ import java.util.concurrent.ArrayBlockingQueue;
 
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.seq.CharSeqTools;
+import solar.mr.MRTableState;
 import solar.mr.proc.Joba;
 import solar.mr.proc.State;
 import solar.mr.proc.Whiteboard;
-import solar.mr.MRTableShard;
+import solar.mr.routines.MRRecord;
 
 /**
 * User: solar
@@ -44,16 +45,16 @@ public class ReadJoba implements Joba {
 
   @Override
   public boolean run(final Whiteboard wb) {
-    final MRTableShard shard = wb.get(input[0]);
+    final MRPath shard = wb.get(input[0]);
     final State state = wb.snapshot();
-    final ArrayBlockingQueue<CharSequence> seqs = new ArrayBlockingQueue<>(1000);
+    final ArrayBlockingQueue<MRRecord> seqs = new ArrayBlockingQueue<>(1000);
     final Thread readTh = new Thread(){
       @Override
       public void run() {
         try {
-          wb.env().read(shard, new Processor<CharSequence>() {
+          wb.env().read(shard, new Processor<MRRecord>() {
             @Override
-            public void process(final CharSequence arg) {
+            public void process(final MRRecord arg) {
               try {
                 seqs.put(arg);
               } catch (InterruptedException e) {
@@ -61,7 +62,7 @@ public class ReadJoba implements Joba {
               }
             }
           });
-          seqs.put(CharSeqTools.EMPTY);
+          seqs.put(MRRecord.EMPTY);
         }
         catch (RuntimeException re) {
           if (re.getCause() instanceof InterruptedException)
@@ -75,8 +76,8 @@ public class ReadJoba implements Joba {
     readTh.start();
     try {
       final Constructor<?> constructor = method.getDeclaringClass().getConstructor(State.class);
-      wb.set(output, method.invoke(constructor.newInstance(state), new Iterator<CharSequence>() {
-        CharSequence next = null;
+      wb.set(output, method.invoke(constructor.newInstance(state), new Iterator<MRRecord>() {
+        MRRecord next = null;
         boolean needs2wait = true;
 
         @Override
@@ -84,7 +85,7 @@ public class ReadJoba implements Joba {
           if (next == null && needs2wait) {
             try {
               next = seqs.take();
-              if (next == CharSeqTools.EMPTY) {
+              if (next == MRRecord.EMPTY) {
                 needs2wait = false;
                 next = null;
               }
@@ -96,10 +97,10 @@ public class ReadJoba implements Joba {
         }
 
         @Override
-        public CharSequence next() {
+        public MRRecord next() {
           if (!hasNext())
             throw new NoSuchElementException();
-          final CharSequence result = next;
+          final MRRecord result = next;
           next = null;
           return result;
         }

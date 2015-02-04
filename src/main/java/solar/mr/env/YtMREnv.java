@@ -3,22 +3,18 @@ package solar.mr.env;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.random.FastRandom;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqTools;
-import com.spbsu.commons.util.ArrayTools;
 import com.spbsu.commons.util.JSONTools;
-import com.spbsu.commons.util.cache.CacheStrategy;
-import com.spbsu.commons.util.cache.impl.FixedSizeCache;
+import org.apache.log4j.Logger;
 import solar.mr.*;
-import solar.mr.proc.impl.WhiteboardImpl;
+import solar.mr.proc.impl.MRPath;
 import solar.mr.routines.MRRecord;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.LineNumberReader;
-import java.io.Reader;
+import java.io.*;
 import java.text.ParseException;
 import java.util.*;
 
@@ -28,14 +24,15 @@ import java.util.*;
  * Time: 17:08
  */
 public class YtMREnv extends RemoteMREnv {
+  private static Logger LOG = Logger.getLogger(YtMREnv.class);
   public YtMREnv(final ProcessRunner runner, final String tag, final String master) {
     super(runner, tag, master);
   }
 
   @SuppressWarnings("UnusedDeclaration")
   public YtMREnv(final ProcessRunner runner, final String user, final String master,
-                    final Processor<CharSequence> errorsProc,
-                    final Processor<CharSequence> outputProc) {
+                    final Action<CharSequence> errorsProc,
+                    final Action<CharSequence> outputProc) {
     super(runner, user, master, errorsProc, outputProc);
   }
 
@@ -50,7 +47,7 @@ public class YtMREnv extends RemoteMREnv {
     return options;
   }
 
-  public int read(MRTableShard shard, final Processor<CharSequence> linesProcessor) {
+  public int read(MRPath shard, final Processor<MRRecord> linesProcessor) {
     final int[] recordsCount = new int[]{0};
 
     //if (!shard.isAvailable())
@@ -61,9 +58,9 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--format");
     options.add("\"<has_subkey=true>\"yamr");
     options.add(localPath(shard));
-    executeCommand(options, new YtResponseProcessor(new Processor<CharSequence>() {
+    executeCommand(options, new YtResponseProcessor(new MRRoutine(shard) {
       @Override
-      public void process(final CharSequence arg) {
+      public void process(final MRRecord arg) {
         recordsCount[0]++;
         linesProcessor.process(arg);
       }
@@ -71,67 +68,24 @@ public class YtMREnv extends RemoteMREnv {
     return recordsCount[0];
   }
 
-  public void sample(MRTableShard table, final Processor<CharSequence> linesProcessor) {
+  public void sample(MRPath table, final Processor<MRRecord> linesProcessor) {
     final List<String> options = defaultOptions();
     options.add("read");
     options.add("--format");
     options.add("\"<has_subkey=true>yamr\"");
     options.add(localPath(table) + "[:#100]");
-    executeCommand(options, new YtResponseProcessor(new Processor<CharSequence>() {
+    executeCommand(options, new YtResponseProcessor(new MRRoutine() {
       @Override
-      public void process(final CharSequence arg) {
+      public void process(final MRRecord arg) {
         linesProcessor.process(arg);
       }
     }), defaultErrorsProcessor, null);
   }
 
-  @Override
-  public MRTableShard[] resolveAll(String[] paths) {
-    final MRTableShard[] result = new MRTableShard[paths.length];
-    final long time = System.currentTimeMillis();
-    final Set<String> unknown = new HashSet<>();
-    for(int i = 0; i < paths.length; i++) {
-      final String path = paths[i];
-      final MRTableShard shard = shardsCache.get("/" + path);
-      if (shard != null) {
-        if (time - shard.metaTS() < MRTools.FRESHNESS_TIMEOUT) {
-          result[i] = shard;
-          continue;
-        }
-        shardsCache.clear(path);
-      }
-      unknown.add(path);
-    }
-
-    for (final String u:unknown) {
-      final MRTableShard[] shards = list(u);
-      if (shards.length == 0) {
-        continue;
-      }
-      assert shards.length == 1;
-
-      int index = ArrayTools.indexOf(shards[0].path(), paths);
-      if (index != -1 && shards[0].isAvailable())
-        result[index] = shards[0];
-    }
-
-    for(int i = 0; i < result.length; i++) {
-      if (result[i] == null)
-        result[i] = new MRTableShard(paths[i], false, false, "0", 0, 0, 0, System.currentTimeMillis());
-      else {
-        invoke(new ShardAlter(result[i], ShardAlter.AlterType.UPDATED));
-      }
-    }
-    return result;
-  }
 
   @Override
-  public MRTableShard[] list(String prefix) {
+  public MRPath[] list(MRPath prefix) {
     final List<String> defaultOptionsEntity = defaultOptions();
-    final MRTableShard sh = shardsCache.get("/" + prefix);
-    final long time = System.currentTimeMillis();
-    if (sh != null && time - sh.metaTS() < MRTools.FRESHNESS_TIMEOUT)
-      return new  MRTableShard[]{sh};
 
     defaultOptionsEntity.add("get");
     defaultOptionsEntity.add("--format");
@@ -139,45 +93,47 @@ public class YtMREnv extends RemoteMREnv {
 
     final List<String> optionEntity = new ArrayList<>();
     optionEntity.addAll(defaultOptionsEntity);
-    final String path = localPath(new WhiteboardImpl.LazyTableShard(prefix, this));
-    optionEntity.add(path + (prefix.endsWith("/")? "" : "/") + "@");
-    final AppenderProcessor getBuilder = new AppenderProcessor();
-    executeCommand(optionEntity, new YtResponseProcessor(getBuilder), defaultErrorsProcessor, null);
+    final String path = localPath(prefix);
+    final List<MRPath> result = new ArrayList<>();
+    if (!prefix.isDirectory()) { // trying an easy way first
+      optionEntity.add(path);
+      final ConcatAction resultProcessor = new ConcatAction();
+      executeCommand(optionEntity, new YtResponseProcessor(resultProcessor), defaultErrorsProcessor, null);
 
-    final List<MRTableShard> result = new ArrayList<>();
-    try {
-      if (getBuilder.sequence().length() == 0)
-        return new MRTableShard[0];
-      JsonParser getParser = JSONTools.parseJSON(getBuilder.sequence());
-      extractTableFromJson(prefix, result, getParser);
-      if (!result.isEmpty()) {
-        return new MRTableShard[]{result.get(0)};
+      try {
+        final JsonParser parser = JSONTools.parseJSON(resultProcessor.sequence());
+        extractTableFromJson(prefix, result, parser);
+      } catch (IOException| ParseException e) {
+        LOG.warn(e);
+        return new MRPath[0];
       }
-    } catch (IOException| ParseException e) {
-      return new MRTableShard[0];
     }
+    else {
+      final List<String> options = defaultOptions();
+      options.add("list");
+      final String nodePath = path.substring(0, path.length() - 1);
+      options.add(nodePath);
+      final ConcatAction builder = new ConcatAction(" ");
+      executeCommand(options, new YtResponseProcessor(builder), defaultErrorsProcessor, null);
 
-    final List<String> options = defaultOptions();
-    options.add("list");
-    final String nodePath = path.substring(0, path.length() - 1);
-    options.add(nodePath);
-    final AppenderProcessor builder = new AppenderProcessor(" ");
-    executeCommand(options, new YtResponseProcessor(builder), defaultErrorsProcessor, null);
+      final CharSequence[] listSeq = CharSeqTools.split(builder.trimmedSequence(), ' ');
 
-    final CharSequence[] listSeq = CharSeqTools.split(builder.trimmedSequence(), ' ');
-
-    result.clear();
-    for (int i = 0; i < listSeq.length; i += 1) {
-      if (listSeq[i].length() == 0)
-        continue;
-
-      result.add(new WhiteboardImpl.LazyTableShard(nodePath.substring(1) /* this is in Yt form prefixed with "//" */
-          + (i != listSeq.length - 1 ? "/" + listSeq[i].toString() : ""), this));
+      result.clear();
+      for (int i = 0; i < listSeq.length; i += 1) {
+        if (listSeq[i].length() == 0)
+          continue;
+        final String localPath = nodePath.substring(1) /* this is in Yt form prefixed with "//" */
+                + (i != listSeq.length - 1 ? "/" + listSeq[i].toString() : "");
+        // TODO: is it possible to find out whether this is sorted file?
+        result.add(findByLocalPath(localPath, false));
+      }
     }
-    return result.toArray(new MRTableShard[result.size()]);
+    return result.toArray(new MRPath[result.size()]);
   }
 
-  private void extractTableFromJson(final String prefix, List<MRTableShard> result, JsonParser parser) throws IOException, ParseException {
+  private void extractTableFromJson(final MRPath prefixPath, List<MRPath> result, JsonParser parser) throws IOException, ParseException {
+    final String prefix = localPath(prefixPath);
+    // TODO: cache mapper
     final ObjectMapper mapper = new ObjectMapper();
 
     final JsonNode metaJSON = mapper.readTree(parser);
@@ -187,25 +143,26 @@ public class YtMREnv extends RemoteMREnv {
       final long size = metaJSON.get("uncompressed_data_size").longValue();
       boolean sorted= metaJSON.has("sorted");
       final long recordsCount = metaJSON.has("row_count") ? metaJSON.get("row_count").longValue() : 0;
-      final String path = prefix.endsWith("/" + name)? prefix : prefix + "/" + name;
-      final MRTableShard sh = new MRTableShard(path, true, sorted, "" + size, size, recordsCount/10, recordsCount, /*ts*/ System.currentTimeMillis());
-      result.add(sh);
-      invoke(new ShardAlter(sh, ShardAlter.AlterType.UPDATED));
+      final String path = prefixPath.isDirectory() ? prefix : prefix + "/" + name;
+      final MRTableState sh = new MRTableState(path, true, sorted, "" + size, size, recordsCount/10, recordsCount, /*ts*/ System.currentTimeMillis());
+      final MRPath localPath = findByLocalPath(path, sorted);
+      result.add(localPath);
+      updateState(localPath, sh);
     }
   }
 
   @Override
-  public MRTableShard copy(final MRTableShard[] from, MRTableShard to, boolean append) {
-    for (final  MRTableShard d:from) {
-      if (!resolve(d.path()).isAvailable())
-        createTable(d);
+  public void copy(final MRPath[] from, MRPath to, boolean append) {
+    final MRTableState[] states = resolveAll(from);
+    // TODO: why do we need to create source tables
+    for(int i = 0; i < states.length; i++) {
+      createTable(from[i]);
     }
-    if (!append) {
+    if (!append)
       delete(to); /* Yt requires that destination shouldn't exists */
-    }
     createTable(to);
 
-    for (final MRTableShard sh:from){
+    for (final MRPath sh : from){
       final List<String> options = defaultOptions();
       options.add("merge");
       options.add("--src");
@@ -215,43 +172,51 @@ public class YtMREnv extends RemoteMREnv {
       //options.add("--mode sorted");
       executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     }
-    invoke(new ShardAlter(to, ShardAlter.AlterType.CHANGED));
-    return to;
+    wipeState(to);
   }
 
-  public MRTableShard write(final MRTableShard shard, final Reader content) {
+  public void write(final MRPath shard, final Reader content) {
+    final String localPath = localPath(shard);
     createTable(shard);
     final List<String> options = defaultOptions();
     options.add("write");
     options.add("--format");
     options.add("\"<has_subkey=true>yamr\"");
-    options.add(localPath(shard));
+    options.add(localPath);
     MRTools.CounterInputStream cis = new MRTools.CounterInputStream(new LineNumberReader(content), 0, 0, 0);
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, cis);
-    final MRTableShard updatedShard = MRTools.updateTableShard(shard, false, cis);
-    invoke(new ShardAlter(updatedShard, ShardAlter.AlterType.UPDATED));
-    return updatedShard;
+    updateState(shard, MRTools.updateTableShard(localPath, false, cis));
   }
 
   @Override
-  public MRTableShard append(final MRTableShard shard, final Reader content) {
+  public void append(final MRPath shard, final Reader content) {
+    final String localPath = localPath(shard);
     createTable(shard);
     final List<String> options = defaultOptions();
     options.add("write");
     options.add("--format");
     options.add("\"<has_subkey=true>yamr\"");
-    options.add("\"<append=true>" + localPath(shard) + "\"");
-    MRTools.CounterInputStream cis = new MRTools.CounterInputStream(new LineNumberReader(content), shard.recordsCount(), shard.keysCount(), shard.length());
-    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, cis);
-    final MRTableShard updatedShard = MRTools.updateTableShard(shard, false, cis);
-    invoke(new ShardAlter(updatedShard, ShardAlter.AlterType.UPDATED));
-    return updatedShard;
+    options.add("\"<append=true>" + localPath + "\"");
+    final MRTableState cachedState = resolve(shard, true);
+    if (cachedState != null) {
+      MRTools.CounterInputStream cis = new MRTools.CounterInputStream(new LineNumberReader(content), cachedState.recordsCount(), cachedState.keysCount(), cachedState.length());
+      executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, cis);
+      updateState(shard, MRTools.updateTableShard(localPath, false, cis));
+    }
+    else {
+      executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, new InputStream() {
+        @Override
+        public int read() throws IOException {
+          return content.read();
+        }
+      });
+    }
   }
 
-  private MRTableShard createTable(final MRTableShard shard) {
-    final MRTableShard sh = shardsCache.get(shard.path());
-    if (sh != null && resolve(sh.path()).isAvailable())
-      return sh;
+  private void createTable(final MRPath shard) {
+    final MRTableState sh = resolve(shard, true);
+    if (sh != null && sh.isAvailable())
+      return;
 
     final List<String> options = defaultOptions();
     options.add("create");
@@ -259,23 +224,23 @@ public class YtMREnv extends RemoteMREnv {
     options.add("table");
     options.add(localPath(shard));
     executeCommand(options, new YtResponseProcessor(defaultOutputProcessor), defaultErrorsProcessor, null);
-    return resolve(shard.path());
+    wipeState(shard);
   }
 
-  public MRTableShard delete(final MRTableShard table) {
+  public void delete(final MRPath table) {
     final List<String> options = defaultOptions();
     options.add("remove");
     options.add("-r ");
     options.add(localPath(table));
-    executeCommand(options, defaultOutputProcessor , defaultErrorsProcessor , null);
-    final MRTableShard updatedShard = new MRTableShard(table.path(), false, false, "0", 0, 0, 0, System.currentTimeMillis());
-    invoke(new ShardAlter(updatedShard, ShardAlter.AlterType.UPDATED));
-    return updatedShard;
+    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
+    final MRTableState updatedShard = new MRTableState(localPath(table), false, false, "0", 0, 0, 0, System.currentTimeMillis());
+    updateState(table, updatedShard);
   }
 
-  public MRTableShard sort(final MRTableShard table) {
-    if (table.isSorted())
-      return table;
+  public void sort(final MRPath table) {
+    final MRTableState sorted = resolve(new MRPath(table.mount, table.path, true));
+    if (sorted.isAvailable())
+      return;
     final List<String> options = defaultOptions();
     options.add("sort");
     options.add("--src");
@@ -283,18 +248,7 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--dst");
     options.add(localPath(table));
     options.add("--sort_by key");
-    invoke(new ShardAlter(table, ShardAlter.AlterType.CHANGED));
-    return table;
-  }
-
-  @Override
-  public String getTmp() {
-    return "/tmp/";
-  }
-
-  @Override
-  public MRTableShard resolve(final String path) {
-    return resolveAll(new String[]{path})[0];
+    wipeState(table);
   }
 
   @Override
@@ -318,11 +272,11 @@ public class YtMREnv extends RemoteMREnv {
 
     options.add("--format");
     options.add("\"<has_subkey=true;enable_table_index=true>yamr\"");
-    MRTableShard[] in = resolveAll(builder.input());
-    MRTableShard[] out = resolveAll(builder.output());
+    MRPath[] in = builder.input();
+    MRPath[] out = builder.output();
 
 //    final MRTableShard[] realOut = new MRTableShard[out.length];
-    for(final MRTableShard o: out) {
+    for(final MRPath o: out) {
       options.add("--dst");
       options.add(localPath(o));
 //      realOut[i] =
@@ -355,91 +309,84 @@ public class YtMREnv extends RemoteMREnv {
     //options.add("1>&2'");
 
     int inCount = 0;
-    for(final MRTableShard sh:in) {
-      if (!resolve(sh.path()).isAvailable())
+    for(final MRPath sh : in) {
+      if (!resolve(sh).isAvailable()) {
+        LOG.warn("Input table " + sh + " does not exist");
         continue;
+      }
 
       options.add("--src");
       options.add(localPath(sh));
-      inCount ++;
+      inCount++;
     }
 
     if (inCount == 0) {
-      for (final MRTableShard d:out) {
+      LOG.warn("Empty input tables list!");
+      for (final MRPath d : out) {
         createTable(d);
       }
       return true;
     }
 
-    final String errorsShardName = "/tmp/errors-" + Integer.toHexString(new FastRandom().nextInt());
-    final MRTableShard errorsShard = createTable(new WhiteboardImpl.LazyTableShard(errorsShardName, this));
+    final MRPath errorsPath = MRPath.create("/tmp/errors-" + Integer.toHexString(new FastRandom().nextInt()));
+    createTable(errorsPath);
     options.add("--dst");
-    options.add(localPath(errorsShard));
+    options.add(localPath(errorsPath));
 
     executeCommand(options, defaultOutputProcessor, new YtResponseProcessor(defaultErrorsProcessor), null);
     final int[] errorsCount = new int[]{0};
-    errorsCount[0] += read(errorsShard, new MRRoutine(new String[]{errorsShardName}, null, null) {
-      @Override
-      public void invoke(final MRRecord record) {
-        CharSequence[] parts = CharSeqTools.split(record.value, '\t', new CharSequence[4]);
-        errorsHandler.error(record.key, record.sub, new MRRecord(parts[0].toString(), parts[1].toString(), parts[2].toString(), parts[3]));
-        System.err.println(record.value);
-        System.err.println(record.key + "\t" + record.sub.replace("\\n", "\n").replace("\\t", "\t"));
-      }
-    });
-    delete(errorsShard);
+    errorsCount[0] += read(errorsPath, new ErrorsTableHandler(errorsPath, errorsHandler));
+    delete(errorsPath);
 
     return errorsCount[0] == 0;
   }
 
   @Override
+  protected MRPath findByLocalPath(String table, boolean sorted) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  protected String localPath(MRPath shard) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  protected boolean isFat(MRPath path) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public String name() {
-    return "YaMR://" + master + "/";
+    return "Yt://" + master + "/";
   }
 
   @Override
   public String toString() {
-    return "YaMR://" + user + "@" + master + "/";
+    return "Yt://" + user + "@" + master + "/";
   }
 
-  private final FixedSizeCache<String, MRTableShard> shardsCache = new FixedSizeCache<>(1000, CacheStrategy.Type.LRU);
-
-  @Override
-  protected void invoke(ShardAlter e) {
-    if (e.type == ShardAlter.AlterType.CHANGED) {
-      shardsCache.clear(localPath(e.shard));
-    }
-    else if (e.type == ShardAlter.AlterType.UPDATED) {
-      shardsCache.put(localPath(e.shard), e.shard);
-    }
-    super.invoke(e);
-  }
-
-  private String localPath(MRTableShard shard) {
-    return "/" + shard.path();
-  }
-
-  private static class AppenderProcessor implements Processor<CharSequence> {
+  private static class ConcatAction implements Action<CharSequence> {
     private final CharSeqBuilder builder;
     private final String sep;
     private boolean withSeparator;
 
-    private AppenderProcessor(final String sep, boolean withSeparator) {
+    private ConcatAction(final String sep, boolean withSeparator) {
       this.sep = sep;
       this.withSeparator = withSeparator;
       builder = new CharSeqBuilder();
     }
 
-    public AppenderProcessor() {
+    public ConcatAction() {
       this("",false);
     }
 
-    public AppenderProcessor(final String sep) {
+    public ConcatAction(final String sep) {
       this(sep, true);
     }
 
     @Override
-    public void process(CharSequence arg) {
+    public void invoke(CharSequence arg) {
       builder.append(arg);
       if (withSeparator)
         builder.append(sep);
@@ -458,20 +405,20 @@ public class YtMREnv extends RemoteMREnv {
     }
   }
 
-  private class YtResponseProcessor implements Processor<CharSequence> {
-    final Processor<CharSequence> processor;
+  private class YtResponseProcessor implements Action<CharSequence> {
+    final Action<CharSequence> processor;
     boolean skip = false;
-    public YtResponseProcessor(final Processor<CharSequence> processor) {
+    public YtResponseProcessor(final Action<CharSequence> processor) {
       this.processor = processor;
     }
     @Override
-    public void process(CharSequence arg) {
+    public void invoke(CharSequence arg) {
       /* TODO: enhance error/warnings processing */
       if (!skip && CharSeqTools.startsWith(arg, "Response to request"))
         skip = true;
 
       if (!skip)
-        processor.process(arg);
+        processor.invoke(arg);
     }
   }
 }

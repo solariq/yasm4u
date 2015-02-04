@@ -1,13 +1,7 @@
 package solar.mr;
 
-import com.spbsu.commons.func.Processor;
-import com.spbsu.commons.io.StreamTools;
-import com.spbsu.commons.seq.CharSeqTools;
-import com.spbsu.commons.system.RuntimeUtils;
-import solar.mr.env.MROutputImpl;
-import solar.mr.env.MRRunner;
 import solar.mr.proc.State;
-import solar.mr.routines.MRRecord;
+import solar.mr.proc.impl.MRPath;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -21,18 +15,30 @@ import java.util.List;
  */
 public abstract class MRRoutineBuilder implements Serializable {
   protected State state;
-  private List<String> tablesIn = new ArrayList<>();
-  private List<String> tablesOut = new ArrayList<>();
+  private List<MRPath> tablesIn = new ArrayList<>();
+  private List<MRPath> tablesOut = new ArrayList<>();
   private boolean complete = false;
 
   public void addInput(String... tables) {
-    checkComplete();
-    this.tablesIn.addAll(Arrays.asList(tables));
+    for(int i = 0; i < tables.length; i++) {
+      addInput(MRPath.create(tables[i]));
+    }
   }
 
   public void addOutput(String... tables) {
+    for(int i = 0; i < tables.length; i++) {
+      addOutput(MRPath.create(tables[i]));
+    }
+  }
+
+  private void addInput(MRPath... paths) {
     checkComplete();
-    this.tablesOut.addAll(Arrays.asList(tables));
+    this.tablesIn.addAll(Arrays.asList(paths));
+  }
+
+  public void addOutput(MRPath... paths) {
+    checkComplete();
+    this.tablesOut.addAll(Arrays.asList(paths));
   }
 
   public void setState(State state) {
@@ -77,14 +83,14 @@ public abstract class MRRoutineBuilder implements Serializable {
 //    }
 //  }
 
-  public String[] output() {
+  public MRPath[] output() {
     complete();
-    return tablesOut.toArray(new String[tablesOut.size()]);
+    return tablesOut.toArray(new MRPath[tablesOut.size()]);
   }
 
-  public String[] input() {
+  public MRPath[] input() {
     complete();
-    return tablesIn.toArray(new String[tablesIn.size()]);
+    return tablesIn.toArray(new MRPath[tablesIn.size()]);
   }
 
   public enum RoutineType {
@@ -102,8 +108,8 @@ public abstract class MRRoutineBuilder implements Serializable {
   @SuppressWarnings("unchecked")
   private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
     state = (State)in.readObject();
-    tablesIn = (List<String>) in.readObject();
-    tablesOut = (List<String>) in.readObject();
+    tablesIn = (List<MRPath>) in.readObject();
+    tablesOut = (List<MRPath>) in.readObject();
 //    routineClass = (Class<? extends MRRoutine>) Class.forName(in.readUTF());
     complete();
   }

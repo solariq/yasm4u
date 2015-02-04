@@ -7,7 +7,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import solar.mr.MREnv;
 import solar.mr.MROutput;
-import solar.mr.MRTableShard;
+import solar.mr.MRTableState;
 import solar.mr.env.LocalMREnv;
 import solar.mr.env.ProcessRunner;
 import solar.mr.env.SSHProcessRunner;
@@ -20,6 +20,7 @@ import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
 import solar.mr.proc.tags.MRRead;
 import solar.mr.proc.tags.MRReduceMethod;
+import solar.mr.routines.MRRecord;
 
 import java.util.Date;
 import java.util.Iterator;
@@ -65,12 +66,12 @@ public class MRProcTest {
     }
 
     @MRRead(input = "temp:mr:///counter-result", output = "var:result")
-    public int count(Iterator<CharSequence> line) {
+    public int count(Iterator<MRRecord> records) {
       int result = 0;
-      while (line.hasNext()) {
-        final CharSequence[] split = CharSeqTools.split(line.next(), "\t");
-        if (split[0].equals("SAPP"))
-          result = CharSeqTools.parseInt(split[2]);
+      while (records.hasNext()) {
+        final MRRecord next = records.next();
+        if ("SAPP".equals(next.key))
+          result = CharSeqTools.parseInt(next.value);
       }
       return result;
     }
@@ -97,7 +98,7 @@ public class MRProcTest {
 
 
     @MRRead(input = "temp:mr:///dev-null", output = "var:result")
-    public int poh(Iterator<CharSequence> line) {
+    public int poh(Iterator<MRRecord> line) {
       return 0;
     }
   }
@@ -126,7 +127,7 @@ public class MRProcTest {
 
 
     @MRRead(input = "temp:mr:///dev-null", output = "var:result")
-    public int poh(Iterator<CharSequence> line) {
+    public int poh(Iterator<MRRecord> line) {
       return 0;
     }
   }
@@ -176,18 +177,18 @@ public class MRProcTest {
     wb.set("var:xxx", "yyy");
     final String resolveString = wb.get("{var:xxx}");
     @SuppressWarnings("UnusedDeclaration")
-    final MRTableShard resolveTable = wb.get("mr://xxx");
+    final MRTableState resolveTable = wb.get("mr://xxx");
 
     Assert.assertEquals("yyy", resolveString);
 
     wb.set("var:xx1", new Date(2014-1900,7,1));
     Assert.assertEquals("20140801", wb.get("{var:xx1,date,yyyyMMdd}"));
     @SuppressWarnings("UnusedAssignment")
-    String path = wb.<MRTableShard>get("mr:///sometest/{var:xx1,date,yyyyMMdd}").path();
-    path = wb.<MRTableShard>get("mr:///sometest/{var:xx1,date,yyyyMMdd}_test").path();
+    String path = wb.<MRTableState>get("mr:///sometest/{var:xx1,date,yyyyMMdd}").path();
+    path = wb.<MRTableState>get("mr:///sometest/{var:xx1,date,yyyyMMdd}_test").path();
     Assert.assertEquals("sometest/20140801_test",path);
     wb.set("var:xx2", "sometest/{var:xx1,date,yyyyMMdd}");
-    path = wb.<MRTableShard>get("mr:///{var:xx2}_test").path();
+    path = wb.<MRTableState>get("mr:///{var:xx2}_test").path();
     Assert.assertEquals("sometest/20140801_test",path);
   }
 
@@ -198,7 +199,7 @@ public class MRProcTest {
 
     wb.set("var:xx1", new Date(2014-1900,7,1));
     wb.set("var:xx2", "sometest/{var:xx1,date,yyyyMMdd}");
-    String path = wb.<MRTableShard>get("mr:///{var:xx2}_test").path();
+    String path = wb.<MRTableState>get("mr:///{var:xx2}_test").path();
     Assert.assertEquals("sometest/20140801_test",path);
   }
 

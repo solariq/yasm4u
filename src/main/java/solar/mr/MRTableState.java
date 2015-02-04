@@ -6,17 +6,17 @@ package solar.mr;
 * Date: 15.10.14
 * Time: 11:08
 */
-public class MRTableShard {
+public class MRTableState {
+  public final String crc;
   private final String path;
   private final long recordsCount;
   private final long metaTS;
   private final boolean exist;
-  public final String crc;
   private final boolean sorted;
   private final long length;
   private final long keysCount;
 
-  public MRTableShard(final String path, final boolean exist, final boolean sorted, final String crc,
+  public MRTableState(final String path, final boolean exist, final boolean sorted, final String crc,
                       long length, long keysCount, long recordsCount, final long ts) {
     this.path = path;
     this.exist = exist;
@@ -38,10 +38,10 @@ public class MRTableShard {
   public boolean equals(final Object o) {
     if (this == o)
       return true;
-    if (!(o instanceof MRTableShard))
+    if (!(o instanceof MRTableState))
       return false;
 
-    final MRTableShard that = (MRTableShard) o;
+    final MRTableState that = (MRTableState) o;
     return crc.equals(that.crc) && exist == that.exist && sorted == that.sorted && path().equals(that.path());
   }
 
@@ -67,7 +67,7 @@ public class MRTableShard {
     return recordsCount;
   }
 
-  public long metaTS() {
+  public long snapshotTime() {
     return metaTS;
   }
 

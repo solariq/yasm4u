@@ -8,6 +8,7 @@ import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
 import solar.mr.proc.AnnotatedMRProcess;
 import solar.mr.proc.State;
+import solar.mr.proc.impl.MRPath;
 import solar.mr.proc.tags.MRProcessClass;
 import solar.mr.proc.tags.MRReduceMethod;
 import solar.mr.routines.MRRecord;
@@ -24,7 +25,7 @@ import static solar.mr.MRTestUtils.*;
 @RunWith(Parameterized.class)
 public final class SimpleReduceTest extends BaseMRTest {
 
-  private final Record[] RECORDS = createRecordsWithKeys(3, "key1", "key2", "key3");
+  private final MRRecord[] RECORDS = createRecordsWithKeys(3, "key1", "key2", "key3");
 
   private static final String IN_TABLE_NAME = TABLE_NAME_PREFIX + "SimpleReduceTest-1-" + SALT;
   private static final String OUT_TABLE_NAME = TABLE_NAME_PREFIX + "SimpleReduceTest-2-" + SALT;
@@ -60,14 +61,14 @@ public final class SimpleReduceTest extends BaseMRTest {
     mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
-    List<Record> records = readRecords(env, OUT_TABLE_NAME);
+    List<MRRecord> records = readRecords(env, OUT_TABLE_NAME);
     assertEquals(3, records.size());
   }
 
   @After
   public void dropTable() {
-    dropMRTable(env, IN_TABLE_NAME);
-    dropMRTable(env, OUT_TABLE_NAME);
+    env.delete(MRPath.createFromURI(IN_TABLE_NAME));
+    env.delete(MRPath.createFromURI(OUT_TABLE_NAME));
   }
 
 }

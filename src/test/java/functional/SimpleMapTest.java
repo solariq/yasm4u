@@ -8,8 +8,10 @@ import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
 import solar.mr.proc.State;
 import solar.mr.proc.AnnotatedMRProcess;
+import solar.mr.proc.impl.MRPath;
 import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
+import solar.mr.routines.MRRecord;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -26,7 +28,7 @@ import static solar.mr.MRTestUtils.*;
 @RunWith(Parameterized.class)
 public final class SimpleMapTest extends BaseMRTest {
 
-  private final Record[] RECORDS = createRecords(10); // should be odd
+  private final MRRecord[] RECORDS = createRecords(10); // should be odd
 
   private static final String IN_TABLE_NAME = TABLE_NAME_PREFIX + "SimpleMapTest-1-" + SALT;
   private static final String OUT_TABLE_NAME = TABLE_NAME_PREFIX + "SimpleMapTest-2-" + SALT;
@@ -60,16 +62,16 @@ public final class SimpleMapTest extends BaseMRTest {
     mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
-    List<Record> records = readRecords(env, OUT_TABLE_NAME);
+    List<MRRecord> records = readRecords(env, OUT_TABLE_NAME);
     assertEquals(RECORDS.length / 2, records.size());
-    Set<Record> recordsSet = new HashSet<>(Arrays.asList(RECORDS));
+    Set<MRRecord> recordsSet = new HashSet<>(Arrays.asList(RECORDS));
     assertTrue(recordsSet.containsAll(records));
   }
 
   @After
   public void dropTable() {
-    dropMRTable(env, IN_TABLE_NAME);
-    dropMRTable(env, OUT_TABLE_NAME);
+    env.delete(MRPath.createFromURI(IN_TABLE_NAME));
+    env.delete(MRPath.createFromURI(OUT_TABLE_NAME));
   }
 
 }

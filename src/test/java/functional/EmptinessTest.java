@@ -8,8 +8,10 @@ import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
 import solar.mr.proc.AnnotatedMRProcess;
 import solar.mr.proc.State;
+import solar.mr.proc.impl.MRPath;
 import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
+import solar.mr.routines.MRRecord;
 
 import static solar.mr.MRTestUtils.*;
 
@@ -19,7 +21,7 @@ import static solar.mr.MRTestUtils.*;
 @RunWith(Parameterized.class)
 public final class EmptinessTest extends BaseMRTest {
 
-  private final Record[] RECORDS = createRecords(10);
+  private final MRRecord[] RECORDS = createRecords(10);
 
   private static final String IN_TABLE_NAME_EMPTY = TABLE_NAME_PREFIX + "EmptinessTest-1-" + SALT;
   private static final String OUT_TABLE_NAME = TABLE_NAME_PREFIX + "EmptinessTest-2-" + SALT;
@@ -75,8 +77,8 @@ public final class EmptinessTest extends BaseMRTest {
 
   @After
   public void dropTable() {
-    dropMRTable(env, IN_TABLE_NAME_FULL);
-    dropMRTable(env, OUT_TABLE_NAME);
+    env.delete(MRPath.createFromURI(IN_TABLE_NAME_FULL));
+    env.delete(MRPath.createFromURI(OUT_TABLE_NAME));
   }
 
 }

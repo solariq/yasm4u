@@ -1,9 +1,9 @@
 package solar.mr.env;
 
-import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
 import solar.mr.*;
 import solar.mr.proc.Whiteboard;
+import solar.mr.proc.impl.MRPath;
 import solar.mr.proc.impl.WhiteboardImpl;
 import solar.mr.routines.MRRecord;
 
@@ -43,21 +43,17 @@ public final class ProfilerMREnv implements MREnv {
     wb.wipe();
   }
 
-  public String getTmp() {
-    return wrapped.getTmp();
-  }
-
   @Override
   public boolean execute(MRRoutineBuilder builder,  MRErrorsHandler errorsHandler) {
     long start = System.currentTimeMillis();
-    final MRTableShard profilerShard = wb.get(PROFILER_SHARD_NAME);
+    final MRPath profilerShard = wb.get(PROFILER_SHARD_NAME);
     assert profilerShard != null;
-    builder.addOutput(profilerShard.path());
+    builder.addOutput(profilerShard);
     boolean result = wrapped.execute(builder, errorsHandler);
     final Map<String, Long> stat = new HashMap<>();
-    wrapped.read(profilerShard, new MRRoutine(new String[]{profilerShard.path()}, null, null) {
+    wrapped.read(profilerShard, new MRRoutine(new MRPath[]{profilerShard}, null, null) {
       @Override
-      public void invoke(final MRRecord record) {
+      public void process(final MRRecord record) {
         stat.put(record.key, Long.parseLong(record.value.toString()));
       }
     });
@@ -78,7 +74,7 @@ public final class ProfilerMREnv implements MREnv {
   }
 
   @Override
-  public MRTableShard resolve(String path)
+  public MRTableState resolve(MRPath path)
   {
     final long start = System.currentTimeMillis();
     try {
@@ -90,7 +86,7 @@ public final class ProfilerMREnv implements MREnv {
   }
 
   @Override
-  public MRTableShard[] resolveAll(String... paths) {
+  public MRTableState[] resolveAll(MRPath... paths) {
     final long start = System.currentTimeMillis();
     try {
       return wrapped.resolveAll(paths);
@@ -101,7 +97,7 @@ public final class ProfilerMREnv implements MREnv {
   }
 
   @Override
-  public int read(MRTableShard shard, Processor<CharSequence> seq) {
+  public int read(MRPath shard, Processor<MRRecord> seq) {
     final long start = System.currentTimeMillis();
     try {
       return wrapped.read(shard, seq);
@@ -112,10 +108,10 @@ public final class ProfilerMREnv implements MREnv {
   }
 
   @Override
-  public MRTableShard write(MRTableShard shard, Reader content) {
+  public void write(MRPath shard, Reader content) {
     final long start = System.currentTimeMillis();
     try {
-      return wrapped.write(shard, content);
+      wrapped.write(shard, content);
     }
     finally {
       incrementTime(Operation.WRITE, System.currentTimeMillis() - start);
@@ -123,10 +119,10 @@ public final class ProfilerMREnv implements MREnv {
   }
 
   @Override
-  public MRTableShard append(MRTableShard shard, Reader content) {
+  public void append(MRPath shard, Reader content) {
     final long start = System.currentTimeMillis();
     try {
-      return wrapped.append(shard, content);
+      wrapped.append(shard, content);
     }
     finally {
       incrementTime(Operation.APPEND, System.currentTimeMillis() - start);
@@ -134,7 +130,7 @@ public final class ProfilerMREnv implements MREnv {
   }
 
   @Override
-  public void sample(MRTableShard shard, Processor<CharSequence> seq) {
+  public void sample(MRPath shard, Processor<MRRecord> seq) {
     final long start = System.currentTimeMillis();
     try {
       wrapped.sample(shard, seq);
@@ -145,7 +141,7 @@ public final class ProfilerMREnv implements MREnv {
   }
 
   @Override
-  public MRTableShard[] list(String prefix) {
+  public MRPath[] list(MRPath prefix) {
     final long start = System.currentTimeMillis();
     try {
       return wrapped.list(prefix);
@@ -156,10 +152,10 @@ public final class ProfilerMREnv implements MREnv {
   }
 
   @Override
-  public MRTableShard copy(MRTableShard[] from, MRTableShard to, boolean append) {
+  public void copy(MRPath[] from, MRPath to, boolean append) {
     final long start = System.currentTimeMillis();
     try {
-      return wrapped.copy(from, to, append);
+      wrapped.copy(from, to, append);
     }
     finally {
       incrementTime(Operation.COPY, System.currentTimeMillis() - start);
@@ -167,10 +163,10 @@ public final class ProfilerMREnv implements MREnv {
   }
 
   @Override
-  public MRTableShard delete(MRTableShard shard) {
+  public void delete(MRPath shard) {
     final long start = System.currentTimeMillis();
     try {
-      return wrapped.delete(shard);
+      wrapped.delete(shard);
     }
     finally {
       incrementTime(Operation.DELETE, System.currentTimeMillis() - start);
@@ -178,10 +174,10 @@ public final class ProfilerMREnv implements MREnv {
   }
 
   @Override
-  public MRTableShard sort(MRTableShard shard) {
+  public void sort(MRPath shard) {
     final long start = System.currentTimeMillis();
     try {
-      return wrapped.delete(shard);
+      wrapped.delete(shard);
     }
     finally {
       incrementTime(Operation.SORT, System.currentTimeMillis() - start);
@@ -191,11 +187,6 @@ public final class ProfilerMREnv implements MREnv {
   @Override
   public String name() {
     return wrapped.name();
-  }
-
-  @Override
-  public void addListener(Action<? super ShardAlter> lst) {
-    wrapped.addListener(lst);
   }
 
   @SuppressWarnings("UnusedDeclaration")
@@ -210,6 +201,7 @@ public final class ProfilerMREnv implements MREnv {
     profilingOverhead = 0;
   }
 
+  @SuppressWarnings("UnusedDeclaration")
   public void printStatistics() {
     int total = 0;
     for(Operation op: Operation.values()) {

@@ -1,10 +1,5 @@
 package solar.mr.proc.impl;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.*;
-
-
 import com.spbsu.commons.filters.*;
 import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
@@ -14,38 +9,41 @@ import com.spbsu.commons.random.FastRandom;
 import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqReader;
-import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.system.RuntimeUtils;
 import solar.mr.MREnv;
 import solar.mr.MRErrorsHandler;
-import solar.mr.MRTools;
 import solar.mr.proc.State;
 import solar.mr.proc.Whiteboard;
 import solar.mr.routines.MRRecord;
-import solar.mr.MRTableShard;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.*;
 
 /**
  * User: solar
  * Date: 12.10.14
  * Time: 10:23
  */
-public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREnv.ShardAlter> {
+public class WhiteboardImpl extends StateImpl implements Whiteboard {
 
   public final static String USER = System.getProperty("mr.user", System.getProperty("user.name"));
   private final MREnv env;
   private final String user;
   private final Properties increment = new Properties();
-  private final MRTableShard myShard;
+  private final MRPath myShard;
   private final Random rng = new FastRandom();
   private MRErrorsHandler errorsHandler;
   private SerializationRepository<CharSequence> marshaling;
 
   public WhiteboardImpl(final MREnv env, final String id, final String user) {
     this(env, id, user, new MRErrorsHandler() {
+      int counter = 0;
       @Override
       public void error(final String type, final String cause, final MRRecord rec) {
         System.err.println(rec.source + "\t" + type + "\t" + cause);
         System.err.println(rec.toString());
+        counter++;
       }
 
       @Override
@@ -53,6 +51,12 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
         System.err.print(rec.source + "\t");
         th.printStackTrace(System.err);
         System.err.println(rec.toString());
+        counter++;
+      }
+
+      @Override
+      public int errorsCount() {
+        return counter;
       }
     });
   }
@@ -73,26 +77,17 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
     this.env = env;
     this.user = user;
 
-    myShard = new LazyTableShard(env.getTmp() + user + "/state/" + id, env);
-    env.read(myShard, new Processor<CharSequence>() {
+    myShard = new MRPath(MRPath.Mount.HOME, "state/" + id, false);
+    env.read(myShard, new Processor<MRRecord>() {
       @Override
-      public void process(final CharSequence arg) {
-        if (arg.length() == 0)
-          return;
-        CharSequence[] parts = CharSeqTools.split(arg, '\t');
+      public void process(final MRRecord arg) {
         try {
-          if (parts.length > 1) {
-            if (parts[1].length() > 0)
-              state.put(parts[0].toString(), marshaling.read(parts[2], Class.forName(parts[1].toString())));
-            else
-              state.remove(parts[0].toString());
-          }
+          state.put(arg.key, marshaling.read(arg.sub, Class.forName(arg.value.toString())));
         } catch (ClassNotFoundException e) {
           throw new RuntimeException(e);
         }
       }
     });
-    env.addListener(this);
   }
 
   public WhiteboardImpl(MREnv env, String name) {
@@ -127,22 +122,18 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
         case "temp":
           final String subProtocol = uri.getSchemeSpecificPart();
           if (subProtocol.startsWith("mr://")) {
-
             int offset = "mr://".length();
-            final String path = env.getTmp() + user + subProtocol.substring(offset) + "-" + (Integer.toHexString(rng.nextInt()));
-            final MRTableShard resolve = new LazyTableShard(path, env);
-            set(resource, resolve);
-            return (T)resolve;
+            final String realPath = "mr:///tmp/"+ user + subProtocol.substring(offset) + "-" + (Integer.toHexString(rng.nextInt()));
+            return get(realPath);
           }
           else throw new UnsupportedOperationException("Unknown schema for temp allocation: " + subProtocol);
         case "mr":
           Object result;
           final String path = uri.getPath();
           if (resource.endsWith("*"))
-            result = env.list(path.substring(0, path.length() - 1));
-          else {
-            result = new LazyTableShard(path, env);
-          }
+            result = env.list(MRPath.create(path.substring(0, path.length() - 1)));
+          else
+            result = MRPath.create(path);
           set(resource, result);
           return (T)result;
       }
@@ -182,63 +173,12 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
     return new StateImpl(this);
   }
 
-  private final Set<String> hints = new HashSet<>();
-
-  @Override
-  public void invoke(MREnv.ShardAlter shardAlter) {
-    final String path = shardAlter.shard.path();
-    switch (shardAlter.type) {
-      case CHANGED:
-        hints.add(path);
-        break;
-      case UPDATED:
-        hints.remove(path);
-        final MRTableShard shd = shardAlter.shard;
-        updateResource(shd);
-        break;
-    }
-  }
-
-  private void updateResource(MRTableShard shd) {
-    final String path = shd.path();
-    for (final String resourceName : keys()) {
-      final Object resolve = get(resourceName);
-      if (resolve instanceof MRTableShard) {
-        final MRTableShard oldShard = (MRTableShard) resolve;
-        if (path.equals(oldShard.path()))
-          set(resourceName, shd);
-      }
-      else if (resolve instanceof MRTableShard[]) {
-        final MRTableShard[] shards = (MRTableShard[]) resolve;
-        for(int i = 0; i < shards.length; i++) {
-          final MRTableShard oldShard = shards[i];
-          if (path.equals(oldShard.path())) {
-            shards[i] = shd;
-          }
-        }
-      }
-    }
-  }
-
   @SuppressWarnings("unchecked")
   public void sync() {
-    final long currentTime = System.currentTimeMillis();
-    final List<String> shards = new ArrayList<>();
-    for (final String resourceName : keys()) {
-      processAs(resourceName, new Processor<MRTableShard>() {
-        @Override
-        public void process(final MRTableShard shard) {
-          if (hints.contains(shard.path()) || currentTime - shard.metaTS() > MRTools.FRESHNESS_TIMEOUT) {
-            shards.add(shard.path());
-          }
-        }
-      });
-    }
     // this will update all shards through notification mechanism
-    env.resolveAll(shards.toArray(new String[shards.size()]));
-
     for (Map.Entry<Object, Object> entry : increment.entrySet()) {
       if (CharSeq.EMPTY == entry.getValue())
+        //noinspection SuspiciousMethodCalls
         state.remove(entry.getKey());
       else
         state.put((String) entry.getKey(), entry.getValue());
@@ -265,9 +205,9 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
     if (!state.isEmpty()) {
       for (String resourceName : keys()) {
         if (resourceName.startsWith("temp:")) {
-          if (!processAs(resourceName, new Processor<MRTableShard>() {
+          if (!processAs(resourceName, new Processor<MRPath>() {
             @Override
-            public void process(MRTableShard arg) {
+            public void process(MRPath arg) {
               env.delete(arg);
             }
           }))
@@ -280,56 +220,5 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard, Action<MREn
 
   public void setErrorsHandler(MRErrorsHandler errorsHandler) {
     this.errorsHandler = errorsHandler;
-  }
-
-  public static class LazyTableShard extends MRTableShard {
-    private final MREnv env;
-    MRTableShard realShard;
-
-    public LazyTableShard(String path, MREnv env) {
-      super(path, false, false, "", 0, 0, 0, 0);
-      this.env = env;
-    }
-
-    private MRTableShard real() {
-      if (realShard == null)
-        realShard = env.resolve(path());
-      return realShard;
-    }
-
-    @Override
-    public boolean isAvailable() {
-      return real().isAvailable();
-    }
-
-    @Override
-    public boolean isSorted() {
-      return real().isSorted();
-    }
-
-    @Override
-    public String crc() {
-      return real().crc();
-    }
-
-    @Override
-    public long metaTS() {
-      return 0l;
-    }
-
-    @Override
-    public long recordsCount() {
-      return real().recordsCount();
-    }
-
-    @Override
-    public long length() {
-      return real().length();
-    }
-
-    @Override
-    public long keysCount() {
-      return real().keysCount();
-    }
   }
 }

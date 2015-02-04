@@ -5,8 +5,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import solar.mr.MRTableShard;
 import solar.mr.MRTestUtils;
+import solar.mr.proc.impl.MRPath;
+import solar.mr.routines.MRRecord;
 
 import static solar.mr.MRTestUtils.*;
 import static org.junit.Assert.assertEquals;
@@ -17,9 +18,9 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 public final class ListNDropTest extends BaseMRTest {
 
-  private final MRTestUtils.Record[] RECORDS_1 = createRecords(1);
-  private final MRTestUtils.Record[] RECORDS_2 = createRecords(1);
-  private final MRTestUtils.Record[] RECORDS_3 = createRecords(1);
+  private final MRRecord[] RECORDS_1 = createRecords(1);
+  private final MRRecord[] RECORDS_2 = createRecords(1);
+  private final MRRecord[] RECORDS_3 = createRecords(1);
 
   private static final String IN_TABLE_NAME_PREFIX = TABLE_NAME_PREFIX + "list/";
   private static final String IN_TABLE_NAME_1 = IN_TABLE_NAME_PREFIX + "ListTest-1-" + SALT;
@@ -35,25 +36,25 @@ public final class ListNDropTest extends BaseMRTest {
 
   @Test
   public void listShouldWork() {
-    MRTableShard[] result = env.list(IN_TABLE_NAME_PREFIX);
+    MRPath[] result = env.list(MRPath.createFromURI(IN_TABLE_NAME_PREFIX));
     assertEquals(3, result.length);
   }
 
   @Test
   public void dropShouldWork() {
-    MRTableShard[] result = env.list(IN_TABLE_NAME_PREFIX);
+    MRPath[] result = env.list(MRPath.createFromURI(IN_TABLE_NAME_PREFIX));
     assertEquals(3, result.length);
-    dropMRTable(env, IN_TABLE_NAME_1);
-    result = env.list(IN_TABLE_NAME_PREFIX);
+    env.delete(MRPath.createFromURI(IN_TABLE_NAME_1));
+    result = env.list(MRPath.createFromURI(IN_TABLE_NAME_PREFIX));
     assertEquals(2, result.length);
   }
 
   @After
   public void dropTable() {
-    dropMRTable(env, IN_TABLE_NAME_1);
-    dropMRTable(env, IN_TABLE_NAME_2);
-    dropMRTable(env, IN_TABLE_NAME_3);
-    dropMRTable(env, IN_TABLE_NAME_PREFIX);
+    env.delete(MRPath.createFromURI(IN_TABLE_NAME_1));
+    env.delete(MRPath.createFromURI(IN_TABLE_NAME_2));
+    env.delete(MRPath.createFromURI(IN_TABLE_NAME_3));
+    env.delete(MRPath.createFromURI(IN_TABLE_NAME_PREFIX));
   }
 
 }
