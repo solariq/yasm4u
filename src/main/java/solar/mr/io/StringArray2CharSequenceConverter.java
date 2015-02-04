@@ -7,6 +7,7 @@ import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqTools;
 
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +16,7 @@ import java.util.List;
  */
 public class StringArray2CharSequenceConverter implements ConversionPack<String[], CharSequence> {
 
+  private final static String SEP = ";";
   @Override
   public Class<? extends TypeConverter<String[], CharSequence>> to() {
     return To.class;
@@ -32,9 +34,9 @@ public class StringArray2CharSequenceConverter implements ConversionPack<String[
 
       final CharSeqBuilder builder = new CharSeqBuilder();
       for (int i = 0; i < from.length; ++i) {
-        builder.append(from[i]);
+        builder.append(CharSeqTools.toBase64(from[i].getBytes(Charset.forName("UTF-8"))));
         if (i < from.length - 1)
-          builder.append(';');
+          builder.append(SEP);
       }
       return builder.build();
     }
@@ -43,10 +45,10 @@ public class StringArray2CharSequenceConverter implements ConversionPack<String[
   public static class From implements TypeConverter<CharSequence, String[]> {
     @Override
     public String[] convert(CharSequence from) {
-      CharSequence[] split = CharSeqTools.split(from, ',');
+      final CharSequence[] split = CharSeqTools.split(from, SEP);
       final String[] result = new String[split.length];
       for(int i = 0; i < split.length; ++i)
-        result[i] = split[i].toString();
+        result[i] = new String(CharSeqTools.parseBase64(split[i]), Charset.forName("UTF-8"));
       return result;
     }
   }
