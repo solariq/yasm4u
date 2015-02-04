@@ -378,6 +378,7 @@ public class YtMREnv extends RemoteMREnv {
     return "Yt://" + user + "@" + master + "/";
   }
 
+
   @Override
   protected void executeCommand(List<String> options, Action<CharSequence> outputProcessor, Action<CharSequence> errorsProcessor, InputStream contents) {
     if (runner instanceof SSHProcessRunner)
