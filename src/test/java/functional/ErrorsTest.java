@@ -8,6 +8,7 @@ import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
 import solar.mr.proc.AnnotatedMRProcess;
 import solar.mr.proc.State;
+import solar.mr.proc.impl.MRPath;
 import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
 import solar.mr.proc.tags.MRReduceMethod;
@@ -24,7 +25,7 @@ import static solar.mr.MRTestUtils.*;
 @RunWith(Parameterized.class)
 public final class ErrorsTest extends BaseMRTest {
 
-  private final Record[] RECORDS = createRecords(1);
+  private final MRRecord[] RECORDS = createRecords(1);
 
   private static final String IN_TABLE_NAME = TABLE_NAME_PREFIX + "ErrorsTest-1-" + SALT;
   private static final String OUT_TABLE_NAME = TABLE_NAME_PREFIX + "ErrorsTest-2-" + SALT;
@@ -224,8 +225,8 @@ public final class ErrorsTest extends BaseMRTest {
 
   @After
   public void dropTable() {
-    dropMRTable(env, IN_TABLE_NAME);
-    dropMRTable(env, OUT_TABLE_NAME);
+    env.delete(MRPath.createFromURI(IN_TABLE_NAME));
+    env.delete(MRPath.createFromURI(OUT_TABLE_NAME));
   }
 
 }

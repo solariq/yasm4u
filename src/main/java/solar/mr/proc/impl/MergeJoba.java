@@ -1,7 +1,7 @@
 package solar.mr.proc.impl;
 
 import com.spbsu.commons.func.Processor;
-import solar.mr.MRTableShard;
+import solar.mr.MRTableState;
 import solar.mr.proc.Joba;
 import solar.mr.proc.Whiteboard;
 
@@ -30,17 +30,17 @@ public class MergeJoba implements Joba {
 
   @Override
   public boolean run(final Whiteboard wb) {
-    final List<MRTableShard> shards = new ArrayList<>();
+    final List<MRPath> shards = new ArrayList<>();
 
     for(int i = 0; i < this.shards.length; i++) {
-      wb.processAs(this.shards[i], new Processor<MRTableShard>() {
+      wb.processAs(this.shards[i], new Processor<MRPath>() {
         @Override
-        public void process(MRTableShard arg) {
+        public void process(MRPath arg) {
           shards.add(arg);
         }
       });
     }
-    wb.env().copy(shards.toArray(new MRTableShard[shards.size()]), wb.<MRTableShard>get(result), false);
+    wb.env().copy(shards.toArray(new MRPath[shards.size()]), wb.<MRPath>get(result), false);
     return true;
   }
 

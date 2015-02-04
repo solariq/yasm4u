@@ -5,6 +5,7 @@ import java.util.Iterator;
 
 import solar.mr.MROutput;
 import solar.mr.proc.State;
+import solar.mr.proc.impl.MRPath;
 import solar.mr.routines.MRRecord;
 import solar.mr.routines.MRReduce;
 
@@ -14,7 +15,7 @@ import solar.mr.routines.MRReduce;
 * Time: 1:56
 */
 public class SAPPCounterReduce extends MRReduce {
-  public SAPPCounterReduce(final String[] inputTables, final MROutput output, final State state) {
+  public SAPPCounterReduce(final MRPath[] inputTables, final MROutput output, final State state) {
     super(inputTables, output, state);
   }
 

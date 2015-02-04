@@ -5,6 +5,8 @@ import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqTools;
 import solar.mr.proc.State;
+import solar.mr.proc.impl.MRPath;
+import solar.mr.proc.impl.StateImpl;
 import solar.mr.routines.MRRecord;
 
 import java.util.Timer;
@@ -15,24 +17,43 @@ import java.util.TimerTask;
 * Date: 23.09.14
 * Time: 11:19
 */
-public abstract class MRRoutine implements Processor<CharSequence>, Action<MRRecord> {
-
+public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSequence> {
+  private final MRErrorsHandler output;
   public final int MAX_OPERATION_TIME = 600;
-
-  protected final MROutput output;
   private final State state;
-  private final String[] inputTables;
+  private final MRPath[] inputTables;
   private int currentInputIndex = 0;
   private boolean interrupted = false;
 
-  public MRRoutine(String[] inputTables, MROutput output, State state) {
+  public MRRoutine(MRPath[] inputTables, MRErrorsHandler output, State state) {
     this.inputTables = inputTables;
     this.output = output;
     this.state = state;
   }
 
+  public MRRoutine(MRPath... inputTables) {
+    this(inputTables, new MRErrorsHandler() {
+      @Override
+      public void error(String type, String cause, MRRecord record) {
+        throw new RuntimeException("Error during record processing! type: " + type + ", cause: " + cause + ", record: [" + record.toString() + "]");
+      }
+
+      @Override
+      public void error(Throwable th, MRRecord record) {
+        if (th instanceof RuntimeException)
+          throw (RuntimeException)th;
+        throw new RuntimeException(th);
+      }
+
+      @Override
+      public int errorsCount() {
+        return 0;
+      }
+    }, new StateImpl());
+  }
+
   @Override
-  public final void process(final CharSequence record) {
+  public void invoke(final CharSequence record) {
     if (record == CharSeq.EMPTY)
       onEndOfInput();
     if (interrupted || record.length() == 0) // this is trash and ugar but we need to read entire stream before closing it, so that YaMR won't gone mad
@@ -46,7 +67,7 @@ public abstract class MRRoutine implements Processor<CharSequence>, Action<MRRec
     else {
       final MRRecord mrRecord = new MRRecord(currentTable(), split[0].toString(), split[1].toString(), split[2]);
       try {
-        invoke(mrRecord);
+        process(mrRecord);
       }
       catch (Exception e) {
         output.error(e, mrRecord);
@@ -61,7 +82,7 @@ public abstract class MRRoutine implements Processor<CharSequence>, Action<MRRec
 
   protected void onEndOfInput() {}
 
-  public String currentTable() {
+  public MRPath currentTable() {
     return inputTables[currentInputIndex];
   }
 
@@ -69,11 +90,7 @@ public abstract class MRRoutine implements Processor<CharSequence>, Action<MRRec
     return state;
   }
 
-  public String[] input() {
+  public MRPath[] input() {
     return inputTables;
-  }
-
-  public String[] output() {
-    return output.names();
   }
 }

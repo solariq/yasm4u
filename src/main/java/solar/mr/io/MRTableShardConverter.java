@@ -4,17 +4,17 @@ package solar.mr.io;
 import com.spbsu.commons.func.types.ConversionPack;
 import com.spbsu.commons.func.types.TypeConverter;
 import com.spbsu.commons.seq.CharSeqTools;
-import solar.mr.MRTableShard;
+import solar.mr.MRTableState;
 
 /**
  * User: solar
  * Date: 21.10.14
  * Time: 17:10
  */
-public class MRTableShardConverter implements ConversionPack<MRTableShard,CharSequence> {
-  public static class To implements TypeConverter<MRTableShard, CharSequence> {
+public class MRTableShardConverter implements ConversionPack<MRTableState,CharSequence> {
+  public static class To implements TypeConverter<MRTableState, CharSequence> {
     @Override
-    public CharSequence convert(final MRTableShard from) {
+    public CharSequence convert(final MRTableState from) {
       final StringBuilder builder = new StringBuilder();
       builder.append(from.path())
           .append("?available=").append(from.isAvailable())
@@ -25,15 +25,15 @@ public class MRTableShardConverter implements ConversionPack<MRTableShard,CharSe
         builder.append("&records=").append(from.recordsCount());
         builder.append("&keys=").append(from.keysCount());
       }
-      builder.append("#").append(Long.toString(from.metaTS()));
+      builder.append("#").append(Long.toString(from.snapshotTime()));
 
       return builder.toString();
     }
   }
 
-  public static class From implements TypeConverter<CharSequence, MRTableShard> {
+  public static class From implements TypeConverter<CharSequence, MRTableState> {
     @Override
-    public MRTableShard convert(final CharSequence from) {
+    public MRTableState convert(final CharSequence from) {
       CharSequence[] parts = CharSeqTools.split(from, "?");
       final String path = parts[0].toString();
       parts = CharSeqTools.split(parts[1], "#");
@@ -62,16 +62,16 @@ public class MRTableShardConverter implements ConversionPack<MRTableShard,CharSe
           keysCount = CharSeqTools.parseLong(kv[1]);
       }
 
-      return new MRTableShard(path, available, sorted, crc, length, keysCount, recordsCount, ts);
+      return new MRTableState(path, available, sorted, crc, length, keysCount, recordsCount, ts);
     }
   }
   @Override
-  public Class<? extends TypeConverter<MRTableShard, CharSequence>> to() {
+  public Class<? extends TypeConverter<MRTableState, CharSequence>> to() {
     return To.class;
   }
 
   @Override
-  public Class<? extends TypeConverter<CharSequence, MRTableShard>> from() {
+  public Class<? extends TypeConverter<CharSequence, MRTableState>> from() {
     return From.class;
   }
 }

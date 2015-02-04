@@ -10,4 +10,5 @@ import solar.mr.routines.MRRecord;
 public interface MRErrorsHandler {
   void error(String type, String cause, MRRecord record);
   void error(Throwable th, MRRecord record);
+  int errorsCount();
 }

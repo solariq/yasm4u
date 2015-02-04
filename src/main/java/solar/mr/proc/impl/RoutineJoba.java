@@ -2,7 +2,7 @@ package solar.mr.proc.impl;
 
 import com.spbsu.commons.func.Processor;
 import solar.mr.MRRoutineBuilder;
-import solar.mr.MRTableShard;
+import solar.mr.MRTableState;
 import solar.mr.proc.Joba;
 import solar.mr.proc.Whiteboard;
 
@@ -38,9 +38,9 @@ public class RoutineJoba implements Joba {
     if (type == MRRoutineBuilder.RoutineType.REDUCE) {
       for (int i = 0; i < input.length; i++) {
         final String resourceName = input[i];
-        wb.processAs(resourceName, new Processor<MRTableShard>() {
+        wb.processAs(resourceName, new Processor<MRPath>() {
           @Override
-          public void process(MRTableShard shard) {
+          public void process(MRPath shard) {
             wb.env().sort(shard);
           }
         });
@@ -60,9 +60,9 @@ public class RoutineJoba implements Joba {
   private String[] resolveAll(String[] input, Whiteboard wb) {
     final List<String> result = new ArrayList<>(input.length);
     for(int i = 0; i < input.length; i++) {
-      wb.processAs(input[i], new Processor<MRTableShard>() {
+      wb.processAs(input[i], new Processor<MRTableState>() {
         @Override
-        public void process(MRTableShard shard) {
+        public void process(MRTableState shard) {
           result.add(shard.path());
         }
       });

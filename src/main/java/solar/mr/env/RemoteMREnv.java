@@ -1,43 +1,48 @@
 package solar.mr.env;
 
+import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
-import com.spbsu.commons.func.impl.WeakListenerHolderImpl;
 import com.spbsu.commons.io.StreamTools;
-import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.system.RuntimeUtils;
 import com.spbsu.commons.util.cache.CacheStrategy;
 import com.spbsu.commons.util.cache.impl.FixedSizeCache;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import org.apache.log4j.Logger;
 import solar.mr.*;
+import solar.mr.proc.impl.MRPath;
 import solar.mr.routines.MRRecord;
 
 import java.io.*;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by minamoto on 10/12/14.
  */
-public abstract class RemoteMREnv extends WeakListenerHolderImpl<MREnv.ShardAlter> implements MREnv {
+public abstract class RemoteMREnv implements MREnv {
   private static Logger LOG = Logger.getLogger(RemoteMREnv.class);
   protected final String user;
 
   protected final String master;
-  protected final Processor<CharSequence> defaultErrorsProcessor;
-  protected final Processor<CharSequence> defaultOutputProcessor;
+  protected final Action<CharSequence> defaultErrorsProcessor;
+  protected final Action<CharSequence> defaultOutputProcessor;
   protected final ProcessRunner runner;
 
   protected RemoteMREnv(final ProcessRunner runner, final String user, final String master) {
     this(runner, user, master,
-        new Processor<CharSequence>() {
+        new Action<CharSequence>() {
           @Override
-          public void process(final CharSequence arg) {
+          public void invoke(final CharSequence arg) {
             System.err.println(arg);
           }
         },
-        new Processor<CharSequence>() {
+        new Action<CharSequence>() {
           @Override
-          public void process(final CharSequence arg) {
+          public void invoke(final CharSequence arg) {
             System.out.println(arg);
           }
         }
@@ -45,8 +50,8 @@ public abstract class RemoteMREnv extends WeakListenerHolderImpl<MREnv.ShardAlte
   }
 
   protected RemoteMREnv(final ProcessRunner runner, final String user, final String master,
-                        final Processor<CharSequence> errorsProc,
-                        final Processor<CharSequence> outputProc) {
+                        final Action<CharSequence> errorsProc,
+                        final Action<CharSequence> outputProc) {
     this.runner = runner;
     this.user = user;
     this.master = master;
@@ -79,14 +84,13 @@ public abstract class RemoteMREnv extends WeakListenerHolderImpl<MREnv.ShardAlte
       to.append(CharSeqTools.toBase64(builderSerialized.toByteArray())).append("\n");
       to.flush();
 
-      final String[] input = builder.input();
+      final MRPath[] input = builder.input();
       for (int i = 0; i < input.length; i++) {
-        final MRTableShard inputShard = env.resolve(input[i]);
-        env.sample(inputShard, new Processor<CharSequence>() {
+        env.sample(input[i], new Processor<MRRecord>() {
           @Override
-          public void process(CharSequence arg) {
+          public void process(MRRecord arg) {
             try {
-              to.append(arg).append("\n");
+              to.append(arg.toString()).append("\n");
             } catch (IOException e) {
               throw new RuntimeException(e);
             }
@@ -94,17 +98,7 @@ public abstract class RemoteMREnv extends WeakListenerHolderImpl<MREnv.ShardAlte
         });
       }
       to.close();
-      final MROutputImpl output = new MROutputImpl(env, builder.output(), new MRErrorsHandler() {
-        @Override
-        public void error(String type, String cause, MRRecord record) {
-          throw new RuntimeException("Error during MR operation.\nType: " + type + "\tCause: " + cause + "\tRecord: [" + record + "]");
-        }
-
-        @Override
-        public void error(Throwable th, MRRecord record) {
-          throw new RuntimeException("Exception during processing: [" + record.toString() + "]", th);
-        }
-      });
+      final MROutputBase output = new MROutput2MREnv(env, builder.output(), null);
       CharSeqTools.processLines(from, new Processor<CharSequence>() {
         @Override
         public void process(CharSequence arg) {
@@ -133,8 +127,8 @@ public abstract class RemoteMREnv extends WeakListenerHolderImpl<MREnv.ShardAlte
     }
   }
 
-  protected void executeCommand(final List<String> options, final Processor<CharSequence> outputProcessor,
-                              final Processor<CharSequence> errorsProcessor, InputStream contents) {
+  protected void executeCommand(final List<String> options, final Action<CharSequence> outputProcessor,
+                              final Action<CharSequence> errorsProcessor, InputStream contents) {
     try {
       final Process exec = runner.start(options, contents);
       if (exec == null)
@@ -171,18 +165,97 @@ public abstract class RemoteMREnv extends WeakListenerHolderImpl<MREnv.ShardAlte
     }
   }
 
+  @SuppressWarnings("UnusedDeclaration")
+  protected abstract MRPath findByLocalPath(String table, boolean sorted);
+  @SuppressWarnings("UnusedDeclaration")
+  protected abstract String localPath(MRPath shard);
 
-  protected final FixedSizeCache<String, MRTableShard> shardsCache = new FixedSizeCache<>(1000, CacheStrategy.Type.LRU);
+  protected final FixedSizeCache<MRPath, MRTableState> shardsCache = new FixedSizeCache<>(10000, CacheStrategy.Type.LRU);
+
+  protected synchronized void updateState(MRPath path, MRTableState newState) {
+    shardsCache.put(path, newState);
+  }
+
+  protected synchronized void wipeState(MRPath path) {
+    shardsCache.clear(path);
+  }
+
+  protected synchronized MRTableState cachedState(MRPath path) {
+    MRTableState result = shardsCache.get(path);
+    if (result == null && !path.sorted) {
+      result = shardsCache.get(new MRPath(path.mount, path.path, true));
+    }
+    return result;
+  }
 
   @Override
-  protected void invoke(MREnv.ShardAlter e) {
-    if (e.type == MREnv.ShardAlter.AlterType.CHANGED) {
-      shardsCache.clear(e.shard.path());
+  public final MRTableState resolve(final MRPath path) {
+    return resolve(path, false);
+  }
+
+  @Override
+  public final MRTableState[] resolveAll(MRPath[] paths) {
+    return resolveAll(paths, false);
+  }
+
+  protected MRTableState resolve(MRPath path, boolean cachedOnly) {
+    return resolveAll(new MRPath[]{path}, cachedOnly)[0];
+  }
+
+  protected final MRTableState[] resolveAll(MRPath[] paths, boolean cachedOnly) {
+    final MRTableState[] result = new MRTableState[paths.length];
+    final long time = System.currentTimeMillis();
+    final Set<MRPath> unknown = new HashSet<>();
+    for(int i = 0; i < paths.length; i++) {
+      MRPath path = paths[i];
+      final MRTableState shard = cachedState(path);
+      if (shard != null) {
+        if (time - shard.snapshotTime() < MRTools.FRESHNESS_TIMEOUT) {
+          result[i] = shard;
+          continue;
+        }
+        wipeState(path);
+      }
+      unknown.add(path);
     }
-    else if (e.type == MREnv.ShardAlter.AlterType.UPDATED) {
-      shardsCache.put(e.shard.path(), e.shard);
+
+    if (cachedOnly)
+      return result;
+    // after this cycle all entries of paths array must be in the shardsCache
+    for (final MRPath prefix : findBestPrefixes(unknown)) {
+      list(prefix);
     }
-    super.invoke(e);
+    return resolveAll(paths, true);
+  }
+
+  protected abstract boolean isFat(MRPath path);
+
+  private Set<MRPath> findBestPrefixes(Set<MRPath> paths) {
+    if (paths.size() < 2)
+      return paths;
+    final Set<MRPath> result = new HashSet<>();
+    final TObjectIntMap<MRPath> parents = new TObjectIntHashMap<>();
+    final Iterator<MRPath> itPath = paths.iterator();
+    while (itPath.hasNext()) {
+      final MRPath path = itPath.next();
+      final MRPath parent = path.parent();
+      if (parent.isRoot() && isFat(path)) {
+        result.add(path);
+        itPath.remove();
+      }
+      else parents.adjustOrPutValue(parent, 1, 1);
+    }
+
+    for(final MRPath path : paths) {
+      final MRPath parent = path.parent();
+
+      if (parents.get(parent) == 1 && (parent.level() < 2 || parent.mount == MRPath.Mount.TEMP)) {
+        result.add(path);
+        parents.remove(parent);
+      }
+    }
+    result.addAll(findBestPrefixes(parents.keySet()));
+    return result;
   }
 
 }

@@ -5,11 +5,11 @@ import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.Holder;
-import com.spbsu.commons.util.Pair;
 import solar.mr.MRRoutine;
 import solar.mr.MRRoutineBuilder;
 import solar.mr.MRTools;
 import solar.mr.RuntimeInterruptedException;
+import solar.mr.proc.impl.MRPath;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
@@ -23,7 +23,6 @@ import java.util.HashMap;
 * Time: 10:41
 */
 public class MRRunner implements Runnable {
-  public static final Pair<Integer, CharSequence> STOP = new Pair<Integer, CharSequence>(-1, "");
   public static final String BUILDER_RESOURCE_NAME = ".builder";
 
   private final MRRoutineBuilder routineBuilder;
@@ -92,14 +91,14 @@ public class MRRunner implements Runnable {
 
   @Override
   public void run() {
-    final String[] outputTables = routineBuilder.output();
-    final MROutputImpl out = new MROutputImpl(this.out, outputTables);
+    final MRPath[] outputTables = routineBuilder.output();
+    final MROutputBase out = new MROutput2Writer(this.out, outputTables);
     try {
       final MRRoutine instance = routineBuilder.build(out);
 
       long start = System.currentTimeMillis();
       CharSeqTools.processLines(in, instance);
-      instance.process(CharSeq.EMPTY);
+      instance.invoke(CharSeq.EMPTY);
       final Boolean profile = instance.state().get(ProfilerMREnv.PROFILER_ENABLED_VAR);
       if (profile != null && profile) {
         final int profilingTable = outputTables.length - 2;
@@ -115,7 +114,7 @@ public class MRRunner implements Runnable {
     }
   }
 
-  private void dumpProfilingStats(MROutputImpl out, long start, int profilingTable) throws UnknownHostException {
+  private void dumpProfilingStats(MROutputBase out, long start, int profilingTable) throws UnknownHostException {
     out.add(profilingTable, InetAddress.getLocalHost().getHostName(), "#", Long.toString(System.currentTimeMillis() - start));
   }
 
@@ -127,6 +126,7 @@ public class MRRunner implements Runnable {
         public void invoke(Class aClass) {
           try {
             final Object serializedBuilderHolder = aClass.getClassLoader().loadClass(Holder.class.getName()).newInstance();
+            //noinspection unchecked
             final Runnable runnable = (Runnable) aClass.getConstructor(serializedBuilderHolder.getClass()).newInstance(serializedBuilderHolder);
             resourcesMap.put(BUILDER_RESOURCE_NAME, (byte[])serializedBuilderHolder.getClass().getMethod("getValue").invoke(serializedBuilderHolder));
             runnable.run();

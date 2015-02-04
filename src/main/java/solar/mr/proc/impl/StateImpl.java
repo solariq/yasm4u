@@ -6,11 +6,7 @@ import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.func.types.SerializationRepository;
 import com.spbsu.commons.func.types.TypeConverter;
 import org.jetbrains.annotations.Nullable;
-import solar.mr.MREnv;
-import solar.mr.MRTableShard;
-import solar.mr.env.ProfilerMREnv;
-import solar.mr.env.YaMREnv;
-import solar.mr.env.YtMREnv;
+import solar.mr.MRTableState;
 import solar.mr.proc.State;
 import solar.mr.proc.Whiteboard;
 
@@ -44,6 +40,7 @@ public class StateImpl implements State {
     if (!state.containsKey(name))
       return null;
 
+    //noinspection unchecked
     return (T)state.get(name);
   }
 
@@ -51,9 +48,9 @@ public class StateImpl implements State {
   public boolean available(final String... consumes) {
     final boolean[] holder = new boolean[]{true};
     for (int i = 0; holder[0] && i < consumes.length; i++) {
-      if (!processAs(consumes[i], new Processor<MRTableShard>() {
+      if (!processAs(consumes[i], new Processor<MRTableState>() {
         @Override
-        public void process(MRTableShard shard) {
+        public void process(MRTableState shard) {
           holder[0] &= shard.isAvailable();
         }
       }))
@@ -106,8 +103,6 @@ public class StateImpl implements State {
       final Object instance = get(current);
       assert instance != null;
       final SerializationRepository<CharSequence> serialization = State.SERIALIZATION;
-      if (instance instanceof WhiteboardImpl.LazyTableShard)
-        continue;
       final TypeConverter<CharSequence, ?> converter = serialization.base.converter(CharSequence.class, instance.getClass());
       if (converter != null && !new ClassFilter<TypeConverter>(Action.class, Whiteboard.class).accept(converter)) {
         out.writeBoolean(true);

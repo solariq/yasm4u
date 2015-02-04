@@ -9,6 +9,7 @@ import solar.mr.env.YtMREnv;
 import solar.mr.proc.State;
 import solar.mr.proc.AnnotatedMRProcess;
 import solar.mr.proc.Whiteboard;
+import solar.mr.proc.impl.MRPath;
 import solar.mr.proc.impl.WhiteboardImpl;
 import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
@@ -76,9 +77,9 @@ public class YtTest {
   public void testList() {
     final ProcessRunner runner = new SSHProcessRunner("testing.mobsearch.serp.yandex.ru", "/usr/bin/yt");
     final MREnv env = new YtMREnv(runner, "minamoto", "plato.yt.yandex.net");
-    env.list("//tmp/minamoto");
-    env.list("//tmp/minamoto/test1");
-    env.list("/");
+    env.list(MRPath.create("/tmp/minamoto"));
+    env.list(MRPath.create("/tmp/minamoto/test1"));
+    env.list(MRPath.create("/"));
   }
 
 }

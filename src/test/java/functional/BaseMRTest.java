@@ -3,6 +3,7 @@ package functional;
 import org.junit.runners.Parameterized;
 import solar.mr.MREnv;
 import solar.mr.env.*;
+import solar.mr.proc.impl.MRPath;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -16,7 +17,7 @@ public class BaseMRTest {
    * please, dont change TABLE_NAME_PREFIX, Yt has several places where mobilesearch user  has rw access 
    * that not a problem in YaMR. 
    */
-  public static final String TABLE_NAME_PREFIX = "/home/mobilesearch/yasm4u-tests/";
+  public static final String TABLE_NAME_PREFIX = "mr:///home/mobilesearch/yasm4u-tests/";
   public static final String SALT = "_test"; // Don't know how to implement this better yet
 
   public static final String SCHEMA = "mr://";

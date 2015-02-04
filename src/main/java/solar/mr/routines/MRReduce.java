@@ -8,6 +8,7 @@ import java.util.concurrent.*;
 import solar.mr.MROutput;
 import solar.mr.MRRoutine;
 import solar.mr.proc.State;
+import solar.mr.proc.impl.MRPath;
 
 /**
 * User: solar
@@ -15,14 +16,16 @@ import solar.mr.proc.State;
 * Time: 11:19
 */
 public abstract class MRReduce extends MRRoutine {
-  public static final MRRecord EOF = new MRRecord("/dev/random", "", "", "");
+  public static final MRRecord EOF = new MRRecord(MRPath.create("/dev/random"), "", "", "");
 
   public static final int MAX_REDUCE_SIZE = 100000;
   private final Thread reduceThread;
   private final ArrayBlockingQueue<MRRecord> recordsQueue = new ArrayBlockingQueue<>(MAX_REDUCE_SIZE);
+  protected MROutput output;
 
-  public MRReduce(String[] inputTables, final MROutput output, State state) {
+  public MRReduce(MRPath[] inputTables, final MROutput output, State state) {
     super(inputTables, output, state);
+    this.output= output;
     reduceThread = new Thread(new Runnable() {
       private MRRecord record;
       private MRRecord lastRetrieved;
@@ -78,7 +81,7 @@ public abstract class MRReduce extends MRRoutine {
               if (lastRetrieved != null) {
                 output.error(e, lastRetrieved);
               } else {
-                output.error(e, new MRRecord("No records were processed", "unknown", "unknown", "unknown"));
+                output.error(e, new MRRecord(MRPath.create("/dev/random"), "unknown", "unknown", "unknown"));
               }
               interrupt();
               break;
@@ -97,7 +100,7 @@ public abstract class MRReduce extends MRRoutine {
   }
 
   @Override
-  public final void invoke(MRRecord rec) {
+  public final void process(MRRecord rec) {
     try {
       recordsQueue.put(rec);
     } catch (InterruptedException e) {

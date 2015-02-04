@@ -3,6 +3,7 @@ package yamr;
 
 import com.spbsu.commons.seq.CharSeqTools;
 import solar.mr.proc.State;
+import solar.mr.proc.impl.MRPath;
 import solar.mr.routines.MRMap;
 import solar.mr.MROutput;
 
@@ -12,12 +13,12 @@ import solar.mr.MROutput;
 * Time: 23:56
 */
 public class SAPPCounterMap extends MRMap {
-  public SAPPCounterMap(final String[] inputTables, final MROutput output, final State state) {
+  public SAPPCounterMap(final MRPath[] inputTables, final MROutput output, final State state) {
     super(inputTables, output, state);
   }
 
   @Override
-  public void map(final String key, final String sub, final CharSequence value) {
+  public void map(MRPath table, final String sub, final CharSequence value, final String key) {
     final CharSequence[] parts = CharSeqTools.split(value, '\t');
     for (int i = 0; i < parts.length; i++) {
       if (CharSeqTools.startsWith(parts[i], "reqid=")) {

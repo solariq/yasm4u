@@ -8,6 +8,7 @@ import org.junit.runners.Parameterized;
 import solar.mr.MROutput;
 import solar.mr.proc.State;
 import solar.mr.proc.AnnotatedMRProcess;
+import solar.mr.proc.impl.MRPath;
 import solar.mr.proc.tags.MRProcessClass;
 import solar.mr.proc.tags.MRReduceMethod;
 import solar.mr.routines.MRRecord;
@@ -24,8 +25,8 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public final class MultiReduceTest extends BaseMRTest {
 
-  private final Record[] RECORDS_1 = createRecordsWithKeys(9, 10, "key1", "key2", "key3");
-  private final Record[] RECORDS_2 = createRecordsWithKeys(7, 20, "key3", "key4", "key5");
+  private final MRRecord[] RECORDS_1 = createRecordsWithKeys(9, 10, "key1", "key2", "key3");
+  private final MRRecord[] RECORDS_2 = createRecordsWithKeys(7, 20, "key3", "key4", "key5");
 
   private static final String IN_TABLE_NAME_1 = TABLE_NAME_PREFIX + "MultiReduceTest-in-1-" + SALT;
   private static final String IN_TABLE_NAME_2 = TABLE_NAME_PREFIX + "MultiReduceTest-in-2-" + SALT;
@@ -70,9 +71,9 @@ public final class MultiReduceTest extends BaseMRTest {
     mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
-    List<Record> records = readRecords(env, OUT_TABLE_NAME_1);
+    List<MRRecord> records = readRecords(env, OUT_TABLE_NAME_1);
     assertEquals(RECORDS_1.length + RECORDS_2.length, records.size());
-    Set<Record> recordsSet = new HashSet<>(Arrays.asList(RECORDS_1));
+    Set<MRRecord> recordsSet = new HashSet<>(Arrays.asList(RECORDS_1));
     recordsSet.addAll(Arrays.asList(RECORDS_2));
     assertTrue(recordsSet.containsAll(records));
   }
@@ -103,7 +104,7 @@ public final class MultiReduceTest extends BaseMRTest {
         } else if (record.sub.startsWith("subkey2")) {
           output.add(1, record.key, record.sub, record.value);
         } else {
-          output.error("Unexpected key", "#", new MRRecord("#", record.key, record.sub, record.value));
+          output.error("Unexpected key", "#", record);
         }
       }
     }
@@ -116,13 +117,13 @@ public final class MultiReduceTest extends BaseMRTest {
     mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
-    List<Record> records1 = readRecords(env, OUT_TABLE_NAME_1);
-    List<Record> records2 = readRecords(env, OUT_TABLE_NAME_2);
+    List<MRRecord> records1 = readRecords(env, OUT_TABLE_NAME_1);
+    List<MRRecord> records2 = readRecords(env, OUT_TABLE_NAME_2);
     assertEquals(RECORDS_1.length, records1.size());
     assertEquals(RECORDS_2.length, records2.size());
-    Set<Record> recordsSet1 = new HashSet<>(Arrays.asList(RECORDS_1));
+    Set<MRRecord> recordsSet1 = new HashSet<>(Arrays.asList(RECORDS_1));
     assertTrue(recordsSet1.containsAll(records1));
-    Set<Record> recordsSet2 = new HashSet<>(Arrays.asList(RECORDS_2));
+    Set<MRRecord> recordsSet2 = new HashSet<>(Arrays.asList(RECORDS_2));
     assertTrue(recordsSet2.containsAll(records2));
   }
 
@@ -162,12 +163,12 @@ public final class MultiReduceTest extends BaseMRTest {
     mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
-    List<Record> records1 = readRecords(env, OUT_TABLE_NAME_1);
-    List<Record> records2 = readRecords(env, OUT_TABLE_NAME_2);
+    List<MRRecord> records1 = readRecords(env, OUT_TABLE_NAME_1);
+    List<MRRecord> records2 = readRecords(env, OUT_TABLE_NAME_2);
     assertEquals(9, records1.size());
     assertEquals(RECORDS_1.length - 9, records2.size());
-    for(Record record: records1) {
-      if (record.subkey.equals("subkey10") || record.subkey.equals("subkey11") || record.subkey.equals("subkey12")) {
+    for(MRRecord record: records1) {
+      if (record.sub.equals("subkey10") || record.sub.equals("subkey11") || record.sub.equals("subkey12")) {
         continue;
       }
       assertTrue(false);
@@ -176,10 +177,10 @@ public final class MultiReduceTest extends BaseMRTest {
 
   @After
   public void dropTables() {
-    dropMRTable(env, IN_TABLE_NAME_1);
-    dropMRTable(env, IN_TABLE_NAME_2);
-    dropMRTable(env, OUT_TABLE_NAME_1);
-    dropMRTable(env, OUT_TABLE_NAME_2);
+    env.delete(MRPath.createFromURI(IN_TABLE_NAME_1));
+    env.delete(MRPath.createFromURI(IN_TABLE_NAME_2));
+    env.delete(MRPath.createFromURI(OUT_TABLE_NAME_1));
+    env.delete(MRPath.createFromURI(OUT_TABLE_NAME_2));
   }
 
 }

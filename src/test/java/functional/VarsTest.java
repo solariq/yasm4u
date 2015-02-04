@@ -7,9 +7,11 @@ import solar.mr.MROutput;
 import solar.mr.proc.AnnotatedMRProcess;
 import solar.mr.proc.State;
 import solar.mr.proc.Whiteboard;
+import solar.mr.proc.impl.MRPath;
 import solar.mr.proc.impl.WhiteboardImpl;
 import solar.mr.proc.tags.MRMapMethod;
 import solar.mr.proc.tags.MRProcessClass;
+import solar.mr.routines.MRRecord;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -24,7 +26,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public final class VarsTest extends BaseMRTest {
 
-  private final Record[] RECORDS = createRecords(3);
+  private final MRRecord[] RECORDS = createRecords(3);
 
   private static final String IN_TABLE_NAME_1 = TABLE_NAME_PREFIX + "VarsTest-1-1-" + SALT;
   private static final String OUT_TABLE_NAME_1 = TABLE_NAME_PREFIX + "VarsTest-1-2-" + SALT;
@@ -80,13 +82,13 @@ public final class VarsTest extends BaseMRTest {
     mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
-    List<Record> records = readRecords(env, OUT_TABLE_NAME_1);
+    List<MRRecord> records = readRecords(env, OUT_TABLE_NAME_1);
     assertEquals(RECORDS.length, records.size());
-    for(Record record: records) {
+    for(MRRecord record: records) {
       assertEquals(STRING_VAL + INT_VAL, record.value);
     }
-    dropMRTable(env, IN_TABLE_NAME_1);
-    dropMRTable(env, OUT_TABLE_NAME_1);
+    env.delete(MRPath.createFromURI(IN_TABLE_NAME_1));
+    env.delete(MRPath.createFromURI(OUT_TABLE_NAME_1));
   }
 
   @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME_2)
@@ -119,12 +121,12 @@ public final class VarsTest extends BaseMRTest {
     mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
-    List<Record> records = readRecords(env, REAL_OUT_TABLE_NAME_2);
+    List<MRRecord> records = readRecords(env, REAL_OUT_TABLE_NAME_2);
     assertEquals(RECORDS.length, records.size());
-    Set<Record> recordsSet = new HashSet<>(Arrays.asList(RECORDS));
+    Set<MRRecord> recordsSet = new HashSet<>(Arrays.asList(RECORDS));
     assertTrue(recordsSet.containsAll(records));
-    dropMRTable(env, REAL_IN_TABLE_NAME_2);
-    dropMRTable(env, REAL_OUT_TABLE_NAME_2);
+    env.delete(MRPath.createFromURI(REAL_IN_TABLE_NAME_2));
+    env.delete(MRPath.createFromURI(REAL_OUT_TABLE_NAME_2));
   }
 
   @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME_3)
@@ -153,13 +155,13 @@ public final class VarsTest extends BaseMRTest {
     mrProcess.wb().wipe();
     for(String i: ARRAY_VALS) {
       final String table = OUT_TABLE_NAME_3.replace("{" + ARRAY_VAR + "}", i);
-      List<Record> records = readRecords(env, table);
+      List<MRRecord> records = readRecords(env, table);
       assertEquals(RECORDS.length, records.size());
-      Set<Record> recordsSet = new HashSet<>(Arrays.asList(RECORDS));
+      Set<MRRecord> recordsSet = new HashSet<>(Arrays.asList(RECORDS));
       assertTrue(recordsSet.containsAll(records));
-      dropMRTable(env, table);
+      env.delete(MRPath.createFromURI(table));
     }
-    dropMRTable(env, IN_TABLE_NAME_3);
+    env.delete(MRPath.createFromURI(IN_TABLE_NAME_3));
   }
 
 }
