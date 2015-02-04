@@ -6,7 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.random.FastRandom;
+import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqBuilder;
+import com.spbsu.commons.seq.CharSeqChar;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.JSONTools;
 import org.apache.log4j.Logger;
@@ -451,18 +453,37 @@ public class YtMREnv extends RemoteMREnv {
 
   private class YtResponseProcessor implements Action<CharSequence> {
     final Action<CharSequence> processor;
-    boolean skip = false;
+    boolean ERROR = false;
+    final static String CODE_TOKEN = "    code";
+    final static String LOCATION_TOKEN = "    location";
+    final CharSeqBuilder msg = new CharSeqBuilder();
+    int code = 0;
     public YtResponseProcessor(final Action<CharSequence> processor) {
       this.processor = processor;
     }
     @Override
     public void invoke(CharSequence arg) {
       /* TODO: enhance error/warnings processing */
-      if (!skip && CharSeqTools.startsWith(arg, "Received an error while"))
-        skip = true;
-
-      if (!skip)
-        processor.invoke(arg);
+      msg.append(arg).append('\n');
+      if (CharSeqTools.startsWith(arg, CODE_TOKEN)) {
+        final CharSequence[] mess = CharSeqTools.split(arg, ' ');
+        code = Integer.decode(mess[16].toString());
+      }
+      /* Note: Yt: diagnose */
+      if (code != 0 && CharSeqTools.startsWith(arg, LOCATION_TOKEN)) {
+         switch (code){
+           case 500:
+           System.err.println("WARNING! Path doesn't exists");
+           break;
+           case 501:
+           System.err.println("WARNING! Path already exists");
+           break;
+           default:
+             for(final CharSequence out:CharSeqTools.split(msg.build(), '\n'))
+               processor.invoke(out);
+             throw new RuntimeException("YT: not warning error code\n");
+        }
+      }
     }
   }
 }
