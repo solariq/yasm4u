@@ -425,7 +425,11 @@ public class YtMREnv extends RemoteMREnv {
   }
 
   private String localPath(MRTableShard shard) {
-    return "/" + shard.path();
+    final String path = "/" + shard.path();
+    if (path.endsWith("/")) {
+      return path.substring(path.length() - 1);
+    }
+    return path;
   }
 
   private static class AppenderProcessor implements Processor<CharSequence> {
