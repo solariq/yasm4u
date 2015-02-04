@@ -63,13 +63,13 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--format");
     options.add("\"<has_subkey=true>\"yamr");
     options.add(localPath(shard));
-    executeCommand(options, new YtResponseProcessor(new MRRoutine(shard) {
+    executeCommand(options, new MRRoutine(shard) {
       @Override
       public void process(final MRRecord arg) {
         recordsCount[0]++;
         linesProcessor.process(arg);
       }
-    }), defaultErrorsProcessor, null);
+    }, defaultErrorsProcessor, null);
     return recordsCount[0];
   }
 
@@ -79,12 +79,12 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--format");
     options.add("\"<has_subkey=true>yamr\"");
     options.add(localPath(table) + "[:#100]");
-    executeCommand(options, new YtResponseProcessor(new MRRoutine(table) {
+    executeCommand(options, new MRRoutine(table) {
       @Override
       public void process(final MRRecord arg) {
         linesProcessor.process(arg);
       }
-    }), defaultErrorsProcessor, null);
+    }, defaultErrorsProcessor, null);
   }
 
 
@@ -103,7 +103,7 @@ public class YtMREnv extends RemoteMREnv {
     if (!prefix.isDirectory()) { // trying an easy way first
       optionEntity.add(path);
       final ConcatAction resultProcessor = new ConcatAction();
-      executeCommand(optionEntity, new YtResponseProcessor(resultProcessor), defaultErrorsProcessor, null);
+      executeCommand(optionEntity, resultProcessor, defaultErrorsProcessor, null);
 
       try {
         final JsonParser parser = JSONTools.parseJSON(resultProcessor.sequence());
@@ -119,12 +119,12 @@ public class YtMREnv extends RemoteMREnv {
       final String nodePath = path.substring(0, path.length() - 1);
       options.add(nodePath);
       //final ConcatAction builder = new ConcatAction(" ");
-      executeCommand(options, new YtResponseProcessor(new Action<CharSequence>(){
+      executeCommand(options, new Action<CharSequence>(){
         @Override
         public void invoke(CharSequence arg) {
           result.addAll(Arrays.asList(list(new MRPath(prefix.mount, prefix.path + arg, false))));
         }
-      }), defaultErrorsProcessor, null);
+      }, defaultErrorsProcessor, null);
     }
     if (result.isEmpty()) {
       updateState(prefix, new MRTableState(prefix.path,false, false, "0", 0, 0, 0, System.currentTimeMillis()));
@@ -133,38 +133,6 @@ public class YtMREnv extends RemoteMREnv {
     else
       return result.toArray(new MRPath[result.size()]);
   }
-
-  /*
-  private boolean isNode(final MRPath path) {
-    final List<String> options = defaultOptions();
-    options.add("get");
-    options.add(localPath(path) + "/@type");
-    final CharSequence[] response = new CharSequence[1];
-    executeCommand(options, new YtResponseProcessor(new Action<CharSequence>(){
-      @Override
-      public void invoke(CharSequence charSequence) {
-        response[0] = charSequence;
-      }
-    }), defaultErrorsProcessor, null);
-    if (!"map_node".equals(response[0]) && !"table".equals(response[0]))
-      throw new UnsupportedOperationException("Unknown node type: " + response[0]);
-    return "map_node".equals(response[0]);
-  }
-
-  private boolean isTableSorted(final MRPath path) {
-    final List<String> options = defaultOptions();
-    options.add("get");
-    options.add(localPath(path) + "/@sorted");
-    final CharSequence[] response = new CharSequence[1];
-    executeCommand(options, new YtResponseProcessor(new Action<CharSequence>(){
-      @Override
-      public void invoke(CharSequence charSequence) {
-        response[0] = charSequence;
-      }
-    }), defaultErrorsProcessor, null);
-    return Boolean.parseBoolean(response[0].toString());
-  }
-  */
 
   private void extractTableFromJson(final MRPath prefixPath, List<MRPath> result, JsonParser parser) throws IOException, ParseException {
     final String prefix = localPath(prefixPath);
@@ -266,7 +234,7 @@ public class YtMREnv extends RemoteMREnv {
     options.add("-r");
     options.add("table");
     options.add(localPath(shard));
-    executeCommand(options, new YtResponseProcessor(defaultOutputProcessor), defaultErrorsProcessor, null);
+    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     wipeState(shard);
   }
 
@@ -350,7 +318,7 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--dst");
     options.add(localPath(errorsPath));
 
-    executeCommand(options, defaultOutputProcessor, new YtResponseProcessor(defaultErrorsProcessor), null);
+    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     final int[] errorsCount = new int[]{0};
     errorsCount[0] += read(errorsPath, new ErrorsTableHandler(errorsPath, errorsHandler));
     delete(errorsPath);
@@ -366,12 +334,10 @@ public class YtMREnv extends RemoteMREnv {
     if (table.startsWith(homePrefix)) {
       mnt = MRPath.Mount.HOME;
       path = table.substring(homePrefix.length());
-    }
-    else if (table.startsWith("//tmp/")) {
+    } else if (table.startsWith("//tmp/")) {
       mnt = MRPath.Mount.TEMP;
       path = table.substring("//tmp/".length());
-    }
-    else {
+    } else {
       mnt = MRPath.Mount.ROOT;
       path = table;
     }
@@ -410,6 +376,14 @@ public class YtMREnv extends RemoteMREnv {
   @Override
   public String toString() {
     return "Yt://" + user + "@" + master + "/";
+  }
+
+  @Override
+  protected void executeCommand(List<String> options, Action<CharSequence> outputProcessor, Action<CharSequence> errorsProcessor, InputStream contents) {
+    if (runner instanceof SSHProcessRunner)
+      super.executeCommand(options, new YtResponseProcessor(outputProcessor), errorsProcessor, contents);
+    else
+      super.executeCommand(options, outputProcessor, new YtResponseProcessor(errorsProcessor), contents);
   }
 
   private static class ConcatAction implements Action<CharSequence> {
