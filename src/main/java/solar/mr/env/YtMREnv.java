@@ -63,13 +63,13 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--format");
     options.add("\"<has_subkey=true>\"yamr");
     options.add(localPath(shard));
-    executeCommand(options, new YtResponseProcessor(new Processor<CharSequence>() {
+    executeCommand(options, new Processor<CharSequence>() {
       @Override
       public void process(final CharSequence arg) {
         recordsCount[0]++;
         linesProcessor.process(arg);
       }
-    }), defaultErrorsProcessor, null);
+    }, defaultErrorsProcessor, null);
     return recordsCount[0];
   }
 
@@ -79,12 +79,12 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--format");
     options.add("\"<has_subkey=true>yamr\"");
     options.add(localPath(table) + "[:#10]");
-    executeCommand(options, new YtResponseProcessor(new Processor<CharSequence>() {
+    executeCommand(options, new Processor<CharSequence>() {
       @Override
       public void process(final CharSequence arg) {
         linesProcessor.process(arg);
       }
-    }), defaultErrorsProcessor, null);
+    }, defaultErrorsProcessor, null);
   }
 
   @Override
@@ -140,7 +140,7 @@ public class YtMREnv extends RemoteMREnv {
     final String path = localPath(new WhiteboardImpl.LazyTableShard(prefix, this));
     optionEntity.add(path + (prefix.endsWith("/")? "" : "/") + "@");
     final AppenderProcessor getBuilder = new AppenderProcessor();
-    executeCommand(optionEntity, new YtResponseProcessor(getBuilder), defaultErrorsProcessor, null);
+    executeCommand(optionEntity, getBuilder, defaultErrorsProcessor, null);
 
     final List<MRTableShard> result = new ArrayList<>();
     try {
@@ -160,7 +160,7 @@ public class YtMREnv extends RemoteMREnv {
     final String nodePath = path.substring(0, path.endsWith("/")?path.length() - 1: path.length());
     options.add(nodePath);
     final AppenderProcessor builder = new AppenderProcessor(" ");
-    executeCommand(options, new YtResponseProcessor(builder), defaultErrorsProcessor, null);
+    executeCommand(options, builder, defaultErrorsProcessor, null);
 
     final CharSequence[] listSeq = CharSeqTools.split(builder.trimmedSequence(), ' ');
 
@@ -259,7 +259,7 @@ public class YtMREnv extends RemoteMREnv {
     options.add("-r");
     options.add("table");
     options.add(localPath(shard));
-    executeCommand(options, new YtResponseProcessor(defaultOutputProcessor), defaultErrorsProcessor, null);
+    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     return resolve(shard.path());
   }
 
@@ -371,7 +371,7 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--dst");
     options.add(localPath(errorsShard));
 
-    executeCommand(options, defaultOutputProcessor, new YtResponseProcessor(defaultErrorsProcessor), null);
+    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     final int[] errorsCount = new int[]{0};
     errorsCount[0] += read(errorsShard, new MRRoutine(new String[]{errorsShardName}, null, null) {
       @Override
@@ -391,6 +391,14 @@ public class YtMREnv extends RemoteMREnv {
     delete(errorsShard);
 
     return errorsCount[0] == 0;
+  }
+
+  @Override
+  protected void executeCommand(List<String> options, Processor<CharSequence> outputProcessor, Processor<CharSequence> errorsProcessor, InputStream contents) {
+    if (runner instanceof SSHProcessRunner)
+      super.executeCommand(options, new YtResponseProcessor(outputProcessor), errorsProcessor, contents);
+    else
+      super.executeCommand(options, outputProcessor, new YtResponseProcessor(errorsProcessor), contents);
   }
 
   @Override
@@ -489,7 +497,7 @@ public class YtMREnv extends RemoteMREnv {
            default:
              for(final CharSequence out:CharSeqTools.split(msg.build(), '\n'))
                processor.process(out);
-             throw new RuntimeException("YT: not warning error code\n");
+             throw new RuntimeException("ERROR: not warning error code\n");
         }
       }
     }
