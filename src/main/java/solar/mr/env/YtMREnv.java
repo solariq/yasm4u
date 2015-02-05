@@ -363,6 +363,7 @@ public class YtMREnv extends RemoteMREnv {
       for (final MRTableShard d:out) {
         createTable(d);
       }
+      defaultErrorsProcessor.process("WARNING! No inputs exists map/reduce operation was skiped!");
       return true;
     }
 
@@ -510,7 +511,6 @@ public class YtMREnv extends RemoteMREnv {
       }
     }
     public abstract void reportError();
-
   }
 
   private static class LocalYtResponseProcessor extends YtResponseProcessor {
