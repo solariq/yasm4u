@@ -427,7 +427,7 @@ public class YtMREnv extends RemoteMREnv {
   private String localPath(MRTableShard shard) {
     final String path = "/" + shard.path();
     if (path.endsWith("/")) {
-      return path.substring(path.length() - 1);
+      return path.substring(0, path.length() - 1);
     }
     return path;
   }
