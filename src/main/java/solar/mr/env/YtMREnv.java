@@ -138,7 +138,7 @@ public class YtMREnv extends RemoteMREnv {
     final List<String> optionEntity = new ArrayList<>();
     optionEntity.addAll(defaultOptionsEntity);
     final String path = localPath(new WhiteboardImpl.LazyTableShard(prefix, this));
-    optionEntity.add(path + (prefix.endsWith("/")? "" : "/") + "@");
+    optionEntity.add(path + "/@");
     final AppenderProcessor getBuilder = new AppenderProcessor();
     executeCommand(optionEntity, getBuilder, defaultErrorsProcessor, null);
 
