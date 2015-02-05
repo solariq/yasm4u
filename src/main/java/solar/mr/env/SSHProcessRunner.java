@@ -153,6 +153,8 @@ public class SSHProcessRunner implements ProcessRunner {
           final StringBuilder finalCommand = new StringBuilder();
           finalCommand.append("perl ").append(runner).append(" run ").append(command).append(" 2>>/tmp/runner-errors-" + WhiteboardImpl.USER + ".txt\n");
           println(finalCommand.toString());
+          toProxy.append("export YT_ERROR_FORMAT=json;\n");
+          toProxy.flush();
           toProxy.append(finalCommand);
           toProxy.flush();
           final CharSequence[] split = CharSeqTools.split(fromProxy.readLine(), "\t");
