@@ -6,6 +6,7 @@ import com.spbsu.commons.seq.CharSeqTools;
 import solar.mr.MRTableState;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by inikifor on 09.12.14.
@@ -33,14 +34,14 @@ public class MRTableShardArrayConverter implements ConversionPack<MRTableState[]
 
     @Override
     public MRTableState[] convert(final CharSequence from) {
-      CharSequence[] parts = CharSeqTools.split(from, "@");
-      ArrayList<MRTableState> result = new ArrayList();
+      final CharSequence[] parts = CharSeqTools.split(from, "@");
+      final List<MRTableState> result = new ArrayList<>();
       for(CharSequence part: parts) {
         if (part.length() > 0) {
-          SINGLE_FROM.convert(part);
+          result.add(SINGLE_FROM.convert(part));
         }
       }
-      return result.toArray(new MRTableState[0]);
+      return result.toArray(new MRTableState[result.size()]);
     }
   }
 
