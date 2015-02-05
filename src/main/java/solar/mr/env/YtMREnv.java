@@ -1,5 +1,6 @@
 package solar.mr.env;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -441,11 +442,18 @@ public class YtMREnv extends RemoteMREnv {
         final JsonNode metaJSON = mapper.readTree(parser);
         /* TODO: more protective programming */
         int code = 0;
-        JsonNode errors = metaJSON.get("inner_errors");
-        while (errors.size() != 0) {
-          errors = errors.elements().next();
-          code = errors.get("code").asInt();
+        if (!metaJSON.has("message")) {
+          processor.invoke(arg);
+          return;
         }
+
+        JsonNode errors = metaJSON.get("inner_errors").get(0);
+        do {
+          code = errors.get("code").asInt();
+          errors = errors.elements().next().get(0);
+          if (errors == null)
+            break;
+        } while (errors.size() != 0);
         switch (code) {
           case 500:
             warn("WARNING! doesn't exists");
@@ -453,12 +461,24 @@ public class YtMREnv extends RemoteMREnv {
           case 501:
             warn("WARNING! already exists");
             break;
-          case 1: break;
+          case 1:
+            break;
           default: {
             reportError(arg);
             throw new RuntimeException("Yt exception");
           }
         }
+      } catch (JsonParseException e) {
+        if (arg.charAt(4) == '-'
+            && arg.charAt(10) == '-'
+            && arg.charAt(18) == '-') {
+          /* it's uid of new created table */
+          warn("Shold looks like uuid: " + arg);
+          return;
+        }
+        reportError("Msg: " + arg.toString() + " appears here by mistake!!!!");
+        reportError(e.getMessage());
+        processor.invoke(arg);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
