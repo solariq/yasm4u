@@ -5,6 +5,9 @@ import com.spbsu.commons.seq.CharSeqTools;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Stack;
 
 /**
  * User: solar
@@ -15,7 +18,6 @@ public class MRPath {
   public final Mount mount;
   public final String path;
   public final boolean sorted;
-  private boolean directory;
 
   public MRPath(Mount mount, String path, boolean sorted) {
     this.mount = mount;
@@ -38,35 +40,33 @@ public class MRPath {
   }
 
   public MRPath parent() {
-    return null;
+    if (isRoot())
+      return null;
+    if ("".equals(path))
+      return new MRPath(Mount.ROOT, "", false);
+    return new MRPath(mount, path.substring(0, path.lastIndexOf('/') + 1), false);
   }
 
   public MRPath[] parents() {
-    return new MRPath[0];
+    final MRPath[] parents = new MRPath[level()];
+    MRPath parent = parent();
+    for(int i = 0; i < parents.length; i++) {
+      parents[i] = parent;
+      parent = parent.parent();
+    }
+    return parents;
   }
 
   public int level() {
-    return 0;
+    return (mount == Mount.ROOT ? 0 : 1) + CharSeqTools.count(path, 0, path.length() - 1, '/');
   }
 
   public boolean isRoot() {
-    return false;
+    return "".equals(path) && mount == Mount.ROOT;
   }
 
   public boolean isDirectory() {
-    return directory;
-  }
-
-  public static MRPath create(MRPath parent, String path) {
-    return null;
-  }
-
-  public URI toURI() {
-    return null;
-  }
-
-  public static MRPath createFromURI(String uri) {
-    return null;
+    return isRoot() || path.endsWith("/");
   }
 
   public enum Mount {
@@ -117,5 +117,23 @@ public class MRPath {
     final String path = source.substring(mount.prefix.length());
 
     return new MRPath(mount, path, sorted);
+  }
+
+  public static MRPath create(MRPath parent, String path) {
+    if (!parent.isDirectory())
+      throw new IllegalArgumentException("Parent must be directory but [" + parent + "] is not.");
+    return new MRPath(parent.mount, parent.path + path, false);
+  }
+
+  public static MRPath createFromURI(String uriS) {
+    try {
+      final URI uri = new URI(uriS);
+      if ("mr".equals(uri.getScheme())) {
+        return create(uri.getPath() + "?" + uri.getQuery());
+      }
+      else throw new IllegalArgumentException("Unsupported protocol: " + uri.getScheme() + " in URI: [" + uriS + "]");
+    } catch (URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
   }
 }
