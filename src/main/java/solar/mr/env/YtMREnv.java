@@ -499,10 +499,10 @@ public class YtMREnv extends RemoteMREnv {
       if (code != 0 && CharSeqTools.startsWith(arg, LOCATION_TOKEN)) {
         switch (code) {
           case 500:
-            System.err.println("WARNING! Path doesn't exists");
+            warn("WARNING! Path doesn't exists");
             break;
           case 501:
-            System.err.println("WARNING! Path already exists");
+            warn("WARNING! Path already exists");
             break;
           default:
             reportError();
@@ -511,6 +511,7 @@ public class YtMREnv extends RemoteMREnv {
       }
     }
     public abstract void reportError();
+    public abstract void warn(final String msg);
   }
 
   private static class LocalYtResponseProcessor extends YtResponseProcessor {
@@ -526,6 +527,11 @@ public class YtMREnv extends RemoteMREnv {
       for (final CharSequence out : CharSeqTools.split(msg.build(), '\n')) {
         processor.process(out);
       }
+    }
+
+    @Override
+    public void warn(final String msg) {
+      processor.process(msg);
     }
   }
 
@@ -553,6 +559,11 @@ public class YtMREnv extends RemoteMREnv {
       for (final CharSequence out : CharSeqTools.split(msg.build(), '\n')) {
         errorProcessor.process(out);
       }
+    }
+
+    @Override
+    public void warn(final String msg) {
+      errorProcessor.process(msg);
     }
   }
 }
