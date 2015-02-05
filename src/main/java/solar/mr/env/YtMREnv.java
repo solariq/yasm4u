@@ -3,6 +3,7 @@ package solar.mr.env;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.random.FastRandom;
 import com.spbsu.commons.seq.*;
@@ -13,6 +14,7 @@ import com.spbsu.commons.util.cache.impl.FixedSizeCache;
 import solar.mr.*;
 import solar.mr.proc.impl.WhiteboardImpl;
 import solar.mr.routines.MRRecord;
+import sun.security.pkcs.ParsingException;
 
 import java.io.*;
 import java.text.ParseException;
@@ -469,15 +471,8 @@ public class YtMREnv extends RemoteMREnv {
     }
   }
 
-  protected abstract static class YtResponseProcessor extends AppenderProcessor {
+  protected abstract static class YtResponseProcessor implements Processor<CharSequence>{
     final Processor<CharSequence> processor;
-
-    /* in SSH environment we should split outpu*/
-    final static String ERROR_PROLOG = "Received an error while requesting";
-    boolean ERROR = false;
-    final static String CODE_TOKEN = "    code";
-    final static String LOCATION_TOKEN = "    location";
-    int code = 0;
 
     public YtResponseProcessor(final Processor<CharSequence> processor) {
       this.processor = processor;
@@ -485,32 +480,39 @@ public class YtMREnv extends RemoteMREnv {
 
     @Override
     public void process(CharSequence arg) {
-      super.process(arg);
-      if (CharSeqTools.startsWith(arg, CODE_TOKEN)) {
-        final CharSequence[] mess = CharSeqTools.split(arg, ' ');
-        code = Integer.decode(mess[16].toString());
-      }
-      /* Note: Yt: diagnose */
-      if (code != 0 && CharSeqTools.startsWith(arg, LOCATION_TOKEN)) {
+      try {
+        final JsonParser parser = JSONTools.parseJSON(arg);
+        final ObjectMapper mapper = new ObjectMapper();
+        final JsonNode metaJSON = mapper.readTree(parser);
+        /* TODO: more protective programming */
+        int code = 0;
+        JsonNode errors = metaJSON.get("inner_errors");
+        while (errors.size() != 0) {
+          errors = errors.elements().next();
+          code = errors.get("code").asInt();
+        }
         switch (code) {
           case 500:
-            warn("WARNING! Path doesn't exists");
+            warn("WARNING! doesn't exists");
             break;
           case 501:
-            warn("WARNING! Path already exists");
+            warn("WARNING! already exists");
             break;
-          default:
-            reportError();
-            throw new RuntimeException("ERROR: not warning error code\n");
+          case 1: break;
+          default: {
+            reportError(arg);
+            throw new RuntimeException("Yt exception");
+          }
         }
+      } catch (IOException e) {
+        throw new RuntimeException(e);
       }
     }
-    public abstract void reportError();
+    public abstract void reportError(final CharSequence msg);
     public abstract void warn(final String msg);
   }
 
   protected abstract static class YtMRResponseProcessor extends YtResponseProcessor {
-    final static int OPERATION_INITIALIZATION_POS = 14;
     boolean initialized = false;
 
     public YtMRResponseProcessor(final Processor<CharSequence> processor) {
@@ -519,11 +521,6 @@ public class YtMREnv extends RemoteMREnv {
 
     @Override
     public void process(CharSequence arg) {
-      final CharSequence[] parts = CharSeqTools.split(arg, ' ');
-      if (!initialized && CharSeqTools.equals(parts[OPERATION_INITIALIZATION_POS], "initializing")) {
-        initialized = true;
-        return;
-      }
       return;
     }
   }
@@ -533,16 +530,10 @@ public class YtMREnv extends RemoteMREnv {
 
     public LocalYtResponseProcessor(Processor<CharSequence> errorProcessor) {
       super(errorProcessor);
-
     }
 
     @Override
-    public void reportError() {
-      try {
-        CharSeqTools.processLines(new CharSeqReader(sequence()), processor);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+    public void reportError(final CharSequence msg) {
     }
 
     @Override
@@ -562,21 +553,15 @@ public class YtMREnv extends RemoteMREnv {
 
     @Override
     public void process(CharSequence arg) {
-      if (!errorMessagePrololog && !CharSeqTools.startsWith(arg, ERROR_PROLOG))
-        processor.process(arg);
-      else {
-        errorMessagePrololog = true;
+      if (CharSeqTools.indexOf(arg, "\t") == -1)
         super.process(arg);
-      }
+      else
+        processor.process(arg);
     }
 
     @Override
-    public void reportError() {
-      try {
-        CharSeqTools.processLines(new CharSeqReader(sequence()), errorProcessor);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+    public void reportError(final CharSequence errorMsg) {
+      errorProcessor.process(errorMsg);
     }
 
     @Override
