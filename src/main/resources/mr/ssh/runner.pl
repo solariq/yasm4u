@@ -31,6 +31,7 @@ elsif ($mode eq "run") {
     $SIG{'HUP'} = "IGNORE";
     my $file = `mktemp`;
     chomp($file);
+    $ENV{YT_ERROR_FORMAT}=json;
     `rm -rf $file`;
     `mkdir -p $file`;
     print STDOUT "$$\t$file\n";
