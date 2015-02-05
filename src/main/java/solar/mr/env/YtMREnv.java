@@ -6,9 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.random.FastRandom;
-import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqBuilder;
-import com.spbsu.commons.seq.CharSeqChar;
+import com.spbsu.commons.seq.CharSeqReader;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.JSONTools;
 import org.apache.log4j.Logger;
@@ -18,8 +17,9 @@ import solar.mr.routines.MRRecord;
 
 import java.io.*;
 import java.text.ParseException;
-import java.util.*;
-import java.util.concurrent.Exchanger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * User: solar
@@ -427,8 +427,7 @@ public class YtMREnv extends RemoteMREnv {
     }
   }
 
-
-  private static abstract class YtResponseProcessor implements Action<CharSequence> {
+  protected abstract static class YtResponseProcessor extends ConcatAction {
     final Action<CharSequence> processor;
     /* in SSH environment we should split outpu*/
     final static String ERROR_PROLOG = "Received an error while requesting";
@@ -436,14 +435,14 @@ public class YtMREnv extends RemoteMREnv {
     final static String CODE_TOKEN = "    code";
     final static String LOCATION_TOKEN = "    location";
     int code = 0;
-    final CharSeqBuilder msg = new CharSeqBuilder();
+
     public YtResponseProcessor(final Action<CharSequence> processor) {
       this.processor = processor;
     }
 
     @Override
     public void invoke(CharSequence arg) {
-      msg.append(arg).append('\n');
+      super.invoke(arg);
       if (CharSeqTools.startsWith(arg, CODE_TOKEN)) {
         final CharSequence[] mess = CharSeqTools.split(arg, ' ');
         code = Integer.decode(mess[16].toString());
@@ -467,6 +466,25 @@ public class YtMREnv extends RemoteMREnv {
     public abstract void warn(final String msg);
   }
 
+  protected abstract static class YtMRResponseProcessor extends YtResponseProcessor {
+    final static int OPERATION_INITIALIZATION_POS = 14;
+    boolean initialized = false;
+
+    public YtMRResponseProcessor(final Action<CharSequence> processor) {
+      super(processor);
+    }
+
+    @Override
+    public void invoke(CharSequence arg) {
+      final CharSequence[] parts = CharSeqTools.split(arg, ' ');
+      if (!initialized && CharSeqTools.equals(parts[OPERATION_INITIALIZATION_POS], "initializing")) {
+        initialized = true;
+        return;
+      }
+      return;
+    }
+  }
+
   private static class LocalYtResponseProcessor extends YtResponseProcessor {
     boolean errorMessagePrololog = false;
 
@@ -476,14 +494,16 @@ public class YtMREnv extends RemoteMREnv {
 
     @Override
     public void reportError() {
-      for (final CharSequence out : CharSeqTools.split(msg.build(), '\n')) {
-        processor.invoke(out);
+      try {
+        CharSeqTools.processLines(new CharSeqReader(sequence()), processor);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
       }
     }
 
     @Override
     public void warn(final String msg) {
-      processor.process(msg);
+      processor.invoke(msg);
     }
   }
 
@@ -508,14 +528,16 @@ public class YtMREnv extends RemoteMREnv {
 
     @Override
     public void reportError() {
-      for (final CharSequence out : CharSeqTools.split(msg.build(), '\n')) {
-        errorProcessor.invoke(out);
+      try {
+        CharSeqTools.processLines(new CharSeqReader(sequence()), errorProcessor);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
       }
     }
 
     @Override
     public void warn(final String msg) {
-      errorProcessor.process(msg);
+      errorProcessor.invoke(msg);
     }
   }
 }
