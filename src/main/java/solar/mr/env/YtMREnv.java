@@ -372,7 +372,7 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--dst");
     options.add(localPath(errorsShard));
 
-    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
+    executeMapOrReduceCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     final int[] errorsCount = new int[]{0};
     errorsCount[0] += read(errorsShard, new MRRoutine(new String[]{errorsShardName}, null, null) {
       @Override
@@ -394,8 +394,15 @@ public class YtMREnv extends RemoteMREnv {
     return errorsCount[0] == 0;
   }
 
+  private void executeMapOrReduceCommand(final List<String> options, final Processor<CharSequence> outputProcessor, final Processor<CharSequence> errorsProcessor, final InputStream contents) {
+    if (runner instanceof SSHProcessRunner)
+      super.executeCommand(options, new SshMRYtResponseProcessor(outputProcessor, errorsProcessor), errorsProcessor, contents);
+    else
+      super.executeCommand(options, outputProcessor, new LocalMRYtResponseProcessor(errorsProcessor), contents);
+  }
+
   @Override
-  protected void executeCommand(List<String> options, Processor<CharSequence> outputProcessor, Processor<CharSequence> errorsProcessor, InputStream contents) {
+  protected void executeCommand(final List<String> options, final Processor<CharSequence> outputProcessor, final Processor<CharSequence> errorsProcessor, final InputStream contents) {
     if (runner instanceof SSHProcessRunner)
       super.executeCommand(options, new SshYtResponseProcessor(outputProcessor, errorsProcessor), errorsProcessor, contents);
     else
@@ -533,15 +540,121 @@ public class YtMREnv extends RemoteMREnv {
   }
 
   protected abstract static class YtMRResponseProcessor extends YtResponseProcessor {
-    boolean initialized = false;
+    enum OperationStatus {
+      NONE,
+      INITIALIZING,
+      FAILED,
+      COMPETED,
+      PRINT_HINT
+    }
+    private OperationStatus status = OperationStatus.NONE;
+    private CharSequence guid = null;
+    private final static String TOK_OPERATION = "operation";
+    private final static String TOK_OP_INITIALIZING = "initializing";
+    private final static String TOK_OP_COMPLETED = "completed";
+    private final static String TOK_HINT = "INFO";
 
     public YtMRResponseProcessor(final Processor<CharSequence> processor) {
       super(processor);
     }
 
+    private CharSequence eatDate(final CharSequence arg) {
+      if (CharSeqTools.isNumeric(arg.subSequence(0,3)) /* year */
+          && arg.charAt(4) == '-'
+          && CharSeqTools.isNumeric(arg.subSequence(5, 6)) /* month */
+          && arg.charAt(7) == '-'
+          && CharSeqTools.isNumeric(arg.subSequence(8,9)) /* day */)
+        return arg.subSequence(10,arg.length());
+      else
+        throw new RuntimeException("Expected date");
+    }
+
+    private CharSequence eatWhitespaces(final CharSequence arg) {
+      if (arg.charAt(0) != ' ')
+        return arg;
+      return eatWhitespaces(arg.subSequence(1, arg.length()));
+    }
+
+    private CharSequence eatTime(final CharSequence arg, char separator) {
+      if (CharSeqTools.isNumeric(arg.subSequence(0,1)) /* hours */
+          && arg.charAt(2) == ':'
+          && CharSeqTools.isNumeric(arg.subSequence(3,4)) /* minutes */
+          && arg.charAt(5) == ':'
+          && CharSeqTools.isNumeric(arg.subSequence(6,7))
+          && arg.charAt(8) == separator
+          && CharSeqTools.isNumeric(arg.subSequence(9,11)))
+        return arg.subSequence(12, arg.length());
+      else
+        throw new RuntimeException("Expected time hh:MM:ss " + separator + " zzz");
+    }
+
+    private CharSequence eatPeriod(final CharSequence arg) {
+      if (arg.charAt(0) == '(') {
+        int index = 3;
+        while (CharSeqTools.isNumeric(arg.subSequence(2, index))) {
+          index++;
+        }
+        if (CharSeqTools.equals(arg.subSequence(index, index + 4),"min)"))
+          return arg.subSequence(index + 5, arg.length());
+      }
+      throw new RuntimeException("Expected period \"( xx min)\"");
+    }
+
+    private CharSequence eatToken(final CharSequence arg, final String token) {
+      if (!CharSeqTools.startsWith(arg, token)
+          || CharSeqTools.isAlpha(arg.subSequence(token.length(), token.length() + 1))) {
+        throw new RuntimeException("expected token: " + token);
+      }
+      return arg.subSequence(token.length() + 1, arg.length());
+    }
+
+    private CharSequence initGuid(final CharSequence arg) {
+      CharSequence guid = arg.subSequence(0,33);
+      if (this.guid != null && !CharSeqTools.equals(guid, this.guid))
+        throw new RuntimeException("something strange with guid");
+      return arg.subSequence(34, arg.length());
+    }
+
+    private void checkOperationStatus(final CharSequence arg) {
+      if (CharSeqTools.equals(arg, TOK_OP_INITIALIZING) && status == OperationStatus.NONE) {
+        status = OperationStatus.INITIALIZING;
+        return;
+      }
+      if (CharSeqTools.equals(arg, TOK_OP_COMPLETED) && status == OperationStatus.INITIALIZING){
+        status = OperationStatus.COMPETED;
+        return;
+      }
+      throw new RuntimeException("Unknown status: " + arg);
+    }
+
+    private void hint(final CharSequence arg) {
+      processor.process(eatWhitespaces(eatToken(arg, TOK_HINT)));
+      status = OperationStatus.PRINT_HINT;
+    }
+
     @Override
     public void process(CharSequence arg) {
-      return;
+      switch (status) {
+        case NONE:
+        case INITIALIZING:
+          final CharSequence raw0 = eatWhitespaces(eatPeriod(eatWhitespaces(eatTime(eatWhitespaces(eatDate(arg)), '.'))));
+          final CharSequence raw1 = eatWhitespaces(eatToken(raw0, TOK_OPERATION));
+          final CharSequence raw2 = eatWhitespaces(initGuid(raw1));
+          if (raw2.charAt(0) == ':') /* we don't need the rest of the mess at runtime */
+            return;
+          checkOperationStatus(raw2);
+          break;
+        case COMPETED:
+          hint(eatWhitespaces(eatTime(eatWhitespaces(eatDate(arg)), ',')));
+          break;
+        case PRINT_HINT:
+          processor.process(arg);
+          status = OperationStatus.COMPETED;
+          break;
+        default:
+          throw new RuntimeException("Please add case!!!");
+      }
+      /* here should be hint processing */
     }
   }
 
@@ -587,6 +700,40 @@ public class YtMREnv extends RemoteMREnv {
     @Override
     public void warn(final String msg) {
       errorProcessor.process(msg);
+    }
+  }
+
+  protected static class LocalMRYtResponseProcessor extends YtMRResponseProcessor{
+    public LocalMRYtResponseProcessor(Processor<CharSequence> processor) {
+      super(processor);
+    }
+
+    @Override
+    public void reportError(CharSequence msg) {
+
+    }
+
+    @Override
+    public void warn(String msg) {
+
+    }
+  }
+
+  protected static class SshMRYtResponseProcessor extends YtMRResponseProcessor{
+    final Processor<CharSequence> errorProcessor;
+    public SshMRYtResponseProcessor(final Processor<CharSequence> processor, final Processor<CharSequence> errorProcessor) {
+      super(processor);
+      this.errorProcessor = errorProcessor;
+    }
+
+    @Override
+    public void reportError(CharSequence msg) {
+
+    }
+
+    @Override
+    public void warn(String msg) {
+
     }
   }
 }
