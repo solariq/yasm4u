@@ -5,10 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.random.FastRandom;
-import com.spbsu.commons.seq.CharSeq;
-import com.spbsu.commons.seq.CharSeqBuilder;
-import com.spbsu.commons.seq.CharSeqChar;
-import com.spbsu.commons.seq.CharSeqTools;
+import com.spbsu.commons.seq.*;
 import com.spbsu.commons.util.ArrayTools;
 import com.spbsu.commons.util.JSONTools;
 import com.spbsu.commons.util.cache.CacheStrategy;
@@ -472,8 +469,7 @@ public class YtMREnv extends RemoteMREnv {
     }
   }
 
-  /* TODO: a lot of mess around working in two differnet environments */
-  protected abstract static class YtResponseProcessor implements Processor<CharSequence> {
+  protected abstract static class YtResponseProcessor extends AppenderProcessor {
     final Processor<CharSequence> processor;
 
     /* in SSH environment we should split outpu*/
@@ -482,7 +478,6 @@ public class YtMREnv extends RemoteMREnv {
     final static String CODE_TOKEN = "    code";
     final static String LOCATION_TOKEN = "    location";
     int code = 0;
-    final CharSeqBuilder msg = new CharSeqBuilder();
 
     public YtResponseProcessor(final Processor<CharSequence> processor) {
       this.processor = processor;
@@ -490,7 +485,7 @@ public class YtMREnv extends RemoteMREnv {
 
     @Override
     public void process(CharSequence arg) {
-      msg.append(arg).append('\n');
+      super.process(arg);
       if (CharSeqTools.startsWith(arg, CODE_TOKEN)) {
         final CharSequence[] mess = CharSeqTools.split(arg, ' ');
         code = Integer.decode(mess[16].toString());
@@ -514,6 +509,25 @@ public class YtMREnv extends RemoteMREnv {
     public abstract void warn(final String msg);
   }
 
+  protected abstract static class YtMRResponseProcessor extends YtResponseProcessor {
+    final static int OPERATION_INITIALIZATION_POS = 14;
+    boolean initialized = false;
+
+    public YtMRResponseProcessor(final Processor<CharSequence> processor) {
+      super(processor);
+    }
+
+    @Override
+    public void process(CharSequence arg) {
+      final CharSequence[] parts = CharSeqTools.split(arg, ' ');
+      if (!initialized && CharSeqTools.equals(parts[OPERATION_INITIALIZATION_POS], "initializing")) {
+        initialized = true;
+        return;
+      }
+      return;
+    }
+  }
+
   private static class LocalYtResponseProcessor extends YtResponseProcessor {
     boolean errorMessagePrololog = false;
 
@@ -524,8 +538,10 @@ public class YtMREnv extends RemoteMREnv {
 
     @Override
     public void reportError() {
-      for (final CharSequence out : CharSeqTools.split(msg.build(), '\n')) {
-        processor.process(out);
+      try {
+        CharSeqTools.processLines(new CharSeqReader(sequence()), processor);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
       }
     }
 
@@ -556,8 +572,10 @@ public class YtMREnv extends RemoteMREnv {
 
     @Override
     public void reportError() {
-      for (final CharSequence out : CharSeqTools.split(msg.build(), '\n')) {
-        errorProcessor.process(out);
+      try {
+        CharSeqTools.processLines(new CharSeqReader(sequence()), errorProcessor);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
       }
     }
 
