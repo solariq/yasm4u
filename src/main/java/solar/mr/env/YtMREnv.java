@@ -573,7 +573,9 @@ public class YtMREnv extends RemoteMREnv {
         status = OperationStatus.INITIALIZING;
         return;
       }
-      if (CharSeqTools.equals(arg, TOK_OP_COMPLETED) && status == OperationStatus.INITIALIZING){
+      if (CharSeqTools.equals(arg, TOK_OP_COMPLETED)
+          && (status == OperationStatus.INITIALIZING
+          || status == OperationStatus.PRINT_HINT)){
         status = OperationStatus.COMPETED;
         return;
       }
