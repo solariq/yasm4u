@@ -396,9 +396,9 @@ public class YtMREnv extends RemoteMREnv {
   @Override
   protected void executeCommand(List<String> options, Processor<CharSequence> outputProcessor, Processor<CharSequence> errorsProcessor, InputStream contents) {
     if (runner instanceof SSHProcessRunner)
-      super.executeCommand(options, new YtResponseProcessor(outputProcessor), errorsProcessor, contents);
+      super.executeCommand(options, new SshYtResponseProcessor(outputProcessor, errorsProcessor), errorsProcessor, contents);
     else
-      super.executeCommand(options, outputProcessor, new YtResponseProcessor(errorsProcessor), contents);
+      super.executeCommand(options, outputProcessor, new LocalYtResponseProcessor(errorsProcessor), contents);
   }
 
   @Override
@@ -471,19 +471,24 @@ public class YtMREnv extends RemoteMREnv {
     }
   }
 
-  protected static class YtResponseProcessor implements Processor<CharSequence> {
+  /* TODO: a lot of mess around working in two differnet environments */
+  protected abstract static class YtResponseProcessor implements Processor<CharSequence> {
     final Processor<CharSequence> processor;
+
+    /* in SSH environment we should split outpu*/
+    final static String ERROR_PROLOG = "Received an error while requesting";
     boolean ERROR = false;
     final static String CODE_TOKEN = "    code";
     final static String LOCATION_TOKEN = "    location";
-    final CharSeqBuilder msg = new CharSeqBuilder();
     int code = 0;
+    final CharSeqBuilder msg = new CharSeqBuilder();
+
     public YtResponseProcessor(final Processor<CharSequence> processor) {
       this.processor = processor;
     }
+
     @Override
     public void process(CharSequence arg) {
-      /* TODO: enhance error/warnings processing */
       msg.append(arg).append('\n');
       if (CharSeqTools.startsWith(arg, CODE_TOKEN)) {
         final CharSequence[] mess = CharSeqTools.split(arg, ' ');
@@ -491,18 +496,62 @@ public class YtMREnv extends RemoteMREnv {
       }
       /* Note: Yt: diagnose */
       if (code != 0 && CharSeqTools.startsWith(arg, LOCATION_TOKEN)) {
-         switch (code){
-           case 500:
-           System.err.println("WARNING! Path doesn't exists");
-           break;
-           case 501:
-           System.err.println("WARNING! Path already exists");
-           break;
-           default:
-             for(final CharSequence out:CharSeqTools.split(msg.build(), '\n'))
-               processor.process(out);
-             throw new RuntimeException("ERROR: not warning error code\n");
+        switch (code) {
+          case 500:
+            System.err.println("WARNING! Path doesn't exists");
+            break;
+          case 501:
+            System.err.println("WARNING! Path already exists");
+            break;
+          default:
+            reportError();
+            throw new RuntimeException("ERROR: not warning error code\n");
         }
+      }
+    }
+    public abstract void reportError();
+
+  }
+
+  private static class LocalYtResponseProcessor extends YtResponseProcessor {
+    boolean errorMessagePrololog = false;
+
+    public LocalYtResponseProcessor(Processor<CharSequence> errorProcessor) {
+      super(errorProcessor);
+
+    }
+
+    @Override
+    public void reportError() {
+      for (final CharSequence out : CharSeqTools.split(msg.build(), '\n')) {
+        processor.process(out);
+      }
+    }
+  }
+
+  private static class SshYtResponseProcessor extends YtResponseProcessor {
+    final Processor<CharSequence> errorProcessor;
+    boolean errorMessagePrololog = false;
+
+    public SshYtResponseProcessor(Processor<CharSequence> processor, Processor<CharSequence> errorProcessor) {
+      super(processor);
+      this.errorProcessor = errorProcessor;
+    }
+
+    @Override
+    public void process(CharSequence arg) {
+      if (!errorMessagePrololog && !CharSeqTools.startsWith(arg, ERROR_PROLOG))
+        processor.process(arg);
+      else {
+        errorMessagePrololog = true;
+        super.process(arg);
+      }
+    }
+
+    @Override
+    public void reportError() {
+      for (final CharSequence out : CharSeqTools.split(msg.build(), '\n')) {
+        errorProcessor.process(out);
       }
     }
   }
