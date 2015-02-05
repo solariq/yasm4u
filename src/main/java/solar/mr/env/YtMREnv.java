@@ -343,6 +343,7 @@ public class YtMREnv extends RemoteMREnv {
     }
 
     return new MRPath(mnt, path, sorted);
+
   }
 
   @Override
@@ -380,11 +381,12 @@ public class YtMREnv extends RemoteMREnv {
 
 
   @Override
-  protected void executeCommand(List<String> options, Action<CharSequence> outputProcessor, Action<CharSequence> errorsProcessor, InputStream contents) {
+  protected void executeCommand(List<String> options, Action<CharSequence> outputProcessor,
+                                Action<CharSequence> errorsProcessor, InputStream contents) {
     if (runner instanceof SSHProcessRunner)
-      super.executeCommand(options, new YtResponseProcessor(outputProcessor), errorsProcessor, contents);
+      super.executeCommand(options, new SshYtResponseProcessor(outputProcessor, errorsProcessor), errorsProcessor, contents);
     else
-      super.executeCommand(options, outputProcessor, new YtResponseProcessor(errorsProcessor), contents);
+      super.executeCommand(options, outputProcessor, new LocalYtResponseProcessor(errorsProcessor), contents);
   }
 
   private static class ConcatAction implements Action<CharSequence> {
@@ -426,19 +428,22 @@ public class YtMREnv extends RemoteMREnv {
     }
   }
 
-  private class YtResponseProcessor implements Action<CharSequence> {
+
+  private static abstract class YtResponseProcessor implements Action<CharSequence> {
     final Action<CharSequence> processor;
+    /* in SSH environment we should split outpu*/
+    final static String ERROR_PROLOG = "Received an error while requesting";
     boolean ERROR = false;
     final static String CODE_TOKEN = "    code";
     final static String LOCATION_TOKEN = "    location";
-    final CharSeqBuilder msg = new CharSeqBuilder();
     int code = 0;
+    final CharSeqBuilder msg = new CharSeqBuilder();
     public YtResponseProcessor(final Action<CharSequence> processor) {
       this.processor = processor;
     }
+
     @Override
     public void invoke(CharSequence arg) {
-      /* TODO: enhance error/warnings processing */
       msg.append(arg).append('\n');
       if (CharSeqTools.startsWith(arg, CODE_TOKEN)) {
         final CharSequence[] mess = CharSeqTools.split(arg, ' ');
@@ -446,18 +451,60 @@ public class YtMREnv extends RemoteMREnv {
       }
       /* Note: Yt: diagnose */
       if (code != 0 && CharSeqTools.startsWith(arg, LOCATION_TOKEN)) {
-         switch (code){
-           case 500:
-           System.err.println("WARNING! Path doesn't exists");
-           break;
-           case 501:
-           System.err.println("WARNING! Path already exists");
-           break;
-           default:
-             for(final CharSequence out:CharSeqTools.split(msg.build(), '\n'))
-               processor.invoke(out);
-             throw new RuntimeException("YT: not warning error code\n");
+        switch (code) {
+          case 500:
+            System.err.println("WARNING! Path doesn't exists");
+            break;
+          case 501:
+            System.err.println("WARNING! Path already exists");
+            break;
+          default:
+            reportError();
+            throw new RuntimeException("ERROR: not warning error code\n");
         }
+      }
+    }
+    public abstract void reportError();
+  }
+
+  private static class LocalYtResponseProcessor extends YtResponseProcessor {
+    boolean errorMessagePrololog = false;
+
+    public LocalYtResponseProcessor(Action<CharSequence> errorProcessor) {
+      super(errorProcessor);
+    }
+
+    @Override
+    public void reportError() {
+      for (final CharSequence out : CharSeqTools.split(msg.build(), '\n')) {
+        processor.invoke(out);
+      }
+    }
+  }
+
+  private static class SshYtResponseProcessor extends YtResponseProcessor {
+    final Action<CharSequence> errorProcessor;
+    boolean errorMessagePrololog = false;
+
+    public SshYtResponseProcessor(Action<CharSequence> processor, Action<CharSequence> errorProcessor) {
+      super(processor);
+      this.errorProcessor = errorProcessor;
+    }
+
+    @Override
+    public void invoke(CharSequence arg) {
+      if (!errorMessagePrololog && !CharSeqTools.startsWith(arg, ERROR_PROLOG))
+        processor.invoke(arg);
+      else {
+        errorMessagePrololog = true;
+        super.invoke(arg);
+      }
+    }
+
+    @Override
+    public void reportError() {
+      for (final CharSequence out : CharSeqTools.split(msg.build(), '\n')) {
+        errorProcessor.invoke(out);
       }
     }
   }
