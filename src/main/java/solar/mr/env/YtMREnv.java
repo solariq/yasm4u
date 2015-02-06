@@ -505,7 +505,10 @@ public class YtMREnv extends RemoteMREnv {
     private CharSequence guid = null;
     private final static String TOK_OPERATION = "operation";
     private final static String TOK_OP_INITIALIZING = "initializing";
+    private final static String TOK_OP_COMPLETING = "completing";
     private final static String TOK_OP_COMPLETED = "completed";
+    private final static String TOK_OP_PREPARING = "preparing";
+
     private final static String TOK_HINT = "INFO";
 
     public YtMRResponseProcessor(final Action<CharSequence> processor) {
@@ -587,6 +590,7 @@ public class YtMREnv extends RemoteMREnv {
         status = OperationStatus.COMPETED;
         return;
       }
+      reportError("current status: " + status);
       throw new RuntimeException("Unknown status: " + arg);
     }
 
