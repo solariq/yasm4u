@@ -181,7 +181,7 @@ public class YtMREnv extends RemoteMREnv {
       options.add("--dst");
       options.add("\"<append=true>\"" + localPath(to));
       //options.add("--mode sorted");
-      executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
+      executeMapOrReduceCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     }
     wipeState(to);
   }
