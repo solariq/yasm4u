@@ -670,7 +670,10 @@ public class YtMREnv extends RemoteMREnv {
           final CharSequence raw0 = eatWhitespaces(eatPeriod(eatWhitespaces(eatTime(eatWhitespaces(eatDate(arg)), '.'))));
           final CharSequence raw1 = eatWhitespaces(eatToken(raw0, TOK_OPERATION));
           final CharSequence raw2 = eatWhitespaces(initGuid(raw1));
-          if (raw2.charAt(0) == ':') /* we don't need the rest of the mess at runtime */
+          /* we don't need the rest of the mess at runtime
+           * in some cases Yt drops : before running=... failed=...
+           */
+          if (raw2.charAt(0) == ':' || CharSeqTools.startsWith(eatWhitespaces(raw2), "running="))
             return;
           checkOperationStatus(raw2);
           break;
