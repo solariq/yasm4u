@@ -565,8 +565,10 @@ public class YtMREnv extends RemoteMREnv {
           && arg.charAt(7) == '-'
           && CharSeqTools.isNumeric(arg.subSequence(8,9)) /* day */)
         return arg.subSequence(10,arg.length());
-      else
+      else {
+        reportError(arg);
         throw new RuntimeException("Expected date");
+      }
     }
 
     private CharSequence eatWhitespaces(final CharSequence arg) {
@@ -584,8 +586,10 @@ public class YtMREnv extends RemoteMREnv {
           && arg.charAt(8) == separator
           && CharSeqTools.isNumeric(arg.subSequence(9,11)))
         return arg.subSequence(12, arg.length());
-      else
+      else {
+        reportError(arg);
         throw new RuntimeException("Expected time hh:MM:ss " + separator + " zzz");
+      }
     }
 
     private CharSequence eatPeriod(final CharSequence arg) {
@@ -597,12 +601,14 @@ public class YtMREnv extends RemoteMREnv {
         if (CharSeqTools.equals(arg.subSequence(index, index + 4),"min)"))
           return arg.subSequence(index + 5, arg.length());
       }
+      reportError(arg);
       throw new RuntimeException("Expected period \"( xx min)\"");
     }
 
     private CharSequence eatToken(final CharSequence arg, final String token) {
       if (!CharSeqTools.startsWith(arg, token)
           || CharSeqTools.isAlpha(arg.subSequence(token.length(), token.length() + 1))) {
+        reportError(arg);
         throw new RuntimeException("expected token: " + token);
       }
       return arg.subSequence(token.length() + 1, arg.length());
@@ -610,8 +616,10 @@ public class YtMREnv extends RemoteMREnv {
 
     private CharSequence initGuid(final CharSequence arg) {
       CharSequence guid = arg.subSequence(0,33);
-      if (this.guid != null && !CharSeqTools.equals(guid, this.guid))
+      if (this.guid != null && !CharSeqTools.equals(guid, this.guid)) {
+        reportError(arg);
         throw new RuntimeException("something strange with guid");
+      }
       return arg.subSequence(34, arg.length());
     }
 
@@ -654,6 +662,7 @@ public class YtMREnv extends RemoteMREnv {
           status = OperationStatus.COMPETED;
           break;
         default:
+          reportError(arg);
           throw new RuntimeException("Please add case!!!");
       }
       /* here should be hint processing */
@@ -661,14 +670,13 @@ public class YtMREnv extends RemoteMREnv {
   }
 
   private static class LocalYtResponseProcessor extends YtResponseProcessor {
-    boolean errorMessagePrololog = false;
-
     public LocalYtResponseProcessor(Processor<CharSequence> errorProcessor) {
       super(errorProcessor);
     }
 
     @Override
     public void reportError(final CharSequence msg) {
+      processor.process(msg);
     }
 
     @Override
@@ -679,7 +687,6 @@ public class YtMREnv extends RemoteMREnv {
 
   private static class SshYtResponseProcessor extends YtResponseProcessor {
     final Processor<CharSequence> errorProcessor;
-    boolean errorMessagePrololog = false;
 
     public SshYtResponseProcessor(Processor<CharSequence> processor, Processor<CharSequence> errorProcessor) {
       super(processor);
@@ -712,12 +719,12 @@ public class YtMREnv extends RemoteMREnv {
 
     @Override
     public void reportError(CharSequence msg) {
-
+      processor.process(msg);
     }
 
     @Override
     public void warn(String msg) {
-
+      processor.process(msg);
     }
   }
 
@@ -730,12 +737,12 @@ public class YtMREnv extends RemoteMREnv {
 
     @Override
     public void reportError(CharSequence msg) {
-
+      errorProcessor.process(msg);
     }
 
     @Override
     public void warn(String msg) {
-
+      errorProcessor.process(msg);
     }
   }
 }
