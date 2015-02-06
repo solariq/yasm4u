@@ -294,7 +294,7 @@ public class YtMREnv extends RemoteMREnv {
         + "}};\"merge_job_io\" = {\"table_writer\" = {\"max_row_weight\" = "
         + MAX_ROW_WEIGTH
         + "}}}'");
-    executeCommand(options, defaultOutputProcessor , defaultErrorsProcessor , null);
+    executeMapOrReduceCommand(options, defaultOutputProcessor , defaultErrorsProcessor , null);
     invoke(new ShardAlter(newShard, ShardAlter.AlterType.CHANGED));
     return newShard;
   }
