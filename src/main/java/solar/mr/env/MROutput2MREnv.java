@@ -3,6 +3,8 @@ package solar.mr.env;
 import com.spbsu.commons.io.QueueReader;
 import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqAdapter;
+import com.spbsu.commons.seq.CharSeqChar;
+import com.spbsu.commons.seq.CharSeqComposite;
 import solar.mr.MREnv;
 import solar.mr.MRErrorsHandler;
 import solar.mr.proc.impl.MRPath;
@@ -76,7 +78,7 @@ public class MROutput2MREnv extends MROutputBase {
 
   @Override
   protected void push(int tableNo, CharSequence record) {
-    queues[tableNo].add(new CharSeqAdapter(record));
+    queues[tableNo].add(new CharSeqComposite(record, new CharSeqChar('\n')));
   }
 
   public void interrupt() {

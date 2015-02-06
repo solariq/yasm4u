@@ -40,14 +40,14 @@ public final class MultiReduceTest extends BaseMRTest {
   }
 
   @MRProcessClass(goal = {
-      SCHEMA + OUT_TABLE_NAME_1
+      OUT_TABLE_NAME_1
   })
   public static final class Reduce2in1 {
 
     public Reduce2in1(State state) {
     }
 
-    @MRReduceMethod(input = SCHEMA + IN_TABLE_NAME_1, output = SCHEMA + OUT_TABLE_NAME_1)
+    @MRReduceMethod(input = IN_TABLE_NAME_1, output = OUT_TABLE_NAME_1)
     public void reduce1(final String key, final Iterator<MRRecord> reduce, final MROutput output) {
       while(reduce.hasNext()) {
         MRRecord record = reduce.next();
@@ -55,7 +55,7 @@ public final class MultiReduceTest extends BaseMRTest {
       }
     }
 
-    @MRReduceMethod(input = SCHEMA + IN_TABLE_NAME_2, output = SCHEMA + OUT_TABLE_NAME_1)
+    @MRReduceMethod(input = IN_TABLE_NAME_2, output = OUT_TABLE_NAME_1)
     public void reduce2(final String key, final Iterator<MRRecord> reduce, final MROutput output) {
       while(reduce.hasNext()) {
         MRRecord record = reduce.next();
@@ -79,8 +79,8 @@ public final class MultiReduceTest extends BaseMRTest {
   }
 
   @MRProcessClass(goal = {
-      SCHEMA + OUT_TABLE_NAME_1,
-      SCHEMA + OUT_TABLE_NAME_2
+      OUT_TABLE_NAME_1,
+      OUT_TABLE_NAME_2
   })
   public static final class Reduce2in2 {
 
@@ -89,12 +89,12 @@ public final class MultiReduceTest extends BaseMRTest {
 
     @MRReduceMethod(
         input = {
-            SCHEMA + IN_TABLE_NAME_1,
-            SCHEMA + IN_TABLE_NAME_2
+            IN_TABLE_NAME_1,
+            IN_TABLE_NAME_2
         },
         output = {
-            SCHEMA + OUT_TABLE_NAME_1,
-            SCHEMA + OUT_TABLE_NAME_2
+            OUT_TABLE_NAME_1,
+            OUT_TABLE_NAME_2
         })
     public void reduce(final String key, final Iterator<MRRecord> reduce, final MROutput output) {
       while(reduce.hasNext()) {
@@ -128,8 +128,8 @@ public final class MultiReduceTest extends BaseMRTest {
   }
 
   @MRProcessClass(goal = {
-      SCHEMA + OUT_TABLE_NAME_1,
-      SCHEMA + OUT_TABLE_NAME_2
+      OUT_TABLE_NAME_1,
+      OUT_TABLE_NAME_2
   })
   public static final class Reduce1in2 {
 
@@ -138,11 +138,11 @@ public final class MultiReduceTest extends BaseMRTest {
 
     @MRReduceMethod(
         input = {
-            SCHEMA + IN_TABLE_NAME_1
+            IN_TABLE_NAME_1
         },
         output = {
-            SCHEMA + OUT_TABLE_NAME_1,
-            SCHEMA + OUT_TABLE_NAME_2
+            OUT_TABLE_NAME_1,
+            OUT_TABLE_NAME_2
         })
     public void map(final String key, final Iterator<MRRecord> reduce, final MROutput output) {
       while(reduce.hasNext()) {

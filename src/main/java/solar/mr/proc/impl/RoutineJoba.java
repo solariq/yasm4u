@@ -22,6 +22,11 @@ public class RoutineJoba implements Joba {
   private final MRRoutineBuilder.RoutineType type;
 
   public RoutineJoba(final String[] input, final String[] output, final Method method, MRRoutineBuilder.RoutineType type) {
+    if (type == MRRoutineBuilder.RoutineType.REDUCE) {
+      for(int i = 0; i < input.length; i++) {
+        input[i] += "?sorted=true";
+      }
+    }
     this.input = input;
     this.output = output;
     this.method = method;
@@ -41,7 +46,7 @@ public class RoutineJoba implements Joba {
         wb.processAs(resourceName, new Processor<MRPath>() {
           @Override
           public void process(MRPath shard) {
-            wb.env().sort(shard);
+            wb.env().sort(new MRPath(shard.mount, shard.path, false));
           }
         });
       }
@@ -57,17 +62,14 @@ public class RoutineJoba implements Joba {
     return wb.env().execute(builder, wb.errorsHandler());
   }
 
-  private String[] resolveAll(String[] input, Whiteboard wb) {
-    final List<String> result = new ArrayList<>(input.length);
+  private MRPath[] resolveAll(String[] input, Whiteboard wb) {
+    final List<MRPath> result = new ArrayList<>();
     for(int i = 0; i < input.length; i++) {
-      wb.processAs(input[i], new Processor<MRTableState>() {
-        @Override
-        public void process(MRTableState shard) {
-          result.add(shard.path());
-        }
-      });
+      final Object v = wb.get(input[i]);
+      if (v instanceof MRPath)
+        result.add((MRPath) v);
     }
-    return result.toArray(new String[result.size()]);
+    return result.toArray(new MRPath[result.size()]);
   }
 
   @Override

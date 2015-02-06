@@ -36,7 +36,10 @@ public class LocalMREnv implements MREnv {
     }
   }
 
-  public LocalMREnv(final String home) {
+  public LocalMREnv(String home) {
+    if(home.charAt(home.length() - 1) != '/')
+      home = home + "/";
+
     this.home = new File(home);
     if (!this.home.isDirectory())
       //noinspection ResultOfMethodCallIgnored
@@ -130,9 +133,9 @@ public class LocalMREnv implements MREnv {
     } catch (IOException e) {
       throw new RuntimeException(e);
     } finally {
-      if (!shard.sorted)
+      if (!shard.sorted && !shard.isDirectory())
         //noinspection ResultOfMethodCallIgnored
-        file(shard).delete();
+        file(new MRPath(shard.mount, shard.path, true)).delete();
     }
   }
 
@@ -175,7 +178,9 @@ public class LocalMREnv implements MREnv {
     StreamTools.visitFiles(prefixFile, new Processor<String>() {
       @Override
       public void process(String path) {
-        result.add(findByFile(new File(prefixFile, path)));
+        final MRPath file = findByFile(new File(prefixFile, path));
+        if (!file.isDirectory())
+          result.add(file);
       }
     });
     return result.toArray(new MRPath[result.size()]);
@@ -212,7 +217,11 @@ public class LocalMREnv implements MREnv {
         return o1.getFirst().compareTo(o2.getFirst());
       }
     });
-
+    try {
+      FileUtils.forceMkdir(sortedFile.getParentFile());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     try (final FileWriter out = new FileWriter(sortedFile)) {
       for (int i = 0; i < sort.size(); i++) {
         out.append(sort.get(i).getSecond().toString());
@@ -246,17 +255,19 @@ public class LocalMREnv implements MREnv {
     final String homePrefix = home.getAbsolutePath();
     String path = absolutePath.substring(homePrefix.length());
     MRPath.Mount mnt;
-    if (path.startsWith("home/")) {
+    if (path.startsWith("/home/")) {
       mnt = MRPath.Mount.HOME;
-      path = path.substring("home/".length());
+      path = path.substring("/home/".length());
     }
-    else if (path.startsWith("temp/")) {
+    else if (path.startsWith("/temp/")) {
       mnt = MRPath.Mount.TEMP;
-      path = path.substring("temp/".length());
+      path = path.substring("/temp/".length());
     }
-    else {
+    else if (path.startsWith("/")){
       mnt = MRPath.Mount.ROOT;
+      path = path.substring("/".length());
     }
+    else throw new IllegalArgumentException(path);
 
     boolean sorted = false;
     if (path.endsWith(".txt")) {
@@ -264,13 +275,14 @@ public class LocalMREnv implements MREnv {
     } else if (path.endsWith(".txt.sorted")) {
       path = path.substring(0, path.length() - ".txt.sorted".length());
       sorted = true;
-    }
+    } else path = path + "/";
 
     return new MRPath(mnt, path, sorted);
   }
 
   public File file(final MRPath path) {
     final StringBuilder fullPath = new StringBuilder();
+    fullPath.append(home.getAbsolutePath()).append("/");
     switch (path.mount) {
       case TEMP:
         fullPath.append("temp/");

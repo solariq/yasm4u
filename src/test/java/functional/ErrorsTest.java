@@ -35,13 +35,13 @@ public final class ErrorsTest extends BaseMRTest {
     writeRecords(env, IN_TABLE_NAME, RECORDS);
   }
 
-  @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME)
+  @MRProcessClass(goal = OUT_TABLE_NAME)
   public static final class MapError {
 
     public MapError(State state) {
     }
 
-    @MRMapMethod(input = SCHEMA + IN_TABLE_NAME, output = SCHEMA + OUT_TABLE_NAME)
+    @MRMapMethod(input = IN_TABLE_NAME, output = OUT_TABLE_NAME)
     public void map(final String key, final String sub, final CharSequence value, MROutput output) {
       output.error("Error!", "Error!", new MRRecord(null, key, sub, value));
     }
@@ -60,13 +60,13 @@ public final class ErrorsTest extends BaseMRTest {
     mrProcess.wb().wipe();
   }
 
-  @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME)
+  @MRProcessClass(goal = OUT_TABLE_NAME)
   public static final class MapException {
 
     public MapException(State state) {
     }
 
-    @MRMapMethod(input = SCHEMA + IN_TABLE_NAME, output = SCHEMA + OUT_TABLE_NAME)
+    @MRMapMethod(input = IN_TABLE_NAME, output = OUT_TABLE_NAME)
     public void map(final String key, final String sub, final CharSequence value, MROutput output) {
       throw new RuntimeException();
     }
@@ -85,13 +85,13 @@ public final class ErrorsTest extends BaseMRTest {
     mrProcess.wb().wipe();
   }
 
-  @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME)
+  @MRProcessClass(goal = OUT_TABLE_NAME)
   public static final class ReduceError {
 
     public ReduceError(State state) {
     }
 
-    @MRReduceMethod(input = SCHEMA + IN_TABLE_NAME, output = SCHEMA + OUT_TABLE_NAME)
+    @MRReduceMethod(input = IN_TABLE_NAME, output = OUT_TABLE_NAME)
     public void reduce(final String key, final Iterator<MRRecord> reduce, final MROutput output) {
       output.error("Error!", "Error!", new MRRecord(null, key, "#", "#"));
     }
@@ -110,13 +110,13 @@ public final class ErrorsTest extends BaseMRTest {
     mrProcess.wb().wipe();
   }
 
-  @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME)
+  @MRProcessClass(goal = OUT_TABLE_NAME)
   public static final class ReduceException {
 
     public ReduceException(State state) {
     }
 
-    @MRReduceMethod(input = SCHEMA + IN_TABLE_NAME, output = SCHEMA + OUT_TABLE_NAME)
+    @MRReduceMethod(input = IN_TABLE_NAME, output = OUT_TABLE_NAME)
     public void reduce(final String key, final Iterator<MRRecord> reduce, final MROutput output) {
       throw new RuntimeException();
     }
@@ -135,13 +135,13 @@ public final class ErrorsTest extends BaseMRTest {
     mrProcess.wb().wipe();
   }
 
-  @MRProcessClass(goal = SCHEMA + IN_TABLE_NAME)
+  @MRProcessClass(goal = IN_TABLE_NAME)
   public static final class MapIgnored {
 
     public MapIgnored(State state) {
     }
 
-    @MRMapMethod(input = SCHEMA + IN_TABLE_NAME, output = SCHEMA + OUT_TABLE_NAME)
+    @MRMapMethod(input = IN_TABLE_NAME, output = OUT_TABLE_NAME)
     public void map(final String key, final String sub, final CharSequence value, MROutput output) {
       output.error("Error!", "Error!", new MRRecord(null, key, sub, value));
     }

@@ -88,19 +88,22 @@ public class MRPath {
    * @param source this parameter contains path+query+fragment parts of URI.
    */
   public static MRPath create(String source) {
-    int attrsStart = source.indexOf("?") + 1;
+    final int attrsStart = source.indexOf("?") + 1;
     boolean sorted = false;
-    final CharSequence[] key2value = new CharSequence[2];
-    while (attrsStart > 0) {
-      final int attrsStartNext = source.indexOf("&", attrsStart);
-      CharSeqTools.split(
-              new CharSeqAdapter(source, attrsStart, attrsStartNext > 0 ? attrsStartNext : source.length()),
-              '=', key2value);
-      if (key2value[0].equals("sorted")) {
-        sorted = Boolean.parseBoolean(key2value[1].toString());
+    {
+      int nextAttrStart = attrsStart;
+      final CharSequence[] key2value = new CharSequence[2];
+      while (nextAttrStart > 0) {
+        final int attrsStartNext = source.indexOf("&", nextAttrStart);
+        CharSeqTools.split(
+                new CharSeqAdapter(source, nextAttrStart, attrsStartNext > 0 ? attrsStartNext : source.length()),
+                '=', key2value);
+        if (key2value[0].equals("sorted")) {
+          sorted = Boolean.parseBoolean(key2value[1].toString());
+        }
+        else throw new IllegalArgumentException("Unknown attribute " + key2value[0] + " in resource " + source);
+        nextAttrStart = attrsStartNext + 1;
       }
-      else throw new IllegalArgumentException("Unknown attribute " + key2value[0] + " in resource " + source);
-      attrsStart = attrsStartNext + 1;
     }
 
     Mount mount = null;
@@ -109,9 +112,13 @@ public class MRPath {
         mount = mnt;
     }
 
-    if (mount == null)
+    if (mount == null) {
       throw new IllegalArgumentException("Unknown mount: " + source);
-    final String path = source.substring(mount.prefix.length());
+    }
+    String path = source;
+    if (attrsStart > 0)
+      path = path.substring(0, attrsStart - 1);
+    path = path.substring(mount.prefix.length());
 
     return new MRPath(mount, path, sorted);
   }
@@ -126,7 +133,7 @@ public class MRPath {
     try {
       final URI uri = new URI(uriS);
       if ("mr".equals(uri.getScheme())) {
-        return create(uri.getPath() + "?" + uri.getQuery());
+        return create(uri.getPath() + (uri.getQuery() != null ? "?" + uri.getQuery() : ""));
       }
       else throw new IllegalArgumentException("Unsupported protocol: " + uri.getScheme() + " in URI: [" + uriS + "]");
     } catch (URISyntaxException e) {

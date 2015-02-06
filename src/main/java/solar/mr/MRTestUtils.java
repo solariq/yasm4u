@@ -25,7 +25,7 @@ public final class MRTestUtils {
   public static void writeRecords(MREnv env, String uri, MRRecord... records) {
     final StringBuilder sb = new StringBuilder();
     for (MRRecord record: records) {
-      sb.append(record).append("\n");
+      sb.append(record.toString()).append("\n");
     }
     try (Reader reader = new InputStreamReader(new ByteArrayInputStream(sb.toString().getBytes("UTF-8")))){
       env.write(MRPath.createFromURI(uri), reader);
@@ -36,7 +36,7 @@ public final class MRTestUtils {
 
   public static List<MRRecord> readRecords(MREnv env, final String path) {
     final List<MRRecord> result = new ArrayList<>();
-    env.read(MRPath.create(path), new Processor<MRRecord>() {
+    env.read(MRPath.createFromURI(path), new Processor<MRRecord>() {
       @Override
       public void process(MRRecord record) {
           result.add(record);

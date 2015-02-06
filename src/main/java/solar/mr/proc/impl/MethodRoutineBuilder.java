@@ -38,26 +38,26 @@ class MethodRoutineBuilder extends MRRoutineBuilder {
       final Object instance = routineClass.getConstructor(State.class).newInstance(state);
       switch (type) {
         case MAP: {
-          final Method method = routineClass.getMethod(methodName, MRPath.class, String.class, String.class, CharSequence.class, MROutput.class);
-          if (method == null) {
-            final Method shortMethod = routineClass.getMethod(methodName, String.class, String.class, CharSequence.class, MROutput.class);
+          try {
+            final Method method = routineClass.getMethod(methodName, MRPath.class, String.class, String.class, CharSequence.class, MROutput.class);
             return new MRMap(input(), output, state) {
               @Override
               public void map(MRPath table, String sub, CharSequence value, String key) {
                 try {
-                  shortMethod.invoke(instance, key, sub, value, output);
+                  method.invoke(instance, table, key, sub, value, output);
                 } catch (IllegalAccessException | InvocationTargetException e) {
                   throw new RuntimeException(e);
                 }
               }
             };
           }
-          else {
+          catch (NoSuchMethodException nsme) {
+            final Method shortMethod = routineClass.getMethod(methodName, String.class, String.class, CharSequence.class, MROutput.class);
             return new MRMap(input(), output, state) {
               @Override
               public void map(MRPath table, String sub, CharSequence value, String key) {
                 try {
-                  method.invoke(instance, table, key, sub, value, output);
+                  shortMethod.invoke(instance, key, sub, value, output);
                 } catch (IllegalAccessException | InvocationTargetException e) {
                   throw new RuntimeException(e);
                 }

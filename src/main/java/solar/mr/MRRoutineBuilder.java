@@ -19,19 +19,7 @@ public abstract class MRRoutineBuilder implements Serializable {
   private List<MRPath> tablesOut = new ArrayList<>();
   private boolean complete = false;
 
-  public void addInput(String... tables) {
-    for(int i = 0; i < tables.length; i++) {
-      addInput(MRPath.create(tables[i]));
-    }
-  }
-
-  public void addOutput(String... tables) {
-    for(int i = 0; i < tables.length; i++) {
-      addOutput(MRPath.create(tables[i]));
-    }
-  }
-
-  private void addInput(MRPath... paths) {
+  public void addInput(MRPath... paths) {
     checkComplete();
     this.tablesIn.addAll(Arrays.asList(paths));
   }
