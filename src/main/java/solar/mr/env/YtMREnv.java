@@ -576,12 +576,6 @@ public class YtMREnv extends RemoteMREnv {
       }
     }
 
-    private CharSequence eatWhitespaces(final CharSequence arg) {
-      if (arg.charAt(0) != ' ')
-        return arg;
-      return eatWhitespaces(arg.subSequence(1, arg.length()));
-    }
-
     private CharSequence eatTime(final CharSequence arg, char separator) {
       if (CharSeqTools.isNumeric(arg.subSequence(0,1)) /* hours */
           && arg.charAt(2) == ':'
@@ -658,7 +652,7 @@ public class YtMREnv extends RemoteMREnv {
     }
 
     private void hint(final CharSequence arg) {
-      processor.process(eatWhitespaces(eatToken(arg, TOK_HINT)));
+      processor.process(CharSeqTools.trim(eatToken(arg, TOK_HINT)));
       status = OperationStatus.PRINT_HINT;
     }
 
@@ -667,18 +661,18 @@ public class YtMREnv extends RemoteMREnv {
       switch (status) {
         case NONE:
         case INITIALIZING:
-          final CharSequence raw0 = eatWhitespaces(eatPeriod(eatWhitespaces(eatTime(eatWhitespaces(eatDate(arg)), '.'))));
-          final CharSequence raw1 = eatWhitespaces(eatToken(raw0, TOK_OPERATION));
-          final CharSequence raw2 = eatWhitespaces(initGuid(raw1));
+          final CharSequence raw0 = CharSeqTools.trim(eatPeriod(CharSeqTools.trim(eatTime(CharSeqTools.trim(eatDate(arg)), '.'))));
+          final CharSequence raw1 = CharSeqTools.trim(eatToken(raw0, TOK_OPERATION));
+          final CharSequence raw2 = CharSeqTools.trim(initGuid(raw1));
           /* we don't need the rest of the mess at runtime
            * in some cases Yt drops : before running=... failed=...
            */
-          if (raw2.charAt(0) == ':' || CharSeqTools.startsWith(eatWhitespaces(raw2), "running="))
+          if (raw2.charAt(0) == ':' || CharSeqTools.startsWith(CharSeqTools.trim(raw2), "running="))
             return;
           checkOperationStatus(raw2);
           break;
         case COMPETED:
-          hint(eatWhitespaces(eatTime(eatWhitespaces(eatDate(arg)), ',')));
+          hint(CharSeqTools.trim(eatTime(CharSeqTools.trim(eatDate(arg)), ',')));
           break;
         case PRINT_HINT:
           processor.process(arg);
