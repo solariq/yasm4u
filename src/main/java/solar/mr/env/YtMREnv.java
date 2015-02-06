@@ -294,7 +294,7 @@ public class YtMREnv extends RemoteMREnv {
         + "}};\"merge_job_io\" = {\"table_writer\" = {\"max_row_weight\" = "
         + MAX_ROW_WEIGTH
         + "}}}'");
-    executeMapOrReduceCommand(options, defaultOutputProcessor , defaultErrorsProcessor , null);
+    executeMapOrReduceCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     invoke(new ShardAlter(newShard, ShardAlter.AlterType.CHANGED));
     return newShard;
   }
@@ -543,6 +543,7 @@ public class YtMREnv extends RemoteMREnv {
     enum OperationStatus {
       NONE,
       INITIALIZING,
+      PREPARING,
       FAILED,
       COMPETED,
       PRINT_HINT
@@ -633,8 +634,14 @@ public class YtMREnv extends RemoteMREnv {
       }
       if (CharSeqTools.equals(arg, TOK_OP_COMPLETED)
           && (status == OperationStatus.INITIALIZING
+          || status == OperationStatus.PREPARING
           || status == OperationStatus.PRINT_HINT)){
         status = OperationStatus.COMPETED;
+        return;
+      }
+      if (CharSeqTools.equals(arg, TOK_OP_PREPARING)
+          && (status == OperationStatus.INITIALIZING)) {
+        status = OperationStatus.PREPARING;
         return;
       }
       reportError("current status: " + status);
