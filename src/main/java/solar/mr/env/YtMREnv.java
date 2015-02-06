@@ -498,6 +498,7 @@ public class YtMREnv extends RemoteMREnv {
       NONE,
       INITIALIZING,
       PREPARING,
+      COMPLETING,
       FAILED,
       COMPETED,
       PRINT_HINT
@@ -589,13 +590,20 @@ public class YtMREnv extends RemoteMREnv {
           && (status == OperationStatus.INITIALIZING
           || status == OperationStatus.PREPARING
           || status == OperationStatus.PRINT_HINT
-          || status == OperationStatus.NONE /* Ultra fast operation usually with empty inputs */)){
+          || status == OperationStatus.NONE /* Ultra fast operation usually with empty inputs */
+          || status == OperationStatus.COMPLETING)){
         status = OperationStatus.COMPETED;
         return;
       }
       if (CharSeqTools.equals(arg, TOK_OP_PREPARING)
           && (status == OperationStatus.INITIALIZING)) {
         status = OperationStatus.PREPARING;
+        return;
+      }
+      if (CharSeqTools.equals(arg, TOK_OP_COMPLETING)
+          && (status == OperationStatus.NONE
+          || status == OperationStatus.INITIALIZING)){
+        status = OperationStatus.COMPLETING;
         return;
       }
       reportError("current status: " + status);
