@@ -1,5 +1,6 @@
 package solar.mr.env;
 
+import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.seq.CharSeqTools;
 import org.junit.Test;
@@ -56,16 +57,16 @@ public class YtCodeErrorProcessing {
       "2015-02-04 16:49:23.407 ( 0 min)        operation ac2e2d2-f373a0bc-86f5e18a-98de2170: running=80        completed=477   pending=0       failed=0        aborted=0       lost=0  total=557\n" +
       "2015-02-04 16:49:24.931 ( 0 min)        operation ac2e2d2-f373a0bc-86f5e18a-98de2170 completed\n";
 
-  private static class StrictlyIgnoringProcessor implements Processor<CharSequence> {
+  private static class StrictlyIgnoringProcessor implements Action<CharSequence> {
     @Override
-    public void process(CharSequence arg) {
+    public void invoke(CharSequence arg) {
       throw new IllegalStateException("Shouldn't be called");
     }
   }
 
   private static class ParsingOnlyProcessor extends YtMREnv.YtResponseProcessor {
 
-    public ParsingOnlyProcessor(Processor<CharSequence> processor) {
+    public ParsingOnlyProcessor(Action<CharSequence> processor) {
       super(processor);
     }
 
@@ -82,25 +83,23 @@ public class YtCodeErrorProcessing {
 
   private static class ParsingOnlyMRProcessor extends YtMREnv.YtMRResponseProcessor{
 
-    public ParsingOnlyMRProcessor(Processor<CharSequence> processor) {
+    public ParsingOnlyMRProcessor(Action<CharSequence> processor) {
       super(processor);
     }
 
     @Override
     public void reportError(CharSequence msg) {
-
     }
 
     @Override
     public void warn(String msg) {
-
     }
   }
 
-  public static Processor<CharSequence> STRICTLY_IGNORING_PROCESSOR = new StrictlyIgnoringProcessor();
-  public static Processor<CharSequence> IGNORING_PROCESSOR = new Processor<CharSequence>() {
+  public static Action<CharSequence> STRICTLY_IGNORING_PROCESSOR = new StrictlyIgnoringProcessor();
+  public static Action<CharSequence> IGNORING_PROCESSOR = new Action<CharSequence>() {
     @Override
-    public void process(CharSequence arg) {
+    public void invoke(CharSequence arg) {
       /* do nothing */
     }
   };
