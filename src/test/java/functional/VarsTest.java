@@ -43,7 +43,7 @@ public final class VarsTest extends BaseMRTest {
   private static final String DATE_VAR = "var:date";
   private static final String ARRAY_VAR = "var:array";
 
-  @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME_1)
+  @MRProcessClass(goal = OUT_TABLE_NAME_1)
   public static final class Map1 {
 
     private final State state;
@@ -54,12 +54,12 @@ public final class VarsTest extends BaseMRTest {
 
     @MRMapMethod(
         input = {
-          SCHEMA + IN_TABLE_NAME_1,
+          IN_TABLE_NAME_1,
           INT_VAR,
           STRING_VAR
         },
         output = {
-            SCHEMA + OUT_TABLE_NAME_1
+            OUT_TABLE_NAME_1
         }
     )
     public void map(final String key, final String sub, final CharSequence value, MROutput output) {
@@ -85,19 +85,19 @@ public final class VarsTest extends BaseMRTest {
     List<MRRecord> records = readRecords(env, OUT_TABLE_NAME_1);
     assertEquals(RECORDS.length, records.size());
     for(MRRecord record: records) {
-      assertEquals(STRING_VAL + INT_VAL, record.value);
+      assertEquals(STRING_VAL + INT_VAL, record.value.toString());
     }
     env.delete(MRPath.createFromURI(IN_TABLE_NAME_1));
     env.delete(MRPath.createFromURI(OUT_TABLE_NAME_1));
   }
 
-  @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME_2)
+  @MRProcessClass(goal = OUT_TABLE_NAME_2)
   public static final class Map2 {
 
     public Map2(State state) {
     }
 
-    @MRMapMethod(input = SCHEMA + IN_TABLE_NAME_2, output = SCHEMA + OUT_TABLE_NAME_2)
+    @MRMapMethod(input = IN_TABLE_NAME_2, output = OUT_TABLE_NAME_2)
     public void map(final String key, final String sub, final CharSequence value, MROutput output) {
       output.add(key, sub, value);
     }
@@ -129,13 +129,13 @@ public final class VarsTest extends BaseMRTest {
     env.delete(MRPath.createFromURI(REAL_OUT_TABLE_NAME_2));
   }
 
-  @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME_3)
+  @MRProcessClass(goal = OUT_TABLE_NAME_3)
   public static final class Map3 {
 
     public Map3(State state) {
     }
 
-    @MRMapMethod(input = SCHEMA + IN_TABLE_NAME_3, output = SCHEMA + OUT_TABLE_NAME_3)
+    @MRMapMethod(input = IN_TABLE_NAME_3, output = OUT_TABLE_NAME_3)
     public void map(final String key, final String sub, final CharSequence value, MROutput output) {
       for(String i: ARRAY_VALS) {
         output.add(Integer.parseInt(i), key, sub, value);

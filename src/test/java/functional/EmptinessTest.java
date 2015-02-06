@@ -32,13 +32,13 @@ public final class EmptinessTest extends BaseMRTest {
     writeRecords(env, IN_TABLE_NAME_FULL, RECORDS);
   }
 
-  @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME)
+  @MRProcessClass(goal = OUT_TABLE_NAME)
   public static final class MapEmptyInput {
 
     public MapEmptyInput(State state) {
     }
 
-    @MRMapMethod(input = SCHEMA + IN_TABLE_NAME_EMPTY, output = SCHEMA + OUT_TABLE_NAME)
+    @MRMapMethod(input = IN_TABLE_NAME_EMPTY, output = OUT_TABLE_NAME)
     public void map(final String key, final String sub, final CharSequence value, MROutput output) {
       output.add(key, sub, value);
     }
@@ -53,13 +53,13 @@ public final class EmptinessTest extends BaseMRTest {
     mrProcess.wb().wipe();
   }
 
-  @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME)
+  @MRProcessClass(goal = OUT_TABLE_NAME)
   public static final class MapEmptyOutput {
 
     public MapEmptyOutput(State state) {
     }
 
-    @MRMapMethod(input = SCHEMA + IN_TABLE_NAME_FULL, output = SCHEMA + OUT_TABLE_NAME)
+    @MRMapMethod(input = IN_TABLE_NAME_FULL, output = OUT_TABLE_NAME)
     public void map(final String key, final String sub, final CharSequence value, MROutput output) {
 //      System.err.println("Hello!");
       // do nothing

@@ -45,13 +45,13 @@ public abstract class AsteriskTest extends BaseMRTest {
     writeRecords(env, IN_TABLE_NAME_3, RECORDS_3);
   }
 
-  @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME)
+  @MRProcessClass(goal = OUT_TABLE_NAME)
   public static final class Map {
 
     public Map(State state) {
     }
 
-    @MRMapMethod(input = SCHEMA + IN_TABLES + "*", output = SCHEMA + OUT_TABLE_NAME)
+    @MRMapMethod(input = IN_TABLES + "*", output = OUT_TABLE_NAME)
     public void map(final String key, final String sub, final CharSequence value, MROutput output) {
       output.add(key, sub, value);
     }

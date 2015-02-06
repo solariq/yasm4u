@@ -44,19 +44,19 @@ public final class MultiMapTest extends BaseMRTest {
   }
 
   @MRProcessClass(goal = {
-      SCHEMA + OUT_TABLE_NAME_1
+      OUT_TABLE_NAME_1
   })
   public static final class Map2in1 {
 
     public Map2in1(State state) {
     }
 
-    @MRMapMethod(input = SCHEMA + IN_TABLE_NAME_1, output = SCHEMA + OUT_TABLE_NAME_1)
+    @MRMapMethod(input = IN_TABLE_NAME_1, output = OUT_TABLE_NAME_1)
     public void map1(final String key, final String sub, final CharSequence value, MROutput output) {
       output.add(key, sub, value);
     }
 
-    @MRMapMethod(input = SCHEMA + IN_TABLE_NAME_2, output = SCHEMA + OUT_TABLE_NAME_1)
+    @MRMapMethod(input = IN_TABLE_NAME_2, output = OUT_TABLE_NAME_1)
     public void map2(final String key, final String sub, final CharSequence value, MROutput output) {
       output.add(key, sub, value);
     }
@@ -77,8 +77,8 @@ public final class MultiMapTest extends BaseMRTest {
   }
 
   @MRProcessClass(goal = {
-      SCHEMA + OUT_TABLE_NAME_1,
-      SCHEMA + OUT_TABLE_NAME_2
+      OUT_TABLE_NAME_1,
+      OUT_TABLE_NAME_2
   })
   public static final class Map2in2 {
 
@@ -87,12 +87,12 @@ public final class MultiMapTest extends BaseMRTest {
 
     @MRMapMethod(
         input = {
-            SCHEMA + IN_TABLE_NAME_1,
-            SCHEMA + IN_TABLE_NAME_2
+            IN_TABLE_NAME_1,
+            IN_TABLE_NAME_2
         },
         output = {
-            SCHEMA + OUT_TABLE_NAME_1,
-            SCHEMA + OUT_TABLE_NAME_2
+            OUT_TABLE_NAME_1,
+            OUT_TABLE_NAME_2
         })
     public void map(final MRPath table, final String key, final String sub, final CharSequence value, MROutput output) {
       if (key.startsWith("key1")) {
@@ -123,8 +123,8 @@ public final class MultiMapTest extends BaseMRTest {
   }
 
   @MRProcessClass(goal = {
-      SCHEMA + OUT_TABLE_NAME_1,
-      SCHEMA + OUT_TABLE_NAME_2
+      OUT_TABLE_NAME_1,
+      OUT_TABLE_NAME_2
   })
   public static final class Map1in2 {
 
@@ -133,11 +133,11 @@ public final class MultiMapTest extends BaseMRTest {
 
     @MRMapMethod(
         input = {
-            SCHEMA + IN_TABLE_NAME_1
+            IN_TABLE_NAME_1
         },
         output = {
-            SCHEMA + OUT_TABLE_NAME_1,
-            SCHEMA + OUT_TABLE_NAME_2
+            OUT_TABLE_NAME_1,
+            OUT_TABLE_NAME_2
         })
     public void map(final String key, final String sub, final CharSequence value, MROutput output) {
       if (key.equals("key10") || key.equals("key11") || key.equals("key12")) {

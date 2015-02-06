@@ -35,13 +35,13 @@ public final class SimpleReduceTest extends BaseMRTest {
     writeRecords(env, IN_TABLE_NAME, RECORDS);
   }
 
-  @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME)
+  @MRProcessClass(goal = OUT_TABLE_NAME)
   public static final class Reduce {
 
     public Reduce(State state) {
     }
 
-    @MRReduceMethod(input = SCHEMA + IN_TABLE_NAME, output = SCHEMA + OUT_TABLE_NAME)
+    @MRReduceMethod(input = IN_TABLE_NAME, output = OUT_TABLE_NAME)
     public void reduce(final String key, final Iterator<MRRecord> reduce, final MROutput output) {
       StringBuilder sks = new StringBuilder();
       StringBuilder vs = new StringBuilder();

@@ -55,7 +55,7 @@ public final class SimpleReadWriteTest extends BaseMRTest {
     public Reader(State state) {
     }
 
-    @MRRead(input = SCHEMA + TABLE_NAME, output = RESULT)
+    @MRRead(input = TABLE_NAME, output = RESULT)
     public List<MRRecord> read(Iterator<MRRecord> lines) {
       final List<MRRecord> result = new ArrayList<>();
       while(lines.hasNext()) {

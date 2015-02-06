@@ -38,7 +38,7 @@ public final class SimpleMapTest extends BaseMRTest {
     writeRecords(env, IN_TABLE_NAME, RECORDS);
   }
 
-  @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME)
+  @MRProcessClass(goal = OUT_TABLE_NAME)
   public static final class Map {
 
     private int counter;
@@ -46,7 +46,7 @@ public final class SimpleMapTest extends BaseMRTest {
     public Map(State state) {
     }
 
-    @MRMapMethod(input = SCHEMA + IN_TABLE_NAME, output = SCHEMA + OUT_TABLE_NAME)
+    @MRMapMethod(input = IN_TABLE_NAME, output = OUT_TABLE_NAME)
     public void map(final String key, final String sub, final CharSequence value, MROutput output) {
       if (counter % 2 == 0) {
         output.add(key, sub, value);

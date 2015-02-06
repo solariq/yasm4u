@@ -1,5 +1,6 @@
 package functional;
 
+import com.spbsu.commons.seq.CharSeqTools;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,7 +30,7 @@ public final class MapReduceTest extends BaseMRTest {
   private final MRRecord[] RECORDS = createRecords(50); // should be odd
 
   private static final String IN_TABLE_NAME = TABLE_NAME_PREFIX + "MapReduceTest-1-" + SALT;
-  private static final String TEMP_TABLE_NAME = "MapReduceTest-1-" + SALT;
+  private static final String TEMP_TABLE_NAME = "temp:mr:///MapReduceTest-1-" + SALT;
   private static final String OUT_TABLE_NAME = TABLE_NAME_PREFIX + "MapReduceTest-2-" + SALT;
 
   @Before
@@ -37,7 +38,7 @@ public final class MapReduceTest extends BaseMRTest {
     writeRecords(env, IN_TABLE_NAME, RECORDS);
   }
 
-  @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME)
+  @MRProcessClass(goal = OUT_TABLE_NAME)
   public static final class MapReduce {
 
     private int counter;
@@ -45,7 +46,7 @@ public final class MapReduceTest extends BaseMRTest {
     public MapReduce(State state) {
     }
 
-    @MRMapMethod(input = SCHEMA + IN_TABLE_NAME, output = TMP_SCHEMA + TEMP_TABLE_NAME)
+    @MRMapMethod(input = IN_TABLE_NAME, output = TEMP_TABLE_NAME)
     public void map(final String key, final String sub, final CharSequence value, MROutput output) {
       if (counter % 2 == 0) {
         output.add("odd", "#", "1");
@@ -55,7 +56,7 @@ public final class MapReduceTest extends BaseMRTest {
       counter++;
     }
 
-    @MRReduceMethod(input = TMP_SCHEMA + TEMP_TABLE_NAME, output = SCHEMA + OUT_TABLE_NAME)
+    @MRReduceMethod(input = TEMP_TABLE_NAME, output = OUT_TABLE_NAME)
     public void reduce(final String key, final Iterator<MRRecord> reduce, final MROutput output) {
       int count = 0;
       while(reduce.hasNext()) {
@@ -64,7 +65,6 @@ public final class MapReduceTest extends BaseMRTest {
       }
       output.add(key, "#", "" + count);
     }
-
   }
 
   @Test
@@ -75,8 +75,8 @@ public final class MapReduceTest extends BaseMRTest {
     mrProcess.wb().wipe();
     List<MRRecord> records = readRecords(env, OUT_TABLE_NAME);
     assertEquals(2, records.size());
-    assertEquals("" + RECORDS.length / 2, records.get(0).value);
-    assertEquals("" + RECORDS.length / 2, records.get(1).value);
+    assertEquals(RECORDS.length / 2, CharSeqTools.parseInt(records.get(0).value));
+    assertEquals(RECORDS.length / 2, CharSeqTools.parseInt(records.get(1).value));
   }
 
   @After
