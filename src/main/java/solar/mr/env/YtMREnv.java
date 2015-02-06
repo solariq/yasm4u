@@ -635,7 +635,8 @@ public class YtMREnv extends RemoteMREnv {
       if (CharSeqTools.equals(arg, TOK_OP_COMPLETED)
           && (status == OperationStatus.INITIALIZING
           || status == OperationStatus.PREPARING
-          || status == OperationStatus.PRINT_HINT)){
+          || status == OperationStatus.PRINT_HINT
+          || status == OperationStatus.NONE /* Ultra fast operation usually with empty inputs */)){
         status = OperationStatus.COMPETED;
         return;
       }
