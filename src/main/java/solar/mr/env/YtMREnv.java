@@ -510,6 +510,7 @@ public class YtMREnv extends RemoteMREnv {
     private final static String TOK_OP_COMPLETING = "completing";
     private final static String TOK_OP_COMPLETED = "completed";
     private final static String TOK_OP_PREPARING = "preparing";
+    private final static String TOK_OP_FAILED = "failed";
 
     private final static String TOK_HINT = "INFO";
 
@@ -596,9 +597,12 @@ public class YtMREnv extends RemoteMREnv {
       }
       if (CharSeqTools.equals(arg, TOK_OP_COMPLETING)
           && (status == OperationStatus.NONE
-          || status == OperationStatus.INITIALIZING)){
+          || status == OperationStatus.INITIALIZING)) {
         status = OperationStatus.COMPLETING;
         return;
+      }
+      if (CharSeqTools.equals(arg, TOK_OP_FAILED)) {
+        throw new RuntimeException("Operation failed");
       }
       reportError("current status: " + status);
       throw new RuntimeException("Unknown status: " + arg);
