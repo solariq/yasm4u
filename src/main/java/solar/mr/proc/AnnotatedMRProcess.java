@@ -1,6 +1,7 @@
 package solar.mr.proc;
 
 import solar.mr.MREnv;
+import solar.mr.MROutput;
 import solar.mr.MRRoutineBuilder;
 import solar.mr.proc.impl.*;
 import solar.mr.proc.tags.MRMapMethod;
@@ -22,22 +23,37 @@ import java.util.regex.Pattern;
 public class AnnotatedMRProcess extends CompositeJobaBuilder {
   private Whiteboard wb;
 
+  final static Class[] MAP_PARAMETERS = {MRPath.class, String.class, String.class, CharSequence.class, MROutput.class};
+  final static Class[] REDUCE_PARAMETERS = {String.class, Iterator.class, MROutput.class};
+
   public AnnotatedMRProcess(final Class<?> processDescription, Whiteboard wb) {
     super(processDescription.getName().replace('$', '.'), resolveNames(processDescription.getAnnotation(MRProcessClass.class).goal(), wb));
     final Method[] methods = processDescription.getMethods();
     for (int i = 0; i < methods.length; i++) {
       final Method current = methods[i];
       final MRMapMethod mapAnn = current.getAnnotation(MRMapMethod.class);
-      if (mapAnn != null)
+      if (mapAnn != null) {
+        checkSignature(current, MAP_PARAMETERS, "map");
         addJob(new RoutineJoba(resolveNames(mapAnn.input(), wb), resolveNames(mapAnn.output(), wb), current, MRRoutineBuilder.RoutineType.MAP));
+      }
       final MRReduceMethod reduceAnn = current.getAnnotation(MRReduceMethod.class);
-      if (reduceAnn != null)
+      if (reduceAnn != null) {
+        checkSignature(current, REDUCE_PARAMETERS, "reduce");
         addJob(new RoutineJoba(resolveNames(reduceAnn.input(), wb), resolveNames(reduceAnn.output(), wb), current, MRRoutineBuilder.RoutineType.REDUCE));
+      }
       final MRRead readAnn = current.getAnnotation(MRRead.class);
       if (readAnn != null)
         addJob(new ReadJoba(resolveNames(new String[]{readAnn.input()}, wb), readAnn.output(), current));
     }
     this.wb = wb;
+  }
+
+  private void checkSignature(Method current, final Class[] parameters, final String opName) {
+    final Class[] params = current.getParameterTypes();
+    for (int j = 0; j < params.length; ++j) {
+      if (!params[j].equals(parameters[j]))
+        throw new RuntimeException("Invalid '" + opName + "' Method paramer(" + j+ ")");
+    }
   }
 
 
