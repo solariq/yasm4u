@@ -23,7 +23,8 @@ import java.util.regex.Pattern;
 public class AnnotatedMRProcess extends CompositeJobaBuilder {
   private Whiteboard wb;
 
-  final static Class[] MAP_PARAMETERS = {MRPath.class, String.class, String.class, CharSequence.class, MROutput.class};
+  final static Class[] MAP_PARAMETERS_1 = {String.class, String.class, CharSequence.class, MROutput.class};
+  final static Class[] MAP_PARAMETERS_2 = {MRPath.class, String.class, String.class, CharSequence.class, MROutput.class};
   final static Class[] REDUCE_PARAMETERS = {String.class, Iterator.class, MROutput.class};
 
   public AnnotatedMRProcess(final Class<?> processDescription, Whiteboard wb) {
@@ -33,12 +34,14 @@ public class AnnotatedMRProcess extends CompositeJobaBuilder {
       final Method current = methods[i];
       final MRMapMethod mapAnn = current.getAnnotation(MRMapMethod.class);
       if (mapAnn != null) {
-        checkSignature(current, MAP_PARAMETERS, "map");
+        if (!checkSignature(current, MAP_PARAMETERS_1) && !checkSignature(current,MAP_PARAMETERS_2))
+          throw new RuntimeException("Invalid signature for map operation");
         addJob(new RoutineJoba(resolveNames(mapAnn.input(), wb), resolveNames(mapAnn.output(), wb), current, MRRoutineBuilder.RoutineType.MAP));
       }
       final MRReduceMethod reduceAnn = current.getAnnotation(MRReduceMethod.class);
       if (reduceAnn != null) {
-        checkSignature(current, REDUCE_PARAMETERS, "reduce");
+        if (!checkSignature(current, REDUCE_PARAMETERS))
+          throw new RuntimeException("Invalid signature for reduce operation");
         addJob(new RoutineJoba(resolveNames(reduceAnn.input(), wb), resolveNames(reduceAnn.output(), wb), current, MRRoutineBuilder.RoutineType.REDUCE));
       }
       final MRRead readAnn = current.getAnnotation(MRRead.class);
@@ -48,14 +51,9 @@ public class AnnotatedMRProcess extends CompositeJobaBuilder {
     this.wb = wb;
   }
 
-  private void checkSignature(Method current, final Class[] parameters, final String opName) {
-    final Class[] params = current.getParameterTypes();
-    for (int j = 0; j < params.length; ++j) {
-      if (!params[j].equals(parameters[j]))
-        throw new RuntimeException("Invalid '" + opName + "' Method paramer(" + j+ ")");
-    }
+  private boolean checkSignature(Method current, final Class[] parameters) {
+    return Arrays.equals(current.getParameterTypes(), parameters);
   }
-
 
   private static final Pattern varPattern = Pattern.compile("\\{([^\\},]+),?([^\\}]*)\\}");
 
