@@ -3,6 +3,7 @@ package solar.mr.proc.impl;
 import com.spbsu.commons.seq.CharSeqAdapter;
 import com.spbsu.commons.seq.CharSeqTools;
 
+import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -11,7 +12,7 @@ import java.net.URISyntaxException;
  * Date: 29.01.15
  * Time: 17:38
  */
-public class MRPath {
+public class MRPath implements Serializable {
   public final Mount mount;
   public final String path;
   public final boolean sorted;
@@ -139,5 +140,25 @@ public class MRPath {
     } catch (URISyntaxException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof MRPath)) return false;
+
+    MRPath mrPath = (MRPath) o;
+
+    if (sorted != mrPath.sorted) return false;
+    if (mount != mrPath.mount) return false;
+    return path.equals(mrPath.path);
+  }
+
+  @Override
+  public int hashCode() {
+    int result = mount.hashCode();
+    result = 31 * result + path.hashCode();
+    result = 31 * result + (sorted ? 1 : 0);
+    return result;
   }
 }
