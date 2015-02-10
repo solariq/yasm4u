@@ -82,7 +82,7 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
       @Override
       public void process(final MRRecord arg) {
         try {
-          state.put(arg.key, marshaling.read(arg.sub, Class.forName(arg.value.toString())));
+          state.put(arg.key, marshaling.read(arg.value, Class.forName(arg.sub)));
         } catch (ClassNotFoundException e) {
           throw new RuntimeException(e);
         }
