@@ -100,7 +100,7 @@ public class YaMREnv extends RemoteMREnv {
     options.add(localPath(table));
     options.add("-count");
     options.add("" + 100);
-    executeCommand(options, new MRRoutine() {
+    executeCommand(options, new MRRoutine(table) {
       @Override
       public void process(final MRRecord arg) {
         linesProcessor.process(arg);
@@ -145,6 +145,13 @@ public class YaMREnv extends RemoteMREnv {
     } catch (IOException e) {
       throw new RuntimeException("Error parsing JSON from server: " + build, e);
     }
+    /* It's discussed long time ago that because of Yamr architecture, we have to always fake existance of the tables. */
+    if (states.size() == 0) {
+      final MRTableState shard = new MRTableState(localPath(prefix), true, false, "0", 0, 0, 0, System.currentTimeMillis());
+          updateState(prefix, shard);
+      return new MRPath[]{prefix};
+    }
+
     final List<MRPath> result = new ArrayList<>(states.size());
     for (int i = 0; i < states.size(); i++) {
       final MRTableState shard = states.get(i);
@@ -159,19 +166,22 @@ public class YaMREnv extends RemoteMREnv {
   @Override
   public void copy(MRPath[] from, MRPath to, boolean append) {
     final List<String> options = defaultOptions();
-    final MRTableState toShard = resolve(to, false);
     final MRTableState[] fromShards = resolveAll(from, false);
     options.add(append ? "-dstappend" : "-dst");
     options.add(localPath(to));
     options.add("-copy");
+    for (int i = 0; i < from.length; i++) {
+      options.add("-src");
+      options.add(localPath(from[i]));
+    }
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
+
+    final MRTableState toShard = resolve(to, false);
     if (toShard != null && ArrayTools.indexOf(null, fromShards) < 0) {
       long totalLength = append ? toShard.length() : 0;
       long recordsCount = append ? toShard.recordsCount() : 0;
       long keysCount = append ? toShard.keysCount() : 0;
       for (int i = 0; i < from.length; i++) {
-        options.add("-src");
-        options.add(localPath(from[i]));
         totalLength += fromShards[i].length();
         recordsCount += fromShards[i].recordsCount();
         keysCount += fromShards[i].keysCount();
@@ -246,6 +256,7 @@ public class YaMREnv extends RemoteMREnv {
   @Override
   public boolean execute(MRRoutineBuilder builder, final MRErrorsHandler errorsHandler, File jar) {
     final List<String> options = defaultOptions();
+
     final MRPath[] input = builder.input();
     final MRPath[] output = builder.output();
     int inputShardsCount = 0;
@@ -254,13 +265,16 @@ public class YaMREnv extends RemoteMREnv {
       options.add(localPath(input[i]));
       inputShardsCount++;
     }
+
     for(int i = 0; i < output.length; i++) {
       options.add("-dst");
       options.add(localPath(output[i]));
     }
+
     final MRPath errorsPath = MRPath.create("/tmp/errors-" + Integer.toHexString(new FastRandom().nextInt()));
     options.add("-dst");
     options.add(localPath(errorsPath));
+
     options.add("-file");
     options.add(jar.getAbsolutePath());
 
