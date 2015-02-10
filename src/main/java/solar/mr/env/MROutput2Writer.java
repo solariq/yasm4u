@@ -21,7 +21,9 @@ public class MROutput2Writer extends MROutputBase {
   private final LinkedTransferQueue<Pair<Integer, CharSequence>> queue = new LinkedTransferQueue<>();
 
   public MROutput2Writer(final Writer out, MRPath[] outputTables) {
-    super(outputTables, outputTables.length - 1);
+    /* Builder were created on LocalEnv which doesn't use error table.
+    On remote environment we append error table to the tail of destination tables. */
+    super(outputTables);
     outputThread = new Thread(new Runnable() {
       @Override
       public void run() {
