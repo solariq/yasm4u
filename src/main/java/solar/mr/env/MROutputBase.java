@@ -17,9 +17,9 @@ public abstract class MROutputBase implements MROutput {
   private final int errorTable;
   private int lastActiveTable = 0;
 
-  protected MROutputBase(MRPath[] outTables, int errorTable) {
+  protected MROutputBase(MRPath[] outTables) {
     this.outTables = outTables;
-    this.errorTable = errorTable;
+    this.errorTable = outTables.length;
   }
 
   @Override
@@ -67,7 +67,8 @@ public abstract class MROutputBase implements MROutput {
   @Override
   public void error(final String type, final String cause, final MRRecord rec) {
     counter++;
-    push(errorTable, CharSeqTools.concatWithDelimeter("\t", type, encodeKey(cause), rec.source.toString(), rec.toString()));
+    push(errorTable, CharSeqTools.concatWithDelimeter("\t", type, encodeKey(cause),
+        rec.source != null ? rec.source.toString() : "null", rec.toString()));
   }
 
   @Override

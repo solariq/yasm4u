@@ -25,7 +25,7 @@ public class MROutput2MREnv extends MROutputBase {
   private final MRErrorsHandler handler;
 
   public MROutput2MREnv(final MREnv env, final MRPath[] output, MRErrorsHandler handler) {
-    super(output, handler != null ? output.length : output.length - 1);
+    super(output);
     this.handler = handler;
     //noinspection unchecked
     queues = new ArrayBlockingQueue[output.length];
