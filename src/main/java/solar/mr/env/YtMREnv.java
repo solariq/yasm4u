@@ -132,6 +132,7 @@ public class YtMREnv extends RemoteMREnv {
       return result.toArray(new MRPath[result.size()]);
   }
 
+  /*
   private boolean isNode(final MRPath path) {
     final List<String> options = defaultOptions();
     options.add("get");
@@ -161,6 +162,7 @@ public class YtMREnv extends RemoteMREnv {
     }), defaultErrorsProcessor, null);
     return Boolean.parseBoolean(response[0].toString());
   }
+  */
 
   private void extractTableFromJson(final MRPath prefixPath, List<MRPath> result, JsonParser parser) throws IOException, ParseException {
     final String prefix = localPath(prefixPath);
@@ -343,25 +345,10 @@ public class YtMREnv extends RemoteMREnv {
     //options.add("| sed -ne \"/^[0-9]\\*\\$/p\" -ne \"/\\t/p\" )'");
     options.add("'");
 
-    int inCount = 0;
     for(final MRPath sh : in) {
-      /* if (!resolve(sh).isAvailable()) {
-        LOG.warn("Input table " + sh + " does not exist");
-        continue;
-      }*/
-
       options.add("--src");
       options.add(localPath(sh));
-      inCount++;
     }
-
-    /* if (inCount == 0) {
-      LOG.warn("Empty input tables list!");
-      for (final MRPath d : out) {
-        createTable(d);
-      }
-      return true;
-    }*/
 
     final MRPath errorsPath = MRPath.create("/tmp/errors-" + Integer.toHexString(new FastRandom().nextInt()));
     createTable(errorsPath);
