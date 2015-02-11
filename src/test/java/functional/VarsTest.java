@@ -131,13 +131,14 @@ public final class VarsTest extends BaseMRTest {
 
   @MRProcessClass(goal = OUT_TABLE_NAME_3)
   public static final class Map3 {
-
+    final State state;
     public Map3(State state) {
+      this.state = state;
     }
 
     @MRMapMethod(input = IN_TABLE_NAME_3, output = OUT_TABLE_NAME_3)
     public void map(final String key, final String sub, final CharSequence value, MROutput output) {
-      for(String i: ARRAY_VALS) {
+      for(String i: state.<String[]>get(ARRAY_VAR)) {
         output.add(Integer.parseInt(i), key, sub, value);
       }
     }
