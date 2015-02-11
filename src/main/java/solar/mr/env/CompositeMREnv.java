@@ -140,7 +140,8 @@ public class CompositeMREnv implements MREnv {
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
-      setCopy(path, originalStates[i], result[i] = localShardHolder.getValue());
+      if (originalStates[i] != null)
+        setCopy(path, originalStates[i], result[i] = localShardHolder.getValue());
     }
     return result;
   }
