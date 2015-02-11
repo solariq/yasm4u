@@ -25,6 +25,7 @@ import java.util.*;
  */
 public class YtMREnv extends RemoteMREnv {
   private static Logger LOG = Logger.getLogger(YtMREnv.class);
+  final static String mrUserHome = System.getProperty("mr.user.home","mobilesearch");
   public YtMREnv(final ProcessRunner runner, final String tag, final String master) {
     super(runner, tag, master);
   }
@@ -74,7 +75,7 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--format");
     options.add("\"<has_subkey=true>yamr\"");
     options.add(localPath(table) + "[:#100]");
-    executeCommand(options, new YtResponseProcessor(new MRRoutine() {
+    executeCommand(options, new YtResponseProcessor(new MRRoutine(table) {
       @Override
       public void process(final MRRecord arg) {
         linesProcessor.process(arg);
@@ -84,7 +85,7 @@ public class YtMREnv extends RemoteMREnv {
 
 
   @Override
-  public MRPath[] list(MRPath prefix) {
+  public MRPath[] list(final MRPath prefix) {
     final List<String> defaultOptionsEntity = defaultOptions();
 
     defaultOptionsEntity.add("get");
@@ -113,22 +114,50 @@ public class YtMREnv extends RemoteMREnv {
       options.add("list");
       final String nodePath = path.substring(0, path.length() - 1);
       options.add(nodePath);
-      final ConcatAction builder = new ConcatAction(" ");
-      executeCommand(options, new YtResponseProcessor(builder), defaultErrorsProcessor, null);
-
-      final CharSequence[] listSeq = CharSeqTools.split(builder.trimmedSequence(), ' ');
-
-      result.clear();
-      for (int i = 0; i < listSeq.length; i += 1) {
-        if (listSeq[i].length() == 0)
-          continue;
-        final String localPath = nodePath.substring(1) /* this is in Yt form prefixed with "//" */
-                + (i != listSeq.length - 1 ? "/" + listSeq[i].toString() : "");
-        // TODO: is it possible to find out whether this is sorted file?
-        result.add(findByLocalPath(localPath, false));
-      }
+      //final ConcatAction builder = new ConcatAction(" ");
+      executeCommand(options, new YtResponseProcessor(new Action<CharSequence>(){
+        @Override
+        public void invoke(CharSequence arg) {
+          result.addAll(Arrays.asList(list(new MRPath(prefix.mount, prefix.path + arg, false))));
+        }
+      }), defaultErrorsProcessor, null);
     }
-    return result.toArray(new MRPath[result.size()]);
+    if (result.isEmpty()) {
+      updateState(prefix, new MRTableState(prefix.path,false, false, "0", 0, 0, 0, System.currentTimeMillis()));
+      return new MRPath[]{prefix};
+    }
+    else
+      return result.toArray(new MRPath[result.size()]);
+  }
+
+  private boolean isNode(final MRPath path) {
+    final List<String> options = defaultOptions();
+    options.add("get");
+    options.add(localPath(path) + "/@type");
+    final CharSequence[] response = new CharSequence[1];
+    executeCommand(options, new YtResponseProcessor(new Action<CharSequence>(){
+      @Override
+      public void invoke(CharSequence charSequence) {
+        response[0] = charSequence;
+      }
+    }), defaultErrorsProcessor, null);
+    if (!"map_node".equals(response[0]) && !"table".equals(response[0]))
+      throw new UnsupportedOperationException("Unknown node type: " + response[0]);
+    return "map_node".equals(response[0]);
+  }
+
+  private boolean isTableSorted(final MRPath path) {
+    final List<String> options = defaultOptions();
+    options.add("get");
+    options.add(localPath(path) + "/@sorted");
+    final CharSequence[] response = new CharSequence[1];
+    executeCommand(options, new YtResponseProcessor(new Action<CharSequence>(){
+      @Override
+      public void invoke(CharSequence charSequence) {
+        response[0] = charSequence;
+      }
+    }), defaultErrorsProcessor, null);
+    return Boolean.parseBoolean(response[0].toString());
   }
 
   private void extractTableFromJson(final MRPath prefixPath, List<MRPath> result, JsonParser parser) throws IOException, ParseException {
@@ -137,17 +166,27 @@ public class YtMREnv extends RemoteMREnv {
     final ObjectMapper mapper = new ObjectMapper();
 
     final JsonNode metaJSON = mapper.readTree(parser);
+    if (metaJSON == null) {
+      return;
+    }
+
     final JsonNode typeNode = metaJSON.get("type");
-    if (typeNode != null && !typeNode.isMissingNode() && typeNode.textValue().equals("table"))  {
+    if (typeNode != null && !typeNode.isMissingNode()) {
       final String name = metaJSON.get("key").asText(); /* it's a name in Yt */
-      final long size = metaJSON.get("uncompressed_data_size").longValue();
-      boolean sorted= metaJSON.has("sorted");
-      final long recordsCount = metaJSON.has("row_count") ? metaJSON.get("row_count").longValue() : 0;
       final String path = prefixPath.isDirectory() ? prefix : prefix + "/" + name;
-      final MRTableState sh = new MRTableState(path, true, sorted, "" + size, size, recordsCount/10, recordsCount, /*ts*/ System.currentTimeMillis());
-      final MRPath localPath = findByLocalPath(path, sorted);
-      result.add(localPath);
-      updateState(localPath, sh);
+
+      if (typeNode.textValue().equals("table")) {
+        final long size = metaJSON.get("uncompressed_data_size").longValue();
+        boolean sorted = metaJSON.has("sorted");
+        final long recordsCount = metaJSON.has("row_count") ? metaJSON.get("row_count").longValue() : 0;
+        final MRTableState sh = new MRTableState(path, true, sorted, "" + size, size, recordsCount / 10, recordsCount, /*ts*/ System.currentTimeMillis());
+        final MRPath localPath = findByLocalPath(path, sorted);
+        result.add(localPath);
+        updateState(localPath, sh);
+      }
+      else if (typeNode.textValue().equals("map_node")) {
+        list(new MRPath(prefixPath.mount, path, false));
+      }
     }
   }
 
@@ -310,23 +349,23 @@ public class YtMREnv extends RemoteMREnv {
 
     int inCount = 0;
     for(final MRPath sh : in) {
-      if (!resolve(sh).isAvailable()) {
+      /* if (!resolve(sh).isAvailable()) {
         LOG.warn("Input table " + sh + " does not exist");
         continue;
-      }
+      }*/
 
       options.add("--src");
       options.add(localPath(sh));
       inCount++;
     }
 
-    if (inCount == 0) {
+    /* if (inCount == 0) {
       LOG.warn("Empty input tables list!");
       for (final MRPath d : out) {
         createTable(d);
       }
       return true;
-    }
+    }*/
 
     final MRPath errorsPath = MRPath.create("/tmp/errors-" + Integer.toHexString(new FastRandom().nextInt()));
     createTable(errorsPath);
@@ -343,17 +382,46 @@ public class YtMREnv extends RemoteMREnv {
 
   @Override
   protected MRPath findByLocalPath(String table, boolean sorted) {
-    throw new UnsupportedOperationException();
+    MRPath.Mount mnt;
+    String path;
+    final String homePrefix = "//home/" + mrUserHome + "/";
+    if (table.startsWith(homePrefix)) {
+      mnt = MRPath.Mount.HOME;
+      path = table.substring(homePrefix.length());
+    }
+    else if (table.startsWith("//tmp/")) {
+      mnt = MRPath.Mount.TEMP;
+      path = table.substring("//tmp/".length());
+    }
+    else {
+      mnt = MRPath.Mount.ROOT;
+      path = table;
+    }
+
+    return new MRPath(mnt, path, sorted);
   }
 
   @Override
   protected String localPath(MRPath shard) {
-    throw new UnsupportedOperationException();
+    final StringBuilder result = new StringBuilder();
+    switch (shard.mount) {
+      case HOME:
+        result.append("//home/").append(mrUserHome).append("/");
+        break;
+      case TEMP:
+        result.append("//tmp/");
+        break;
+      case ROOT:
+        result.append("//");
+        break;
+    }
+    result.append(shard.path);
+    return result.toString();
   }
 
   @Override
   protected boolean isFat(MRPath path) {
-    throw new UnsupportedOperationException();
+    return false;
   }
 
   @Override
@@ -414,7 +482,7 @@ public class YtMREnv extends RemoteMREnv {
     @Override
     public void invoke(CharSequence arg) {
       /* TODO: enhance error/warnings processing */
-      if (!skip && CharSeqTools.startsWith(arg, "Response to request"))
+      if (!skip && CharSeqTools.startsWith(arg, "Received an error while"))
         skip = true;
 
       if (!skip)
