@@ -23,7 +23,7 @@ public class BaseMRTest {
   public static final ProcessRunner YAMR_RUNNER = new SSHProcessRunner("batista", "/Berkanavt/mapreduce/bin/mapreduce-dev");
   public static final String YAMR_USER = "mobilesearch";
   public static final String YAMR_CLUSTER = "cedar:8013";
-  //public static final ProcessRunner YTMR_RUNNER = new SSHProcessRunner("prod1-test-mob.serp.yandex.ru", "/usr/bin/yt");
+  public static final ProcessRunner YTMR_RUNNER = new SSHProcessRunner("prod1-test-mob.serp.yandex.ru", "/usr/bin/yt");
   public static final String YTMR_USER = "minamoto";
   public static final String YTMR_CLUSTER = "plato.yt.yandex.net";
 
@@ -31,9 +31,9 @@ public class BaseMRTest {
   public static Collection<Object[]> data() {
     return Arrays.asList(new Object[][]{
         {LocalMREnv.createTemp()},
-        {new CompositeMREnv(new YaMREnv(YAMR_RUNNER, YAMR_USER, YAMR_CLUSTER))},
+        {new CompositeMREnv(new YaMREnv(YAMR_RUNNER, YAMR_USER, YAMR_CLUSTER), LocalMREnv.createTemp())},
         //{new ProfilerMREnv(new YaMREnv(YAMR_RUNNER, YAMR_USER, YAMR_CLUSTER))},
-        //{new CompositeMREnv(new YtMREnv(YTMR_RUNNER, YTMR_USER, YTMR_CLUSTER))}
+        {new CompositeMREnv(new YtMREnv(YTMR_RUNNER, YTMR_USER, YTMR_CLUSTER), LocalMREnv.createTemp())}
     });
   }
 
