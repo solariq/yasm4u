@@ -225,14 +225,13 @@ public class YaMREnv extends RemoteMREnv {
     options.add("-drop");
     options.add(localPath(path));
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
-    final MRTableState updatedShard = new MRTableState(localPath(path), true, false, "0", 0, 0, 0, System.currentTimeMillis());
-    updateState(path, updatedShard);
+    wipeState(path);
   }
 
   public void sort(final MRPath path) {
-    final MRTableState state = resolve(path, true);
+    /* final MRTableState state = resolve(path, true);
     if (state.isAvailable())
-      return;
+      return;*/
     final List<String> options = defaultOptions();
     options.add("-sort");
     options.add(localPath(path));

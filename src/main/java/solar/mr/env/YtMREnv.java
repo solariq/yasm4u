@@ -196,13 +196,10 @@ public class YtMREnv extends RemoteMREnv {
 
   @Override
   public void copy(final MRPath[] from, MRPath to, boolean append) {
-    final MRTableState[] states = resolveAll(from);
-    // TODO: why do we need to create source tables
-    for(int i = 0; i < states.length; i++) {
-      createTable(from[i]);
-    }
-    if (!append)
+    if (!append) {
+
       delete(to); /* Yt requires that destination shouldn't exists */
+    }
     createTable(to);
 
     for (final MRPath sh : from){
@@ -275,8 +272,8 @@ public class YtMREnv extends RemoteMREnv {
 
   public void delete(final MRPath table) {
     final List<String> options = defaultOptions();
-    if (!resolve(table, false).isAvailable())
-      return;
+    /* if (!resolve(table, false).isAvailable())
+      return; */
     options.add("remove");
     options.add("-r ");
     options.add(localPath(table));
@@ -285,9 +282,6 @@ public class YtMREnv extends RemoteMREnv {
   }
 
   public void sort(final MRPath table) {
-    final MRTableState sorted = resolve(new MRPath(table.mount, table.path, true));
-    if (sorted.isAvailable())
-      return;
     final List<String> options = defaultOptions();
     /* if (!resolve(table, false).isAvailable())
       return; */
