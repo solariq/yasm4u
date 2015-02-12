@@ -76,7 +76,7 @@ public abstract class MRReduce extends MRRoutine {
               }
             };
             try {
-                    reduce(key, reduceIterator);
+              reduce(key, reduceIterator);
             } catch (Exception e) {
               if (lastRetrieved != null) {
                 output.error(e, lastRetrieved);
