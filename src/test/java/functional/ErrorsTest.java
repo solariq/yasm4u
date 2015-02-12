@@ -160,13 +160,13 @@ public final class ErrorsTest extends BaseMRTest {
     mrProcess.wb().wipe();
   }
 
-  @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME)
+  @MRProcessClass(goal = OUT_TABLE_NAME)
   public static final class MapEndless {
 
     public MapEndless(State state) {
     }
 
-    @MRMapMethod(input = SCHEMA + IN_TABLE_NAME, output = SCHEMA + OUT_TABLE_NAME)
+    @MRMapMethod(input = IN_TABLE_NAME, output = OUT_TABLE_NAME)
     public void map(final String key, final String sub, final CharSequence value, MROutput output) {
       long i = 0;
       while (true) {
@@ -191,13 +191,13 @@ public final class ErrorsTest extends BaseMRTest {
     mrProcess.wb().wipe();
   }
 
-  @MRProcessClass(goal = SCHEMA + OUT_TABLE_NAME)
+  @MRProcessClass(goal = OUT_TABLE_NAME)
   public static final class ReduceEndless {
 
     public ReduceEndless(State state) {
     }
 
-    @MRReduceMethod(input = SCHEMA + IN_TABLE_NAME, output = SCHEMA + OUT_TABLE_NAME)
+    @MRReduceMethod(input = IN_TABLE_NAME, output = OUT_TABLE_NAME)
     public void reduce(final String key, final Iterator<MRRecord> reduce, final MROutput output) {
       reduce.next();
       long i = 0;
