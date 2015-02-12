@@ -275,12 +275,13 @@ public class YtMREnv extends RemoteMREnv {
 
   public void delete(final MRPath table) {
     final List<String> options = defaultOptions();
+    if (!resolve(table, false).isAvailable())
+      return;
     options.add("remove");
     options.add("-r ");
     options.add(localPath(table));
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
-    final MRTableState updatedShard = new MRTableState(localPath(table), false, false, "0", 0, 0, 0, System.currentTimeMillis());
-    updateState(table, updatedShard);
+    wipeState(table);
   }
 
   public void sort(final MRPath table) {
@@ -288,8 +289,8 @@ public class YtMREnv extends RemoteMREnv {
     if (sorted.isAvailable())
       return;
     final List<String> options = defaultOptions();
-    if (!resolve(table, false).isAvailable())
-      return;
+    /* if (!resolve(table, false).isAvailable())
+      return; */
     options.add("sort");
     options.add("--src");
     options.add(localPath(table));
