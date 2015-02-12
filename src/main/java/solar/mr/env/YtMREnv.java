@@ -196,10 +196,8 @@ public class YtMREnv extends RemoteMREnv {
 
   @Override
   public void copy(final MRPath[] from, MRPath to, boolean append) {
-    if (!append) {
-
+    if (!append)
       delete(to); /* Yt requires that destination shouldn't exists */
-    }
     createTable(to);
 
     for (final MRPath sh : from){

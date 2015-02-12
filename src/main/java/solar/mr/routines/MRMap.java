@@ -5,8 +5,6 @@ import solar.mr.MRRoutine;
 import solar.mr.proc.State;
 import solar.mr.proc.impl.MRPath;
 
-import java.util.concurrent.*;
-
 /**
 * User: solar
 * Date: 23.09.14
