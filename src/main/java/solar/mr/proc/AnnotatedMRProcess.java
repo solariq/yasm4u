@@ -45,12 +45,14 @@ public class AnnotatedMRProcess extends CompositeJobaBuilder {
         if (!checkSignature(current, MAP_PARAMETERS_1) && !checkSignature(current,MAP_PARAMETERS_2))
           throw new RuntimeException("Invalid signature for map operation");
         addJob(new RoutineJoba(resolveNames(mapAnn.input(), wb), resolveNames(mapAnn.output(), wb), current, MRRoutineBuilder.RoutineType.MAP));
+        continue;
       }
       final MRReduceMethod reduceAnn = current.getAnnotation(MRReduceMethod.class);
       if (reduceAnn != null) {
         if (!checkSignature(current, REDUCE_PARAMETERS))
           throw new RuntimeException("Invalid signature for reduce operation");
         addJob(new RoutineJoba(resolveNames(reduceAnn.input(), wb), resolveNames(reduceAnn.output(), wb), current, MRRoutineBuilder.RoutineType.REDUCE));
+        continue;
       }
       final MRRead readAnn = current.getAnnotation(MRRead.class);
       if (readAnn != null) {
