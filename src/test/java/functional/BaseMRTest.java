@@ -31,9 +31,9 @@ public class BaseMRTest {
   public static Collection<Object[]> data() {
     return Arrays.asList(new Object[][]{
         {LocalMREnv.createTemp()},
-        {new CompositeMREnv(new YaMREnv(YAMR_RUNNER, YAMR_USER, YAMR_CLUSTER), LocalMREnv.createTemp())},
+        //{new CompositeMREnv(new YaMREnv(YAMR_RUNNER, YAMR_USER, YAMR_CLUSTER), LocalMREnv.createTemp())},
         //{new ProfilerMREnv(new YaMREnv(YAMR_RUNNER, YAMR_USER, YAMR_CLUSTER))},
-        {new CompositeMREnv(new YtMREnv(YTMR_RUNNER, YTMR_USER, YTMR_CLUSTER), LocalMREnv.createTemp())}
+        //{new CompositeMREnv(new YtMREnv(YTMR_RUNNER, YTMR_USER, YTMR_CLUSTER), LocalMREnv.createTemp())}
     });
   }
 

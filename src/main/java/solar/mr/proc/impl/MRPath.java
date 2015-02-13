@@ -25,7 +25,10 @@ public class MRPath implements Serializable {
 
   public URI resource() {
     try {
-      return new URI("mr", "", mount.prefix + path, sorted ? "sorted=true" : "", "");
+      if (!isDirectory())
+        return new URI("mr", "", mount.prefix + path, "sorted=" + Boolean.toString(sorted), "");
+      else
+        return new URI("mr", "", mount.prefix + path);
     } catch (URISyntaxException e) {
       // should never happen
       throw new RuntimeException(e);
@@ -89,6 +92,9 @@ public class MRPath implements Serializable {
    * @param source this parameter contains path+query+fragment parts of URI.
    */
   public static MRPath create(String source) {
+    if (source.equals("//"))
+      throw new RuntimeException("//");
+
     final int attrsStart = source.indexOf("?") + 1;
     boolean sorted = false;
     {
@@ -114,7 +120,7 @@ public class MRPath implements Serializable {
     }
 
     if (mount == null) {
-      throw new IllegalArgumentException("Unknown mount: " + source);
+      mount=Mount.ROOT; //throw new IllegalArgumentException("Unknown mount: " + source);
     }
     String path = source;
     if (attrsStart > 0)
@@ -125,6 +131,9 @@ public class MRPath implements Serializable {
   }
 
   public static MRPath create(MRPath parent, String path) {
+    if (path.equals("//"))
+      throw new RuntimeException("//");
+
     if (!parent.isDirectory())
       throw new IllegalArgumentException("Parent must be directory but [" + parent + "] is not.");
     return new MRPath(parent.mount, parent.path + path, false);
@@ -132,6 +141,9 @@ public class MRPath implements Serializable {
 
   public static MRPath createFromURI(String uriS) {
     try {
+      if (uriS.equals("//"))
+        throw new RuntimeException("//");
+
       final URI uri = new URI(uriS);
       if ("mr".equals(uri.getScheme())) {
         return create(uri.getPath() + (uri.getQuery() != null ? "?" + uri.getQuery() : ""));

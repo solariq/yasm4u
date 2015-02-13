@@ -6,14 +6,8 @@ import com.spbsu.commons.seq.CharSeqReader;
 import solar.mr.proc.impl.MRPath;
 import solar.mr.routines.MRRecord;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.*;
+import java.util.*;
 
 /**
  * Created by inikifor on 02.12.14.
@@ -95,5 +89,19 @@ public final class MRTestUtils {
     for (Map.Entry<MRPath, CharSeqBuilder> entry : toWrite.entrySet()) {
       env.write(entry.getKey(), new CharSeqReader(entry.getValue().build()));
     }
+  }
+
+  public static void dropMRTable(final MREnv env, String url){
+    for (final MRPath p: env.list(MRPath.createFromURI(url))) {
+      env.delete(p);
+    }
+  }
+
+  public static List<MRPath> listTables(final MREnv env, final MRPath path){
+    final ArrayList<MRPath> result = new ArrayList<>();
+    for (final MRPath p:env.list(path)){
+      result.add(p);
+    }
+    return result;
   }
 }

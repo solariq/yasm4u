@@ -121,12 +121,15 @@ public class LocalMREnv implements MREnv {
 
   private void writeFile(final Reader content, final MRPath shard, final boolean append) {
     final File file = file(shard);
-    try {
+    file.getParentFile().mkdirs();
+    /*try {
+
+
       FileUtils.forceMkdir(file.getParentFile());
     }
     catch (IOException e) {
       throw new RuntimeException(e);
-    }
+    }*/
 
     try (final FileWriter out = new FileWriter(file, append)) {
       StreamTools.transferData(content, out);
@@ -230,6 +233,9 @@ public class LocalMREnv implements MREnv {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+    final File unsortedFile = file(new MRPath(shard.mount, shard.path, false));
+    if (unsortedFile.exists())
+      unsortedFile.delete();
   }
 
   @Override
