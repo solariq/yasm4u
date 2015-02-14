@@ -526,7 +526,8 @@ public class YtMREnv extends RemoteMREnv {
         return arg.subSequence(10,arg.length());
       else {
         reportError(arg);
-        throw new RuntimeException("Expected date");
+        return arg.subSequence(10,arg.length());
+        //throw new RuntimeException("Expected date");
       }
     }
 
@@ -541,13 +542,14 @@ public class YtMREnv extends RemoteMREnv {
         return arg.subSequence(12, arg.length());
       else {
         reportError(arg);
-        throw new RuntimeException("Expected time hh:MM:ss " + separator + " zzz");
+        //throw new RuntimeException("Expected time hh:MM:ss " + separator + " zzz");
+        return arg.subSequence(12, arg.length());
       }
     }
 
     private CharSequence eatPeriod(final CharSequence arg) {
+      int index = 3;
       if (arg.charAt(0) == '(') {
-        int index = 3;
         while (CharSeqTools.isNumeric(arg.subSequence(2, index))) {
           index++;
         }
@@ -555,14 +557,16 @@ public class YtMREnv extends RemoteMREnv {
           return arg.subSequence(index + 5, arg.length());
       }
       reportError(arg);
-      throw new RuntimeException("Expected period \"( xx min)\"");
+      return arg.subSequence(index + 5, arg.length());
+      //throw new RuntimeException("Expected period \"( xx min)\"");
     }
 
     private CharSequence eatToken(final CharSequence arg, final String token) {
       if (!CharSeqTools.startsWith(arg, token)
           || CharSeqTools.isAlpha(arg.subSequence(token.length(), token.length() + 1))) {
         reportError(arg);
-        throw new RuntimeException("expected token: " + token);
+        //throw new RuntimeException("expected token: " + token);
+        return arg.subSequence(token.length() + 1, arg.length());
       }
       return arg.subSequence(token.length() + 1, arg.length());
     }
@@ -571,12 +575,14 @@ public class YtMREnv extends RemoteMREnv {
       CharSequence guid = arg.subSequence(0,33);
       if (this.guid != null && !CharSeqTools.equals(guid, this.guid)) {
         reportError(arg);
-        throw new RuntimeException("something strange with guid");
+        //throw new RuntimeException("something strange with guid");
+        return arg.subSequence(34, arg.length());
       }
       return arg.subSequence(34, arg.length());
     }
 
     private void checkOperationStatus(final CharSequence arg) {
+      System.err.println("DEBUG:" + arg);
       if (CharSeqTools.equals(arg, TOK_OP_INITIALIZING) && status == OperationStatus.NONE) {
         status = OperationStatus.INITIALIZING;
         return;
@@ -637,7 +643,7 @@ public class YtMREnv extends RemoteMREnv {
           break;
         default:
           reportError(arg);
-          throw new RuntimeException("Please add case!!!");
+          //throw new RuntimeException("Please add case!!!");
       }
       /* here should be hint processing */
     }
