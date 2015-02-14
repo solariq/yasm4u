@@ -629,7 +629,6 @@ public class YtMREnv extends RemoteMREnv {
     }
 
     private void checkOperationStatus(final CharSequence arg) {
-      System.err.println("DEBUG:" + arg);
       if (CharSeqTools.equals(arg, TOK_OP_INITIALIZING) && status == OperationStatus.NONE) {
         status = OperationStatus.INITIALIZING;
         return;
@@ -655,10 +654,14 @@ public class YtMREnv extends RemoteMREnv {
         return;
       }
       if (CharSeqTools.equals(arg, TOK_OP_FAILED)) {
-        throw new RuntimeException("Operation failed");
+        reportError("FAILED");
+        return;
+        //throw new RuntimeException("Operation failed");
+
       }
       reportError("current status: " + status);
-      throw new RuntimeException("Unknown status: " + arg);
+      return;
+      //throw new RuntimeException("Unknown status: " + arg);
     }
 
     private void hint(final CharSequence arg) {
@@ -668,6 +671,7 @@ public class YtMREnv extends RemoteMREnv {
 
     @Override
     public void process(CharSequence arg) {
+      System.err.println("DEBUG:" + arg);
       switch (status) {
         case NONE:
         case INITIALIZING:
