@@ -1,6 +1,8 @@
 package solar.mr.routines;
 
+import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqTools;
+import org.jetbrains.annotations.NotNull;
 import solar.mr.proc.impl.MRPath;
 
 /**
@@ -25,6 +27,20 @@ public class MRRecord {
   @Override
   public String toString() {
     return key + "\t" + sub + "\t" + value.toString();
+  }
+
+  @NotNull
+  private CharSeqBuilder getCharSeqBuilder() {
+    final CharSeqBuilder builder = new CharSeqBuilder(key);
+    return builder.append('\t').append(sub).append('\t').append(value);
+  }
+
+  public CharSequence toCharSequence() {
+    return getCharSeqBuilder().build();
+  }
+
+  public CharSequence toCharSequenceNL() {
+    return getCharSeqBuilder().append('\n').build();
   }
 
   @Override
