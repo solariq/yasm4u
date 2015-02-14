@@ -17,15 +17,12 @@ public final class MRTestUtils {
   private MRTestUtils() {}
 
   public static void writeRecords(MREnv env, String uri, MRRecord... records) {
-    final StringBuilder sb = new StringBuilder();
-    for (MRRecord record: records) {
-      sb.append(record.toString()).append("\n");
+    final MRPath path = MRPath.createFromURI(uri);
+    final MRRecord[] out = new MRRecord[records.length];
+    for (int i = 0; i < records.length; ++i) {
+      out[i] = new MRRecord(path, records[i].key, records[i].sub, records[i].value);
     }
-    try (Reader reader = new InputStreamReader(new ByteArrayInputStream(sb.toString().getBytes("UTF-8")))){
-      env.write(MRPath.createFromURI(uri), reader);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    writeRecords(env, records);
   }
 
   public static List<MRRecord> readRecords(MREnv env, final String path) {
@@ -84,7 +81,7 @@ public final class MRTestUtils {
       CharSeqBuilder builder = toWrite.get(record.source);
       if (builder == null)
         toWrite.put(record.source, builder = new CharSeqBuilder());
-      builder.append(record.toString()).append("\n");
+      builder.append(record.toCharSequenceNL());
     }
     for (Map.Entry<MRPath, CharSeqBuilder> entry : toWrite.entrySet()) {
       env.write(entry.getKey(), new CharSeqReader(entry.getValue().build()));
