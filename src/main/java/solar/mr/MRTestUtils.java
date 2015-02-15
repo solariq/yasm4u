@@ -22,7 +22,7 @@ public final class MRTestUtils {
     for (int i = 0; i < records.length; ++i) {
       out[i] = new MRRecord(path, records[i].key, records[i].sub, records[i].value);
     }
-    writeRecords(env, records);
+    writeRecords(env, out);
   }
 
   public static List<MRRecord> readRecords(MREnv env, final String path) {
