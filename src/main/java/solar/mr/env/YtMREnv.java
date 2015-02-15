@@ -380,10 +380,14 @@ public class YtMREnv extends RemoteMREnv {
   }
 
   private void executeMapOrReduceCommand(final List<String> options, final Action<CharSequence> outputProcessor, final Action<CharSequence> errorsProcessor, final InputStream contents) {
+    final YtMRResponseProcessor processor;
     if (runner instanceof SSHProcessRunner)
-      super.executeCommand(options, new SshMRYtResponseProcessor(outputProcessor, errorsProcessor), errorsProcessor, contents);
+      super.executeCommand(options, (processor = new SshMRYtResponseProcessor(outputProcessor, errorsProcessor)), errorsProcessor, contents);
     else
-      super.executeCommand(options, outputProcessor, new LocalMRYtResponseProcessor(errorsProcessor), contents);
+      super.executeCommand(options, outputProcessor, (processor = new LocalMRYtResponseProcessor(errorsProcessor)), contents);
+
+    if (!processor.isOk())
+      throw new RuntimeException("M/R failed");
   }
 
   @Override
@@ -518,6 +522,11 @@ public class YtMREnv extends RemoteMREnv {
     public YtMRResponseProcessor(final Action<CharSequence> processor) {
       super(processor);
     }
+
+    public boolean isOk() {
+      return (status == OperationStatus.COMPETED);
+    }
+
     private CharSequence eatDate(final CharSequence arg) {
       if (CharSeqTools.isNumeric(arg.subSequence(0,3)) /* year */
           && arg.charAt(4) == '-'
@@ -608,6 +617,7 @@ public class YtMREnv extends RemoteMREnv {
         return;
       }
       if (CharSeqTools.equals(arg, TOK_OP_FAILED)) {
+        status = OperationStatus.FAILED;
         reportError("FAILED");
         return;
         //throw new RuntimeException("Operation failed");
