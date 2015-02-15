@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.random.FastRandom;
+import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.JSONTools;
@@ -475,7 +476,7 @@ public class YtMREnv extends RemoteMREnv {
           }
         }
       } catch (JsonParseException e) {
-        if (arg.charAt(5) == '-'
+        if (arg.charAt(4) == '-'
             && arg.charAt(11) == '-'
             && arg.charAt(19) == '-') {
           /* it's uid of new created table */
@@ -572,13 +573,13 @@ public class YtMREnv extends RemoteMREnv {
     }
 
     private CharSequence initGuid(final CharSequence arg) {
-      CharSequence guid = arg.subSequence(0,33);
+      CharSequence guid = arg.subSequence(0,35);
       if (this.guid != null && !CharSeqTools.equals(guid, this.guid)) {
         reportError(arg);
         //throw new RuntimeException("something strange with guid");
-        return arg.subSequence(34, arg.length());
+        return arg.subSequence(35, arg.length());
       }
-      return arg.subSequence(34, arg.length());
+      return arg.subSequence(35, arg.length());
     }
 
     private void checkOperationStatus(final CharSequence arg) {
