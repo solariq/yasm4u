@@ -475,9 +475,9 @@ public class YtMREnv extends RemoteMREnv {
           }
         }
       } catch (JsonParseException e) {
-        if (arg.charAt(4) == '-'
-            && arg.charAt(10) == '-'
-            && arg.charAt(18) == '-') {
+        if (arg.charAt(5) == '-'
+            && arg.charAt(11) == '-'
+            && arg.charAt(19) == '-') {
           /* it's uid of new created table */
           warn("Shold looks like uuid: " + arg);
           return;
