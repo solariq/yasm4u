@@ -160,9 +160,6 @@ public class YtMREnv extends RemoteMREnv {
         result.add(localPath);
         updateState(localPath, sh);
       }
-      else if (typeNode.textValue().equals("map_node")) {
-        list(new MRPath(prefixPath.mount, path, false));
-      }
     }
   }
 
@@ -237,7 +234,7 @@ public class YtMREnv extends RemoteMREnv {
     options.add("table");
     options.add(localPath(shard));
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
-    wipeState(shard);
+    updateState(shard, new MRTableState(shard.path, true, false, "0", 0, 0, 0, System.currentTimeMillis()));
   }
 
   public void delete(final MRPath table) {
@@ -267,7 +264,8 @@ public class YtMREnv extends RemoteMREnv {
         + MAX_ROW_WEIGTH
         + "}}}'");
     executeMapOrReduceCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
-    wipeState(table);
+    MRTableState state  = resolve(table);
+    updateState(table, new MRTableState(table.path, true, true, state.crc(), state.length(), state.keysCount(), state.recordsCount(), System.currentTimeMillis()));
   }
 
   @Override
@@ -310,11 +308,17 @@ public class YtMREnv extends RemoteMREnv {
     //options.add("| sed -ne \"/^[0-9]\\*\\$/p\" -ne \"/\\t/p\" )'");
     options.add("'");
 
+    int inputCount = 0;
     for(final MRPath sh : in) {
-      if (resolve(sh).isAvailable())
+      if (!resolve(sh, false).isAvailable())
         continue;
       options.add("--src");
       options.add(localPath(sh));
+      inputCount++;
+    }
+    /* Otherwise Yt fails with wrong command syntax. */
+    if (inputCount == 0) {
+      return true;
     }
 
     final MRPath errorsPath = MRPath.create("/tmp/errors-" + Integer.toHexString(new FastRandom().nextInt()));
@@ -538,7 +542,7 @@ public class YtMREnv extends RemoteMREnv {
     }
 
     public boolean isOk() {
-      return (status == OperationStatus.COMPETED);
+      return (status != OperationStatus.FAILED);
     }
 
     private CharSequence eatDate(final CharSequence arg) {
