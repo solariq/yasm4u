@@ -9,6 +9,7 @@ import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.random.FastRandom;
 import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqBuilder;
+import com.spbsu.commons.seq.CharSeqReader;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.JSONTools;
 import org.apache.log4j.Logger;
@@ -310,6 +311,8 @@ public class YtMREnv extends RemoteMREnv {
     options.add("'");
 
     for(final MRPath sh : in) {
+      if (resolve(sh).isAvailable())
+        continue;
       options.add("--src");
       options.add(localPath(sh));
     }
@@ -465,24 +468,14 @@ public class YtMREnv extends RemoteMREnv {
           if (errors == null)
             break;
         } while (errors.size() != 0);
-        switch (code) {
-          case 500:
-            warn("WARNING! doesn't exists");
-            break;
-          case 501:
-            warn("WARNING! already exists");
-            break;
-          case 1:
-            break;
-          default: {
-            reportError(arg);
-            throw new RuntimeException("Yt exception");
-          }
-        }
+        errorCodeResolver(arg, metaJSON, code);
       } catch (JsonParseException e) {
-        if (arg.charAt(4) == '-'
+        if ((arg.charAt(4) == '-'
+            && arg.charAt(10) == '-'
+            && arg.charAt(18) == '-')
+            || (arg.charAt(4) == '-'
             && arg.charAt(11) == '-'
-            && arg.charAt(19) == '-') {
+            && arg.charAt(19) == '-')) {
           /* it's uid of new created table */
           warn("Shold looks like uuid: " + arg);
           return;
@@ -494,6 +487,27 @@ public class YtMREnv extends RemoteMREnv {
         throw new RuntimeException(e);
       }
     }
+
+    private void errorCodeResolver(CharSequence arg, JsonNode metaJSON, int code) {
+      JsonNode errors;
+      switch (code) {
+        case 500:
+          warn("WARNING! doesn't exists");
+          break;
+        case 501:
+          warn("WARNING! already exists");
+          break;
+        case 1:
+          errors = metaJSON.get("inner_errors").get(0);
+          errorCodeResolver(arg, errors, errors.get("code").asInt());
+          break;
+        default: {
+          reportError(arg);
+          throw new RuntimeException("Yt exception");
+        }
+      }
+    }
+
     public abstract void reportError(final CharSequence msg);
     public abstract void warn(final String msg);
   }
@@ -582,13 +596,16 @@ public class YtMREnv extends RemoteMREnv {
     }
 
     private CharSequence initGuid(final CharSequence arg) {
-      CharSequence guid = arg.subSequence(0,35);
+      CharSequence guid = arg.subSequence(0, CharSeqTools.indexOf(arg, " "));
       if (this.guid != null && !CharSeqTools.equals(guid, this.guid)) {
         reportError(arg);
         //throw new RuntimeException("something strange with guid");
-        return arg.subSequence(35, arg.length());
+        return arg.subSequence(guid.length(), arg.length());
       }
-      return arg.subSequence(35, arg.length());
+      else if (this.guid == null){
+        this.guid = guid;
+      }
+      return arg.subSequence(guid.length(), arg.length());
     }
 
     private void checkOperationStatus(final CharSequence arg) {
@@ -628,6 +645,15 @@ public class YtMREnv extends RemoteMREnv {
       //throw new RuntimeException("Unknown status: " + arg);
     }
 
+    private CharSequence eatWord(final CharSequence arg, final String word){
+      if (CharSeqTools.startsWith(arg, word)
+          && (arg.charAt(word.length()) == ' '
+      || arg.charAt(word.length()) == '\t')) {
+        return arg.subSequence(word.length(), arg.length());
+      }
+      else throw new RuntimeException("Wrong word! '" + arg + "'");
+    }
+
     private void hint(final CharSequence arg) {
       processor.invoke(CharSeqTools.trim(eatToken(arg, TOK_HINT)));
       status = OperationStatus.PRINT_HINT;
@@ -655,6 +681,33 @@ public class YtMREnv extends RemoteMREnv {
         case PRINT_HINT:
           processor.invoke(arg);
           status = OperationStatus.COMPETED;
+          break;
+        case FAILED:
+          final CharSequence result = eatWord(CharSeqTools.trim(initGuid(CharSeqTools.trim(
+              eatWord(CharSeqTools.trim(arg), "Operation")))), "failed. Result:");
+          final YtResponseProcessor codeResolver = new YtResponseProcessor(new Action<CharSequence>() {
+            @Override
+            public void invoke(final CharSequence charSequence) {
+              YtMRResponseProcessor.this.reportError(charSequence);
+            }
+          }){
+            @Override
+            public void reportError(CharSequence msg) {
+              status = OperationStatus.FAILED;
+            }
+
+            @Override
+            public void warn(String msg) {
+              YtMRResponseProcessor.this.warn(msg);
+              status = OperationStatus.COMPETED;
+            }
+          };
+          try {
+            CharSeqTools.processLines(new CharSeqReader(result), codeResolver);
+          } catch (IOException e) {
+            status = OperationStatus.FAILED;
+            throw new RuntimeException(e);
+          }
           break;
         default:
           reportError(arg);
@@ -690,7 +743,7 @@ public class YtMREnv extends RemoteMREnv {
     @Override
     public void invoke(CharSequence arg) {
       if (CharSeqTools.indexOf(arg, "\t") == -1)
-        super.invoke(arg);
+        super.invoke(CharSeqTools.trim(arg));
       else
         processor.invoke(arg);
     }
