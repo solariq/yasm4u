@@ -56,7 +56,16 @@ public class MRTableState {
 
   @Override
   public String toString() {
-    return path();
+    StringBuilder builder = new StringBuilder(getClass().getName());
+    builder.append("[").append("path: ").append(path).append(", ");
+    builder.append("exists: ").append(exist).append(", ");
+    builder.append("sorted: ").append(sorted).append(", ");
+    builder.append("length: ").append(length).append(", ");
+    builder.append("keysCount: ").append(keysCount).append(", ");
+    builder.append("records count: ").append(recordsCount).append(", ");
+    builder.append("crc: ").append(crc).append(", ");
+    builder.append("timestamp: ").append(metaTS).append("]");
+    return builder.toString();
   }
 
   public String path() {
