@@ -59,9 +59,20 @@ public class CompositeMREnv implements MREnv {
       for(int i = 0; i < out.length; i++) {
         outputExistence &= localOutAfter[i].isAvailable();
       }
+      if (Boolean.getBoolean("yasm4u.dumpStatesFF")) {
+        for(final MRTableState s:localInBefore)
+          System.out.println("FF: local IN BEFORE: " + s);
+        for(final MRTableState s:localOutBefore)
+          System.out.println("FF: local OUT BEFORE: " + s);
+        for(final MRTableState s:localInAfter)
+          System.out.println("FF: local IN AFTER: " + s);
+        for(final MRTableState s:localOutAfter)
+          System.out.println("FF: local OUT AFTER: " + s);
+      }
       if (outputExistence) {
-        System.out.println("Fast forwarding execution " + builder.toString());
-        if (!Boolean.getBoolean("yasm4u.disableFF"))
+        boolean ffDisabled = Boolean.getBoolean("yasm4u.disableFF");
+        System.out.println("Fast forwarding execution " + (ffDisabled? "(ignored)" : "") + builder.toString());
+        if (!ffDisabled)
           return true;
       }
     }
