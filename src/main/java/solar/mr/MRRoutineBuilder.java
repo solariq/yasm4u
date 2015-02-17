@@ -104,4 +104,21 @@ public abstract class MRRoutineBuilder implements Serializable {
 
   private void readObjectNoData() throws ObjectStreamException {
   }
+
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder(getClass().getName());
+    builder.append(", op: ").append(getRoutineType());
+    builder.append(", input: [");
+    for(final MRPath p:input()){
+      builder.append(p.path).append(", ");
+    }
+    builder.replace(builder.length() - 2,builder.length(), "],");
+    builder.append(" output: [");
+    for(final MRPath p:output()){
+      builder.append(p.path).append(", ");
+    }
+    builder.replace(builder.length() - 2,builder.length(), "]");
+    return builder.toString();
+  }
 }
