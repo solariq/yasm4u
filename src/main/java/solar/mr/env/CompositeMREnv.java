@@ -61,7 +61,8 @@ public class CompositeMREnv implements MREnv {
       }
       if (outputExistence) {
         System.out.println("Fast forwarding execution " + builder.toString());
-        return true;
+        if (!Boolean.getBoolean("yasm4u.disableFF"))
+          return true;
       }
     }
     final MultiMap<MRPath, CharSequence> needToAddToSample = new MultiMap<>();
