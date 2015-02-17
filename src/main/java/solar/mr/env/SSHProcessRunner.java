@@ -49,6 +49,8 @@ public class SSHProcessRunner implements ProcessRunner {
         toProxy = new OutputStreamWriter(process.getOutputStream(), Charset.forName("UTF-8"));
         fromProxy = new LineNumberReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF-8")));
         LineNumberReader error = new LineNumberReader(new InputStreamReader(process.getErrorStream(), Charset.forName("UTF-8")));
+        toProxy.append("export YT_ERROR_FORMAT=json\n");
+        toProxy.flush();
         toProxy.append("echo Ok\n");
         toProxy.flush();
         final String response = fromProxy.readLine();
@@ -153,7 +155,7 @@ public class SSHProcessRunner implements ProcessRunner {
           final StringBuilder finalCommand = new StringBuilder();
           finalCommand.append("perl ").append(runner).append(" run ").append(command).append(" 2>>/tmp/runner-errors-" + WhiteboardImpl.USER + ".txt\n");
           println(finalCommand.toString());
-          toProxy.append("export YT_ERROR_FORMAT=json;\n");
+          toProxy.append("export YT_ERROR_FORMAT=json\n");
           toProxy.flush();
           toProxy.append(finalCommand);
           toProxy.flush();
