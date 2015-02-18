@@ -103,7 +103,7 @@ public class YtMREnv extends RemoteMREnv {
     final String path = localPath(prefix);
     final List<MRPath> result = new ArrayList<>();
     if (!prefix.isDirectory()) { // trying an easy way first
-      optionEntity.add(path);
+      optionEntity.add(path + "/@");
       final ConcatAction resultProcessor = new ConcatAction();
       executeCommand(optionEntity, resultProcessor, defaultErrorsProcessor, null);
 
@@ -124,7 +124,7 @@ public class YtMREnv extends RemoteMREnv {
       executeCommand(options, new Action<CharSequence>(){
         @Override
         public void invoke(CharSequence arg) {
-          result.addAll(Arrays.asList(list(new MRPath(prefix.mount, prefix.path + arg, false))));
+          result.addAll(Arrays.asList(list(MRPath.create(prefix, arg.toString()))));
         }
       }, defaultErrorsProcessor, null);
     }
@@ -149,11 +149,11 @@ public class YtMREnv extends RemoteMREnv {
     final JsonNode typeNode = metaJSON.get("type");
     if (typeNode != null && !typeNode.isMissingNode()) {
       final String name = metaJSON.get("key").asText(); /* it's a name in Yt */
-      final String path = prefixPath.isDirectory() ? prefix : prefix + "/" + name;
+      final String path = prefixPath.isDirectory()? localPath(prefixPath) + "/" + name : localPath(prefixPath);
 
       if (typeNode.textValue().equals("table")) {
         final long size = metaJSON.get("uncompressed_data_size").longValue();
-        boolean sorted = metaJSON.has("sorted");
+        boolean sorted = metaJSON.get("sorted").asBoolean();
         final long recordsCount = metaJSON.has("row_count") ? metaJSON.get("row_count").longValue() : 0;
         final MRTableState sh = new MRTableState(path, true, sorted, "" + size, size, recordsCount / 10, recordsCount, /*ts*/ System.currentTimeMillis());
         final MRPath localPath = findByLocalPath(path, sorted);
@@ -318,6 +318,7 @@ public class YtMREnv extends RemoteMREnv {
     }
     /* Otherwise Yt fails with wrong command syntax. */
     if (inputCount == 0) {
+      defaultErrorsProcessor.invoke("WARNING!: ");
       return true;
     }
 
