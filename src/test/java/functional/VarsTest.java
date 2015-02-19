@@ -118,7 +118,7 @@ public final class VarsTest extends BaseMRTest {
     vars.set(STRING_VAR, STRING_VAL);
     vars.set(DATE_VAR, DATE_VAL);
     final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(Map2.class, vars);
-    mrProcess.wb().wipe();
+    //mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
     List<MRRecord> records = readRecords(env, REAL_OUT_TABLE_NAME_2);
@@ -151,7 +151,7 @@ public final class VarsTest extends BaseMRTest {
     Whiteboard vars = new WhiteboardImpl(env, Map3.class.getName());
     vars.set(ARRAY_VAR, ARRAY_VALS);
     final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(Map3.class, vars);
-    mrProcess.wb().wipe();
+    //mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
     for(String i: ARRAY_VALS) {
