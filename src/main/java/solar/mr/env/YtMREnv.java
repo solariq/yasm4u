@@ -610,6 +610,10 @@ public class YtMREnv extends RemoteMREnv {
       else if (this.guid == null){
         this.guid = guid;
       }
+      else if (!this.guid.equals(guid)) {
+        warn("NOTICE! Guid has changed " + this.guid + " -> " + guid);
+        this.guid = guid;
+      }
       return arg.subSequence(guid.length(), arg.length());
     }
 
