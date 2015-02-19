@@ -28,10 +28,10 @@ public class MROutput2MREnv extends MROutputBase {
     super(output);
     this.handler = handler;
     //noinspection unchecked
-    queues = new ArrayBlockingQueue[output.length];
-    for(int i = 0; i < output.length; i++) {
+    queues = new ArrayBlockingQueue[output.length + 1];
+    for(int i = 0; i < output.length + 1; i++) {
       final ArrayBlockingQueue<CharSeq> queue = new ArrayBlockingQueue<>(1000);
-      final MRPath path = output[i];
+      final MRPath path = i == output.length ? MRPath.create("/dev/null") : output[i];
       queues[i] = queue;
       final Thread thread = new Thread("MR parallel output thread to " + path.resource()) {
         @Override
