@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.random.FastRandom;
-import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqReader;
 import com.spbsu.commons.seq.CharSeqTools;
@@ -316,9 +315,10 @@ public class YtMREnv extends RemoteMREnv {
       options.add(localPath(sh));
       inputCount++;
     }
+
     /* Otherwise Yt fails with wrong command syntax. */
     if (inputCount == 0) {
-      defaultErrorsProcessor.invoke("WARNING!: ");
+      defaultErrorsProcessor.invoke("WARNING!: operation was skiped");
       return true;
     }
 
@@ -446,7 +446,7 @@ public class YtMREnv extends RemoteMREnv {
     }
   }
 
-  protected abstract static class YtResponseProcessor implements Action<CharSequence>{
+  protected abstract static class YtResponseProcessor implements Action<CharSequence> {
     final Action<CharSequence> processor;
 
     public YtResponseProcessor(final Action<CharSequence> processor) {
