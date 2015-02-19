@@ -1,5 +1,6 @@
 package solar.mr.env;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,6 +8,7 @@ import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.random.FastRandom;
 import com.spbsu.commons.seq.CharSeqBuilder;
+import com.spbsu.commons.seq.CharSeqReader;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.JSONTools;
 import org.apache.log4j.Logger;
@@ -16,8 +18,9 @@ import solar.mr.routines.MRRecord;
 
 import java.io.*;
 import java.text.ParseException;
-import java.util.*;
-import java.util.concurrent.Exchanger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * User: solar
@@ -61,13 +64,13 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--format");
     options.add("\"<has_subkey=true>\"yamr");
     options.add(localPath(shard));
-    executeCommand(options, new YtResponseProcessor(new MRRoutine(shard) {
+    executeCommand(options, new MRRoutine(shard) {
       @Override
       public void process(final MRRecord arg) {
         recordsCount[0]++;
         linesProcessor.process(arg);
       }
-    }), defaultErrorsProcessor, null);
+    }, defaultErrorsProcessor, null);
     return recordsCount[0];
   }
 
@@ -77,12 +80,12 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--format");
     options.add("\"<has_subkey=true>yamr\"");
     options.add(localPath(table) + "[:#100]");
-    executeCommand(options, new YtResponseProcessor(new MRRoutine(table) {
+    executeCommand(options, new MRRoutine(table) {
       @Override
       public void process(final MRRecord arg) {
         linesProcessor.process(arg);
       }
-    }), defaultErrorsProcessor, null);
+    }, defaultErrorsProcessor, null);
   }
 
 
@@ -99,9 +102,9 @@ public class YtMREnv extends RemoteMREnv {
     final String path = localPath(prefix);
     final List<MRPath> result = new ArrayList<>();
     if (!prefix.isDirectory()) { // trying an easy way first
-      optionEntity.add(path);
+      optionEntity.add(path + "/@");
       final ConcatAction resultProcessor = new ConcatAction();
-      executeCommand(optionEntity, new YtResponseProcessor(resultProcessor), defaultErrorsProcessor, null);
+      executeCommand(optionEntity, resultProcessor, defaultErrorsProcessor, null);
 
       try {
         final JsonParser parser = JSONTools.parseJSON(resultProcessor.sequence());
@@ -117,12 +120,12 @@ public class YtMREnv extends RemoteMREnv {
       final String nodePath = path.substring(0, path.length() - 1);
       options.add(nodePath);
       //final ConcatAction builder = new ConcatAction(" ");
-      executeCommand(options, new YtResponseProcessor(new Action<CharSequence>(){
+      executeCommand(options, new Action<CharSequence>(){
         @Override
         public void invoke(CharSequence arg) {
-          result.addAll(Arrays.asList(list(new MRPath(prefix.mount, prefix.path + arg, false))));
+          result.addAll(Arrays.asList(list(MRPath.create(prefix, arg.toString()))));
         }
-      }), defaultErrorsProcessor, null);
+      }, defaultErrorsProcessor, null);
     }
     if (result.isEmpty()) {
       updateState(prefix, new MRTableState(prefix.path,false, false, "0", 0, 0, 0, System.currentTimeMillis()));
@@ -131,38 +134,6 @@ public class YtMREnv extends RemoteMREnv {
     else
       return result.toArray(new MRPath[result.size()]);
   }
-
-  /*
-  private boolean isNode(final MRPath path) {
-    final List<String> options = defaultOptions();
-    options.add("get");
-    options.add(localPath(path) + "/@type");
-    final CharSequence[] response = new CharSequence[1];
-    executeCommand(options, new YtResponseProcessor(new Action<CharSequence>(){
-      @Override
-      public void invoke(CharSequence charSequence) {
-        response[0] = charSequence;
-      }
-    }), defaultErrorsProcessor, null);
-    if (!"map_node".equals(response[0]) && !"table".equals(response[0]))
-      throw new UnsupportedOperationException("Unknown node type: " + response[0]);
-    return "map_node".equals(response[0]);
-  }
-
-  private boolean isTableSorted(final MRPath path) {
-    final List<String> options = defaultOptions();
-    options.add("get");
-    options.add(localPath(path) + "/@sorted");
-    final CharSequence[] response = new CharSequence[1];
-    executeCommand(options, new YtResponseProcessor(new Action<CharSequence>(){
-      @Override
-      public void invoke(CharSequence charSequence) {
-        response[0] = charSequence;
-      }
-    }), defaultErrorsProcessor, null);
-    return Boolean.parseBoolean(response[0].toString());
-  }
-  */
 
   private void extractTableFromJson(final MRPath prefixPath, List<MRPath> result, JsonParser parser) throws IOException, ParseException {
     final String prefix = localPath(prefixPath);
@@ -177,19 +148,16 @@ public class YtMREnv extends RemoteMREnv {
     final JsonNode typeNode = metaJSON.get("type");
     if (typeNode != null && !typeNode.isMissingNode()) {
       final String name = metaJSON.get("key").asText(); /* it's a name in Yt */
-      final String path = prefixPath.isDirectory() ? prefix : prefix + "/" + name;
+      final String path = prefixPath.isDirectory()? localPath(prefixPath) + "/" + name : localPath(prefixPath);
 
       if (typeNode.textValue().equals("table")) {
         final long size = metaJSON.get("uncompressed_data_size").longValue();
-        boolean sorted = metaJSON.has("sorted");
+        boolean sorted = metaJSON.get("sorted").asBoolean();
         final long recordsCount = metaJSON.has("row_count") ? metaJSON.get("row_count").longValue() : 0;
         final MRTableState sh = new MRTableState(path, true, sorted, "" + size, size, recordsCount / 10, recordsCount, /*ts*/ System.currentTimeMillis());
         final MRPath localPath = findByLocalPath(path, sorted);
         result.add(localPath);
         updateState(localPath, sh);
-      }
-      else if (typeNode.textValue().equals("map_node")) {
-        list(new MRPath(prefixPath.mount, path, false));
       }
     }
   }
@@ -211,7 +179,7 @@ public class YtMREnv extends RemoteMREnv {
       options.add("--dst");
       options.add("\"<append=true>\"" + localPath(to));
       //options.add("--mode sorted");
-      executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
+      executeMapOrReduceCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     }
     wipeState(to);
   }
@@ -264,8 +232,8 @@ public class YtMREnv extends RemoteMREnv {
     options.add("-r");
     options.add("table");
     options.add(localPath(shard));
-    executeCommand(options, new YtResponseProcessor(defaultOutputProcessor), defaultErrorsProcessor, null);
-    wipeState(shard);
+    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
+    updateState(shard, new MRTableState(shard.path, true, false, "0", 0, 0, 0, System.currentTimeMillis()));
   }
 
   public void delete(final MRPath table) {
@@ -294,8 +262,9 @@ public class YtMREnv extends RemoteMREnv {
         + "}};\"merge_job_io\" = {\"table_writer\" = {\"max_row_weight\" = "
         + MAX_ROW_WEIGTH
         + "}}}'");
-    executeCommand(options, defaultOutputProcessor , defaultErrorsProcessor , null);
-    wipeState(table);
+    executeMapOrReduceCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
+    MRTableState state  = resolve(table);
+    updateState(table, new MRTableState(table.path, true, true, state.crc(), state.length(), state.keysCount(), state.recordsCount(), System.currentTimeMillis()));
   }
 
   @Override
@@ -338,9 +307,19 @@ public class YtMREnv extends RemoteMREnv {
     //options.add("| sed -ne \"/^[0-9]\\*\\$/p\" -ne \"/\\t/p\" )'");
     options.add("'");
 
+    int inputCount = 0;
     for(final MRPath sh : in) {
+      if (!resolve(sh, false).isAvailable())
+        continue;
       options.add("--src");
       options.add(localPath(sh));
+      inputCount++;
+    }
+
+    /* Otherwise Yt fails with wrong command syntax. */
+    if (inputCount == 0) {
+      defaultErrorsProcessor.invoke("WARNING!: operation was skiped");
+      return true;
     }
 
     final MRPath errorsPath = MRPath.create("/tmp/errors-" + Integer.toHexString(new FastRandom().nextInt()));
@@ -348,7 +327,7 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--dst");
     options.add(localPath(errorsPath));
 
-    executeCommand(options, defaultOutputProcessor, new YtResponseProcessor(defaultErrorsProcessor), null);
+    executeMapOrReduceCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     final int[] errorsCount = new int[]{0};
     errorsCount[0] += read(errorsPath, new ErrorsTableHandler(errorsPath, errorsHandler));
     delete(errorsPath);
@@ -364,12 +343,10 @@ public class YtMREnv extends RemoteMREnv {
     if (table.startsWith(homePrefix)) {
       mnt = MRPath.Mount.HOME;
       path = table.substring(homePrefix.length());
-    }
-    else if (table.startsWith("//tmp/")) {
+    } else if (table.startsWith("//tmp/")) {
       mnt = MRPath.Mount.TEMP;
       path = table.substring("//tmp/".length());
-    }
-    else {
+    } else {
       mnt = MRPath.Mount.ROOT;
       path = table;
     }
@@ -408,6 +385,26 @@ public class YtMREnv extends RemoteMREnv {
   @Override
   public String toString() {
     return "Yt://" + user + "@" + master + "/";
+  }
+
+  private void executeMapOrReduceCommand(final List<String> options, final Action<CharSequence> outputProcessor, final Action<CharSequence> errorsProcessor, final InputStream contents) {
+    final YtMRResponseProcessor processor;
+    if (runner instanceof SSHProcessRunner)
+      super.executeCommand(options, (processor = new SshMRYtResponseProcessor(outputProcessor, errorsProcessor)), errorsProcessor, contents);
+    else
+      super.executeCommand(options, outputProcessor, (processor = new LocalMRYtResponseProcessor(errorsProcessor)), contents);
+
+    if (!processor.isOk())
+      throw new RuntimeException("M/R failed");
+  }
+
+  @Override
+  protected void executeCommand(List<String> options, Action<CharSequence> outputProcessor,
+                                Action<CharSequence> errorsProcessor, InputStream contents) {
+    if (runner instanceof SSHProcessRunner)
+      super.executeCommand(options, new SshYtResponseProcessor(outputProcessor, errorsProcessor), errorsProcessor, contents);
+    else
+      super.executeCommand(options, outputProcessor, new LocalYtResponseProcessor(errorsProcessor), contents);
   }
 
   private static class ConcatAction implements Action<CharSequence> {
@@ -449,20 +446,355 @@ public class YtMREnv extends RemoteMREnv {
     }
   }
 
-  private class YtResponseProcessor implements Action<CharSequence> {
+  protected abstract static class YtResponseProcessor implements Action<CharSequence> {
     final Action<CharSequence> processor;
-    boolean skip = false;
+
     public YtResponseProcessor(final Action<CharSequence> processor) {
       this.processor = processor;
     }
+
     @Override
     public void invoke(CharSequence arg) {
-      /* TODO: enhance error/warnings processing */
-      if (!skip && CharSeqTools.startsWith(arg, "Received an error while"))
-        skip = true;
+      try {
+        final JsonParser parser = JSONTools.parseJSON(arg);
+        final ObjectMapper mapper = new ObjectMapper();
+        final JsonNode metaJSON = mapper.readTree(parser);
+        /* TODO: more protective programming */
+        int code = 0;
+        if (!metaJSON.has("message")) {
+          processor.invoke(arg);
+          return;
+        }
 
-      if (!skip)
+        JsonNode errors = metaJSON.get("inner_errors").get(0);
+        do {
+          code = errors.get("code").asInt();
+          errors = errors.elements().next().get(0);
+          if (errors == null)
+            break;
+        } while (errors.size() != 0);
+        errorCodeResolver(arg, metaJSON, code);
+      } catch (JsonParseException e) {
+        if ((arg.charAt(4) == '-'
+            && arg.charAt(10) == '-'
+            && arg.charAt(18) == '-')
+            || (arg.charAt(4) == '-'
+            && arg.charAt(11) == '-'
+            && arg.charAt(19) == '-')) {
+          /* it's uid of new created table */
+          warn("Shold looks like uuid: " + arg);
+          return;
+        }
+        reportError("Msg: " + arg.toString() + " appears here by mistake!!!!");
+        reportError(e.getMessage());
         processor.invoke(arg);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    private void errorCodeResolver(CharSequence arg, JsonNode metaJSON, int code) {
+      JsonNode errors;
+      switch (code) {
+        case 500:
+          warn("WARNING! doesn't exists");
+          break;
+        case 501:
+          warn("WARNING! already exists");
+          break;
+        case 1:
+          errors = metaJSON.get("inner_errors").get(0);
+          errorCodeResolver(arg, errors, errors.get("code").asInt());
+          break;
+        default: {
+          reportError(arg);
+          throw new RuntimeException("Yt exception");
+        }
+      }
+    }
+
+    public abstract void reportError(final CharSequence msg);
+    public abstract void warn(final String msg);
+  }
+
+  protected abstract static class YtMRResponseProcessor extends YtResponseProcessor {
+    enum OperationStatus {
+      NONE,
+      INITIALIZING,
+      PREPARING,
+      COMPLETING,
+      FAILED,
+      COMPETED,
+      PRINT_HINT
+    }
+    private OperationStatus status = OperationStatus.NONE;
+    private CharSequence guid = null;
+    private final static String TOK_OPERATION = "operation";
+    private final static String TOK_OP_INITIALIZING = "initializing";
+    private final static String TOK_OP_COMPLETING = "completing";
+    private final static String TOK_OP_COMPLETED = "completed";
+    private final static String TOK_OP_PREPARING = "preparing";
+    private final static String TOK_OP_FAILED = "failed";
+
+    private final static String TOK_HINT = "INFO";
+
+    public YtMRResponseProcessor(final Action<CharSequence> processor) {
+      super(processor);
+    }
+
+    public boolean isOk() {
+      return (status != OperationStatus.FAILED);
+    }
+
+    private CharSequence eatDate(final CharSequence arg) {
+      if (CharSeqTools.isNumeric(arg.subSequence(0,3)) /* year */
+          && arg.charAt(4) == '-'
+          && CharSeqTools.isNumeric(arg.subSequence(5, 6)) /* month */
+          && arg.charAt(7) == '-'
+          && CharSeqTools.isNumeric(arg.subSequence(8,9)) /* day */)
+        return arg.subSequence(10,arg.length());
+      else {
+        reportError(arg);
+        return arg.subSequence(10,arg.length());
+        //throw new RuntimeException("Expected date");
+      }
+    }
+
+    private CharSequence eatTime(final CharSequence arg, char separator) {
+      if (CharSeqTools.isNumeric(arg.subSequence(0,1)) /* hours */
+          && arg.charAt(2) == ':'
+          && CharSeqTools.isNumeric(arg.subSequence(3,4)) /* minutes */
+          && arg.charAt(5) == ':'
+          && CharSeqTools.isNumeric(arg.subSequence(6,7))
+          && arg.charAt(8) == separator
+          && CharSeqTools.isNumeric(arg.subSequence(9,11)))
+        return arg.subSequence(12, arg.length());
+      else {
+        reportError(arg);
+        //throw new RuntimeException("Expected time hh:MM:ss " + separator + " zzz");
+        return arg.subSequence(12, arg.length());
+      }
+    }
+
+    private CharSequence eatPeriod(final CharSequence arg) {
+      int index = 3;
+      if (arg.charAt(0) == '(') {
+        while (CharSeqTools.isNumeric(arg.subSequence(2, index))) {
+          index++;
+        }
+        if (CharSeqTools.equals(arg.subSequence(index, index + 4),"min)"))
+          return arg.subSequence(index + 5, arg.length());
+      }
+      reportError(arg);
+      return arg.subSequence(index + 5, arg.length());
+      //throw new RuntimeException("Expected period \"( xx min)\"");
+    }
+
+    private CharSequence eatToken(final CharSequence arg, final String token) {
+      if (!CharSeqTools.startsWith(arg, token)
+          || CharSeqTools.isAlpha(arg.subSequence(token.length(), token.length() + 1))) {
+        reportError(arg);
+        //throw new RuntimeException("expected token: " + token);
+        return arg.subSequence(token.length() + 1, arg.length());
+      }
+      return arg.subSequence(token.length() + 1, arg.length());
+    }
+
+    private CharSequence initGuid(final CharSequence arg) {
+      CharSequence guid = arg.subSequence(0, CharSeqTools.indexOf(arg, " "));
+      if (this.guid != null && !CharSeqTools.equals(guid, this.guid)) {
+        reportError(arg);
+        //throw new RuntimeException("something strange with guid");
+        return arg.subSequence(guid.length(), arg.length());
+      }
+      else if (this.guid == null){
+        this.guid = guid;
+      }
+      return arg.subSequence(guid.length(), arg.length());
+    }
+
+    private void checkOperationStatus(final CharSequence arg) {
+      if (CharSeqTools.equals(arg, TOK_OP_INITIALIZING) && status == OperationStatus.NONE) {
+        status = OperationStatus.INITIALIZING;
+        return;
+      }
+      if (CharSeqTools.equals(arg, TOK_OP_COMPLETED)
+          && (status == OperationStatus.INITIALIZING
+          || status == OperationStatus.PREPARING
+          || status == OperationStatus.PRINT_HINT
+          || status == OperationStatus.NONE /* Ultra fast operation usually with empty inputs */
+          || status == OperationStatus.COMPLETING)){
+        status = OperationStatus.COMPETED;
+        return;
+      }
+      if (CharSeqTools.equals(arg, TOK_OP_PREPARING)
+          && (status == OperationStatus.INITIALIZING)) {
+        status = OperationStatus.PREPARING;
+        return;
+      }
+      if (CharSeqTools.equals(arg, TOK_OP_COMPLETING)
+          && (status == OperationStatus.NONE
+          || status == OperationStatus.INITIALIZING)) {
+        status = OperationStatus.COMPLETING;
+        return;
+      }
+      if (CharSeqTools.equals(arg, TOK_OP_FAILED)) {
+        status = OperationStatus.FAILED;
+        reportError("FAILED");
+        return;
+        //throw new RuntimeException("Operation failed");
+
+      }
+      reportError("current status: " + status);
+      return;
+      //throw new RuntimeException("Unknown status: " + arg);
+    }
+
+    private CharSequence eatWord(final CharSequence arg, final String word){
+      if (CharSeqTools.startsWith(arg, word)
+          && (arg.charAt(word.length()) == ' '
+      || arg.charAt(word.length()) == '\t')) {
+        return arg.subSequence(word.length(), arg.length());
+      }
+      else throw new RuntimeException("Wrong word! '" + arg + "'");
+    }
+
+    private void hint(final CharSequence arg) {
+      processor.invoke(CharSeqTools.trim(eatToken(arg, TOK_HINT)));
+      status = OperationStatus.PRINT_HINT;
+    }
+
+    @Override
+    public void invoke(CharSequence arg) {
+      System.err.println("DEBUG:" + arg);
+      switch (status) {
+        case NONE:
+        case INITIALIZING:
+          final CharSequence raw0 = CharSeqTools.trim(eatPeriod(CharSeqTools.trim(eatTime(CharSeqTools.trim(eatDate(arg)), '.'))));
+          final CharSequence raw1 = CharSeqTools.trim(eatToken(raw0, TOK_OPERATION));
+          final CharSequence raw2 = CharSeqTools.trim(initGuid(raw1));
+          /* we don't need the rest of the mess at runtime
+           * in some cases Yt drops : before running=... failed=...
+           */
+          if (raw2.charAt(0) == ':' || CharSeqTools.startsWith(CharSeqTools.trim(raw2), "running="))
+            return;
+          checkOperationStatus(raw2);
+          break;
+        case COMPETED:
+          hint(CharSeqTools.trim(eatTime(CharSeqTools.trim(eatDate(arg)), ',')));
+          break;
+        case PRINT_HINT:
+          processor.invoke(arg);
+          status = OperationStatus.COMPETED;
+          break;
+        case FAILED:
+          final CharSequence result = eatWord(CharSeqTools.trim(initGuid(CharSeqTools.trim(
+              eatWord(CharSeqTools.trim(arg), "Operation")))), "failed. Result:");
+          final YtResponseProcessor codeResolver = new YtResponseProcessor(new Action<CharSequence>() {
+            @Override
+            public void invoke(final CharSequence charSequence) {
+              YtMRResponseProcessor.this.reportError(charSequence);
+            }
+          }){
+            @Override
+            public void reportError(CharSequence msg) {
+              status = OperationStatus.FAILED;
+            }
+
+            @Override
+            public void warn(String msg) {
+              YtMRResponseProcessor.this.warn(msg);
+              status = OperationStatus.COMPETED;
+            }
+          };
+          try {
+            CharSeqTools.processLines(new CharSeqReader(result), codeResolver);
+          } catch (IOException e) {
+            status = OperationStatus.FAILED;
+            throw new RuntimeException(e);
+          }
+          break;
+        default:
+          reportError(arg);
+          //throw new RuntimeException("Please add case!!!");
+      }
+      /* here should be hint processing */
+    }
+  }
+
+  private static class LocalYtResponseProcessor extends YtResponseProcessor {
+    public LocalYtResponseProcessor(Action<CharSequence> errorProcessor) {
+      super(errorProcessor);
+    }
+
+    @Override
+    public void reportError(final CharSequence msg) {
+      processor.invoke(msg);
+    }
+
+    @Override
+    public void warn(final String msg) {
+      processor.invoke(msg);
+    }
+  }
+
+  private static class SshYtResponseProcessor extends YtResponseProcessor {
+    final Action<CharSequence> errorProcessor;
+    public SshYtResponseProcessor(Action<CharSequence> processor, Action<CharSequence> errorProcessor) {
+      super(processor);
+      this.errorProcessor = errorProcessor;
+    }
+
+    @Override
+    public void invoke(CharSequence arg) {
+      if (CharSeqTools.indexOf(arg, "\t") == -1)
+        super.invoke(CharSeqTools.trim(arg));
+      else
+        processor.invoke(arg);
+    }
+
+    @Override
+    public void reportError(final CharSequence errorMsg) {
+      errorProcessor.invoke(errorMsg);
+    }
+
+    @Override
+    public void warn(final String msg) {
+      errorProcessor.invoke(msg);
+    }
+  }
+
+  protected static class LocalMRYtResponseProcessor extends YtMRResponseProcessor{
+    public LocalMRYtResponseProcessor(Action<CharSequence> processor) {
+      super(processor);
+    }
+
+    @Override
+    public void reportError(CharSequence msg) {
+      processor.invoke(msg);
+    }
+
+    @Override
+    public void warn(String msg) {
+      processor.invoke(msg);
+    }
+  }
+
+  protected static class SshMRYtResponseProcessor extends YtMRResponseProcessor{
+    final Action<CharSequence> errorProcessor;
+    public SshMRYtResponseProcessor(final Action<CharSequence> processor, final Action<CharSequence> errorProcessor) {
+      super(processor);
+      this.errorProcessor = errorProcessor;
+    }
+
+    @Override
+    public void reportError(CharSequence msg) {
+      errorProcessor.invoke(msg);
+    }
+
+    @Override
+    public void warn(String msg) {
+      errorProcessor.invoke(msg);
     }
   }
 }

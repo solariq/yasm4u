@@ -25,14 +25,6 @@ public final class MRTestUtils {
     writeRecords(env, out);
   }
 
-  public static void writeRecords(MREnv env, MRPath path, MRRecord... records) {
-    final MRRecord[] out = new MRRecord[records.length];
-    for (int i = 0; i < records.length; ++i) {
-      out[i] = new MRRecord(path, records[i].key, records[i].sub, records[i].value);
-    }
-    writeRecords(env, out);
-  }
-
   public static List<MRRecord> readRecords(MREnv env, final String path) {
     final List<MRRecord> result = new ArrayList<>();
     env.read(MRPath.createFromURI(path), new Processor<MRRecord>() {
