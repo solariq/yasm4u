@@ -115,22 +115,20 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
 
       final URI uri = new URI(resource);
       final String scheme = uri.getScheme();
-      if (scheme == null) {
+      if (scheme == null)
         throw new RuntimeException("Schema is null");
-      }
       switch(scheme) {
         case "temp":
           final String subProtocol = uri.getSchemeSpecificPart();
           if (subProtocol.startsWith("mr://")) {
             final MRPath path = MRPath.createFromURI(subProtocol);
-            final MRPath result = new MRPath(MRPath.Mount.TEMP, user + "/" + path.path, path.sorted);
+            final MRPath result = new MRPath(MRPath.Mount.TEMP, user + "/" + path.path + "-" + Integer.toHexString(new FastRandom().nextInt()), path.sorted);
             set(resource, result);
             return (T)result;
           }
           else throw new UnsupportedOperationException("Unknown schema for temp allocation: " + subProtocol);
         case "mr":
           Object result;
-          final String path = uri.getPath();
           if (resource.endsWith("*"))
             result = env.list(MRPath.createFromURI(resource.substring(0, resource.length() - 1)));
           else

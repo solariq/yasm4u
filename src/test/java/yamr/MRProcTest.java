@@ -8,10 +8,7 @@ import org.junit.Test;
 import solar.mr.MREnv;
 import solar.mr.MROutput;
 import solar.mr.MRTableState;
-import solar.mr.env.LocalMREnv;
-import solar.mr.env.ProcessRunner;
-import solar.mr.env.SSHProcessRunner;
-import solar.mr.env.YaMREnv;
+import solar.mr.env.*;
 import solar.mr.proc.AnnotatedMRProcess;
 import solar.mr.proc.State;
 import solar.mr.proc.Whiteboard;
@@ -34,7 +31,7 @@ import java.util.Random;
 @SuppressWarnings("deprecation")
 public class MRProcTest {
 
-  private final static String TEST_SERVER_PROXY = "batista";
+  private final static String TEST_SERVER_PROXY = "dodola";
   private final static String TEST_MR_USER = "mobilesearch";
 
   @SuppressWarnings("UnusedDeclaration")
@@ -136,10 +133,11 @@ public class MRProcTest {
   @Test
   public void testProcCreate() {
     final ProcessRunner runner = new SSHProcessRunner(TEST_SERVER_PROXY, "/Berkanavt/mapreduce/bin/mapreduce-dev");
-    final MREnv env = new YaMREnv(runner, TEST_MR_USER, "cedar:8013");
-    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SAPPCounter.class, env);
+    final MREnv env = new CompositeMREnv(new YaMREnv(runner, TEST_MR_USER, "cedar:8013"));
+    final Whiteboard wb = new WhiteboardImpl(env, "SAPPCounter");
+    wb.set("var:date", new Date(2014-1900, 8, 1));
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SAPPCounter.class, wb);
     mrProcess.wb().wipe();
-    mrProcess.wb().set("var:date", new Date(2014-1900, 8, 1));
     int count = mrProcess.<Integer>result();
     mrProcess.wb().wipe();
     Assert.assertEquals(2611709, count);
