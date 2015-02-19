@@ -74,7 +74,7 @@ public class MRPath implements Serializable {
     ROOT("/"),
     TEMP("/tmp/"),
     HOME("/home/"),
-    ;
+    LOG("/log/");
 
     String prefix;
     Mount(String prefix){

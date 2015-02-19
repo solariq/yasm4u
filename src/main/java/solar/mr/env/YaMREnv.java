@@ -335,7 +335,11 @@ public class YaMREnv extends RemoteMREnv {
     MRPath.Mount mnt;
     String path;
     final String homePrefix = user + "/";
-    if (table.startsWith(homePrefix)) {
+    if (table.startsWith("mobilesearch/")){
+      mnt = MRPath.Mount.LOG;
+      path = table.substring("mobilesearch/".length());
+    }
+    else if (table.startsWith(homePrefix)) {
       mnt = MRPath.Mount.HOME;
       path = table.substring(homePrefix.length());
     }
@@ -354,6 +358,9 @@ public class YaMREnv extends RemoteMREnv {
   protected String localPath(MRPath shard) {
     final StringBuilder result = new StringBuilder();
     switch (shard.mount) {
+      case LOG:
+        result.append("mobilesearch/");
+        break;
       case HOME:
         result.append(user).append("/");
         break;

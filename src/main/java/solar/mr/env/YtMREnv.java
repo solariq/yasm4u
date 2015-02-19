@@ -18,9 +18,7 @@ import solar.mr.routines.MRRecord;
 
 import java.io.*;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /**
  * User: solar
@@ -30,7 +28,7 @@ import java.util.List;
 public class YtMREnv extends RemoteMREnv {
   private static int MAX_ROW_WEIGTH = 128000000;
   private static Logger LOG = Logger.getLogger(YtMREnv.class);
-  final static String mrUserHome = System.getProperty("mr.user.home","mobilesearch");
+  final static String MR_USER_NAME = System.getProperty("user.name");
   public YtMREnv(final ProcessRunner runner, final String tag, final String master) {
     super(runner, tag, master);
   }
@@ -339,11 +337,17 @@ public class YtMREnv extends RemoteMREnv {
   protected MRPath findByLocalPath(String table, boolean sorted) {
     MRPath.Mount mnt;
     String path;
-    final String homePrefix = "//home/" + mrUserHome + "/";
+    // see about homes https://st.yandex-team.ru/YTADMIN-1575
+    final String homePrefix = "//home/mobilesearch/personal_homes/" + MR_USER_NAME + "/";
     if (table.startsWith(homePrefix)) {
       mnt = MRPath.Mount.HOME;
       path = table.substring(homePrefix.length());
-    } else if (table.startsWith("//tmp/")) {
+    }
+    else if (table.startsWith("//home/mobilesearch/")) {
+      mnt = MRPath.Mount.LOG;
+      path = table.substring("//home/mobilesearch/".length());
+    }
+    else if (table.startsWith("//tmp/")) {
       mnt = MRPath.Mount.TEMP;
       path = table.substring("//tmp/".length());
     } else {
@@ -358,8 +362,11 @@ public class YtMREnv extends RemoteMREnv {
   protected String localPath(MRPath shard) {
     final StringBuilder result = new StringBuilder();
     switch (shard.mount) {
-      case HOME:
-        result.append("//home/").append(mrUserHome).append("/");
+      case LOG:
+        result.append("//home/mobilesearch/");
+        break;
+      case HOME: //https://st.yandex-team.ru/YTADMIN-1575
+        result.append("//home/mobilesearch/personal_homes/").append(MR_USER_NAME).append("/");
         break;
       case TEMP:
         result.append("//tmp/");
