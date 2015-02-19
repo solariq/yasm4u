@@ -9,9 +9,6 @@ import solar.mr.proc.impl.MRPath;
 import solar.mr.proc.impl.StateImpl;
 import solar.mr.routines.MRRecord;
 
-import java.util.Timer;
-import java.util.TimerTask;
-
 /**
 * User: solar
 * Date: 23.09.14
@@ -32,24 +29,7 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
   }
 
   public MRRoutine(MRPath... inputTables) {
-    this(inputTables, new MRErrorsHandler() {
-      @Override
-      public void error(String type, String cause, MRRecord record) {
-        throw new RuntimeException("Error during record processing! type: " + type + ", cause: " + cause + ", record: [" + record.toString() + "]");
-      }
-
-      @Override
-      public void error(Throwable th, MRRecord record) {
-        if (th instanceof RuntimeException)
-          throw (RuntimeException)th;
-        throw new RuntimeException(th);
-      }
-
-      @Override
-      public int errorsCount() {
-        return 0;
-      }
-    }, new StateImpl());
+    this(inputTables, new DefaultMRErrorsHandler(), new StateImpl());
   }
 
   @Override
@@ -93,4 +73,5 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
   public MRPath[] input() {
     return inputTables;
   }
+
 }

@@ -69,6 +69,8 @@ public abstract class RemoteMREnv implements MREnv {
 
   public File executeLocallyAndBuildJar(MRRoutineBuilder builder, MREnv env) {
     Process process = null;
+    if (env instanceof LocalMREnv)
+      env.execute(builder, new DefaultMRErrorsHandler()); // to be able to debug
     try {
       final File jar = File.createTempFile("yamr-routine-", ".jar");
       //noinspection ResultOfMethodCallIgnored

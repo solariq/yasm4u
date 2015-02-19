@@ -114,4 +114,9 @@ class MethodRoutineBuilder extends MRRoutineBuilder {
   public void setMethodName(String methodName) {
     this.methodName = methodName;
   }
+
+  @Override
+  public String toString() {
+    return routineClass.getName() + " " + type.toString() + " " + methodName;
+  }
 }

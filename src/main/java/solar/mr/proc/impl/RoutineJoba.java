@@ -67,9 +67,12 @@ public class RoutineJoba implements Joba {
   private MRPath[] resolveAll(String[] input, Whiteboard wb) {
     final List<MRPath> result = new ArrayList<>();
     for(int i = 0; i < input.length; i++) {
-      final Object v = wb.get(input[i]);
-      if (v instanceof MRPath)
-        result.add((MRPath) v);
+      wb.processAs(input[i], new Processor<MRPath>() {
+        @Override
+        public void process(MRPath arg) {
+          result.add(arg);
+        }
+      });
     }
     return result.toArray(new MRPath[result.size()]);
   }
