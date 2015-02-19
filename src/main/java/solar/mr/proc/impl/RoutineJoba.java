@@ -22,11 +22,11 @@ public class RoutineJoba implements Joba {
   private final MRRoutineBuilder.RoutineType type;
 
   public RoutineJoba(final String[] input, final String[] output, final Method method, MRRoutineBuilder.RoutineType type) {
-    if (type == MRRoutineBuilder.RoutineType.REDUCE) {
-      for(int i = 0; i < input.length; i++) {
-        input[i] += "?sorted=true";
-      }
-    }
+//    if (type == MRRoutineBuilder.RoutineType.REDUCE) {
+//      for(int i = 0; i < input.length; i++) {
+//        input[i] += "?sorted=true";
+//      }
+//    }
     this.input = input;
     this.output = output;
     this.method = method;
@@ -43,10 +43,12 @@ public class RoutineJoba implements Joba {
     if (type == MRRoutineBuilder.RoutineType.REDUCE) {
       for (int i = 0; i < input.length; i++) {
         final String resourceName = input[i];
+        final int finalI = i;
         wb.processAs(resourceName, new Processor<MRPath>() {
           @Override
           public void process(MRPath shard) {
             wb.env().sort(new MRPath(shard.mount, shard.path, false));
+            input[finalI] = new MRPath(shard.mount, shard.path, true).resource().toString();
           }
         });
       }
