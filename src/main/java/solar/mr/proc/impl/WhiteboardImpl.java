@@ -213,6 +213,7 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
             throw new RuntimeException("Unknown temporary resource type: " + resourceName);
         }
       }
+      state.clear();
       env.delete(myShard);
     }
   }

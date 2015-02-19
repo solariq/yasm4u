@@ -225,7 +225,13 @@ public abstract class RemoteMREnv implements MREnv {
     for (final MRPath prefix : findBestPrefixes(unknown)) {
       list(prefix);
     }
-    return resolveAll(paths, true);
+    final MRTableState[] states = resolveAll(paths, true);
+    for(int i = 0; i < states.length; i++) {
+      if (states[i] != null)
+        continue;
+      states[i] = new MRTableState(paths[i].path, false, paths[i].sorted, "", 0, 0, 0, System.currentTimeMillis());
+    }
+    return states;
   }
 
   protected abstract boolean isFat(MRPath path);
