@@ -135,12 +135,12 @@ public class MRProcTest {
     final ProcessRunner runner = new SSHProcessRunner(TEST_SERVER_PROXY, "/Berkanavt/mapreduce/bin/mapreduce-dev");
     final MREnv env = new CompositeMREnv(new YaMREnv(runner, TEST_MR_USER, "cedar:8013"));
     final Whiteboard wb = new WhiteboardImpl(env, "SAPPCounter");
+//    wb.wipe();
     wb.set("var:date", new Date(2014-1900, 8, 1));
     final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SAPPCounter.class, wb);
-    mrProcess.wb().wipe();
     int count = mrProcess.<Integer>result();
-    mrProcess.wb().wipe();
     Assert.assertEquals(2611709, count);
+    mrProcess.wb().wipe();
   }
 
   @Test

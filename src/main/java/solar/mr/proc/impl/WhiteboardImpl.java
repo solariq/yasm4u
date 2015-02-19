@@ -174,6 +174,8 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
 
   @SuppressWarnings("unchecked")
   public void sync() {
+    if (increment.isEmpty())
+      return;
     // this will update all shards through notification mechanism
     for (Map.Entry<Object, Object> entry : increment.entrySet()) {
       if (CharSeq.EMPTY == entry.getValue())
@@ -213,6 +215,7 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
             throw new RuntimeException("Unknown temporary resource type: " + resourceName);
         }
       }
+      state.clear();
       env.delete(myShard);
     }
   }

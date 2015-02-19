@@ -35,7 +35,7 @@ public class CompositeMREnv implements MREnv {
   public CompositeMREnv(RemoteMREnv original, LocalMREnv localCopy) {
     this.original = original;
     this.localCopy = localCopy;
-    copyState = new WhiteboardImpl(localCopy, "MREnvState(" + RuntimeUtils.bashEscape(original.name()) + ")", WhiteboardImpl.USER);
+    copyState = new WhiteboardImpl(localCopy, "MREnvState", WhiteboardImpl.USER);
   }
 
   public CompositeMREnv(RemoteMREnv original) {
