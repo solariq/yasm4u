@@ -476,8 +476,8 @@ public class YtMREnv extends RemoteMREnv {
         errorCodeResolver(arg, metaJSON, code);
       } catch (JsonParseException e) {
         if ((arg.charAt(4) == '-'
-            && arg.charAt(10) == '-'
-            && arg.charAt(18) == '-')
+            && arg.charAt(8) == '-'
+            && arg.charAt(16) == '-')
             || (arg.charAt(4) == '-'
             && arg.charAt(11) == '-'
             && arg.charAt(19) == '-')) {
