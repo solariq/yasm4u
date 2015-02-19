@@ -16,11 +16,14 @@ public final class MRTestUtils {
 
   private MRTestUtils() {}
 
-  public static void writeRecords(MREnv env, String uri, MRRecord... records) {
-    final MRPath path = MRPath.createFromURI(uri);
+  public static void writeRecords(MREnv env, final String uri, final MRRecord... records) {
+    writeRecords(env, MRPath.createFromURI(uri), records);
+  }
+  
+  public static void writeRecords(MREnv env, final MRPath uri, MRRecord... records) {
     final MRRecord[] out = new MRRecord[records.length];
     for (int i = 0; i < records.length; ++i) {
-      out[i] = new MRRecord(path, records[i].key, records[i].sub, records[i].value);
+      out[i] = new MRRecord(uri, records[i].key, records[i].sub, records[i].value);
     }
     writeRecords(env, out);
   }
