@@ -174,7 +174,7 @@ public class MRTools {
   public static MRTableState updateTableShard(String path, boolean sorted, CounterInputStream cis) {
     return new MRTableState(path, true, sorted,
             "" + cis.totalLength(), cis.totalLength(), cis.keysCount(), cis.recordsCount(),
-            System.currentTimeMillis());
+            System.currentTimeMillis(), System.currentTimeMillis());
   }
 
   public static class CounterInputStream extends InputStream {

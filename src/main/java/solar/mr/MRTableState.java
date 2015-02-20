@@ -10,6 +10,7 @@ public class MRTableState {
   public final String crc;
   private final String path;
   private final long recordsCount;
+  private final long modtime;
   private final long metaTS;
   private final boolean exist;
   private final boolean sorted;
@@ -17,7 +18,7 @@ public class MRTableState {
   private final long keysCount;
 
   public MRTableState(final String path, final boolean exist, final boolean sorted, final String crc,
-                      long length, long keysCount, long recordsCount, final long ts) {
+                      long length, long keysCount, long recordsCount, final long modtime, final long ts) {
     this.path = path;
     this.exist = exist;
     this.crc = crc;
@@ -25,7 +26,12 @@ public class MRTableState {
     this.length = length;
     this.keysCount = keysCount;
     this.recordsCount = recordsCount;
+    this.modtime = modtime;
     this.metaTS = ts;
+  }
+
+  public MRTableState(String path, boolean sorted) {
+    this(path, false, sorted, "", 0, 0, 0, System.currentTimeMillis(), System.currentTimeMillis());
   }
 
   public String crc() {
@@ -64,6 +70,7 @@ public class MRTableState {
     builder.append("keysCount: ").append(keysCount).append(", ");
     builder.append("records count: ").append(recordsCount).append(", ");
     builder.append("crc: ").append(crc).append(", ");
+    builder.append("modtime: ").append(modtime).append("]");
     builder.append("timestamp: ").append(metaTS).append("]");
     return builder.toString();
   }
@@ -90,6 +97,10 @@ public class MRTableState {
 
   public long length() {
     return length;
+  }
+
+  public long modtime() {
+    return modtime;
   }
 
   public long keysCount() {

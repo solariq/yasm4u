@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.Reader;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * User: solar
@@ -138,7 +139,8 @@ public class YaMREnv extends RemoteMREnv {
             final long size = metaJSON.get("full_size").longValue();
             final String sorted = metaJSON.has("sorted") ? metaJSON.get("sorted").toString() : "0";
             final long recordsCount = metaJSON.has("records") ? metaJSON.get("records").longValue() : 0;
-            states.add(new MRTableState(name, true, "1".equals(sorted), "" + size, size, recordsCount / 10, recordsCount, System.currentTimeMillis()));
+            final long modtime = metaJSON.has("mod_time") ? metaJSON.get("mod_time").longValue() * TimeUnit.SECONDS.toMillis(1) : System.currentTimeMillis();
+            states.add(new MRTableState(name, true, "1".equals(sorted), "" + size, size, recordsCount / 10, recordsCount, modtime, System.currentTimeMillis()));
           }
           next = parser.nextToken();
         }
@@ -147,8 +149,8 @@ public class YaMREnv extends RemoteMREnv {
     }
     /* It's discussed long time ago that because of Yamr architecture, we have to always fake existance of the tables. */
     if (states.size() == 0) {
-      final MRTableState shard = new MRTableState(localPath(prefix), true, false, "0", 0, 0, 0, System.currentTimeMillis());
-          updateState(prefix, shard);
+      final MRTableState shard = new MRTableState(localPath(prefix), prefix.sorted);
+      updateState(prefix, shard);
       return new MRPath[]{prefix};
     }
 
@@ -186,7 +188,7 @@ public class YaMREnv extends RemoteMREnv {
         recordsCount += fromShards[i].recordsCount();
         keysCount += fromShards[i].keysCount();
       }
-      final MRTableState updatedShard = new MRTableState(localPath(to), true, false, "" + totalLength, totalLength, keysCount, recordsCount, System.currentTimeMillis());
+      final MRTableState updatedShard = new MRTableState(localPath(to), true, false, "" + totalLength, totalLength, keysCount, recordsCount, System.currentTimeMillis(), System.currentTimeMillis());
       updateState(to, updatedShard);
     }
     else wipeState(to);

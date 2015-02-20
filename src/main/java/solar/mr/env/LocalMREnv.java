@@ -11,6 +11,8 @@ import solar.mr.proc.impl.MRPath;
 import solar.mr.routines.MRRecord;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 
 /**
@@ -76,9 +78,9 @@ public class LocalMREnv implements MREnv {
     final File file = file(path);
     if (file.exists()) {
       final long[] recordsAndKeys = countRecordsAndKeys(file);
-      return new MRTableState(file.getAbsolutePath(), true, true, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], System.currentTimeMillis());
+      return new MRTableState(file.getAbsolutePath(), true, true, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], modtime(file), System.currentTimeMillis());
     }
-    return new MRTableState(file.getAbsolutePath(), false, false, "0", 0, 0, 0, System.currentTimeMillis());
+    return new MRTableState(file.getAbsolutePath(), path.sorted);
   }
 
   @Override
@@ -236,6 +238,15 @@ public class LocalMREnv implements MREnv {
     final File unsortedFile = file(new MRPath(shard.mount, shard.path, false));
     if (unsortedFile.exists())
       unsortedFile.delete();
+  }
+
+  private long modtime(File file) {
+    try {
+      final BasicFileAttributes attributes = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
+      return attributes.lastModifiedTime().toMillis();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override

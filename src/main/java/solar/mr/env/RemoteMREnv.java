@@ -231,7 +231,7 @@ public abstract class RemoteMREnv implements MREnv {
     for(int i = 0; i < states.length; i++) {
       if (states[i] != null)
         continue;
-      states[i] = new MRTableState(paths[i].path, false, paths[i].sorted, "", 0, 0, 0, System.currentTimeMillis());
+      states[i] = new MRTableState(localPath(paths[i]), paths[i].sorted);
     }
     return states;
   }

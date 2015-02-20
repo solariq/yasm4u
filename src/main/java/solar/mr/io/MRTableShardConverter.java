@@ -24,6 +24,7 @@ public class MRTableShardConverter implements ConversionPack<MRTableState,CharSe
         builder.append("&length=").append(from.length());
         builder.append("&records=").append(from.recordsCount());
         builder.append("&keys=").append(from.keysCount());
+        builder.append("&modtime=").append(from.modtime());
       }
       builder.append("#").append(Long.toString(from.snapshotTime()));
 
@@ -42,6 +43,7 @@ public class MRTableShardConverter implements ConversionPack<MRTableState,CharSe
       long length = 0;
       long recordsCount = 0;
       long keysCount = 0;
+      long modtime = 0;
       boolean available = false;
       boolean sorted = false;
       String crc = "0";
@@ -60,9 +62,11 @@ public class MRTableShardConverter implements ConversionPack<MRTableState,CharSe
           recordsCount = CharSeqTools.parseLong(kv[1]);
         if (kv[0].equals("keys"))
           keysCount = CharSeqTools.parseLong(kv[1]);
+        if (kv[0].equals("modtime"))
+          modtime = CharSeqTools.parseLong(kv[1]);
       }
 
-      return new MRTableState(path, available, sorted, crc, length, keysCount, recordsCount, ts);
+      return new MRTableState(path, available, sorted, crc, length, keysCount, recordsCount, modtime, ts);
     }
   }
   @Override
