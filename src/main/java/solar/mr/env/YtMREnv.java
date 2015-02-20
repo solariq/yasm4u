@@ -124,9 +124,8 @@ public class YtMREnv extends RemoteMREnv {
       }
       response = nodes.elements();
     }
-    catch (Exception e) {
-
-      defaultErrorsProcessor.invoke("exception oocured " + e);
+    catch (IOException e) {
+      defaultErrorsProcessor.invoke("exception ocured " + e);
       throw new RuntimeException(e);
       //return new MRPath[0];
     }
@@ -477,8 +476,8 @@ public class YtMREnv extends RemoteMREnv {
     public  YTTableDescriptor(@JsonProperty("key") final String key,
                            @JsonProperty("type") final String type,
                            @JsonProperty("sorted") boolean sorted,
-                           @JsonProperty("row_count") int row_count,
-                           @JsonProperty("uncompressed_data_size") int uncompressed_data_size)
+                           @JsonProperty("row_count") long row_count,
+                           @JsonProperty("uncompressed_data_size") long uncompressed_data_size)
     {
       this.key = key;
       this.type = type;
