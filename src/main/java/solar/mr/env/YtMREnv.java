@@ -1,7 +1,10 @@
 package solar.mr.env;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spbsu.commons.func.Action;
@@ -29,14 +32,15 @@ public class YtMREnv extends RemoteMREnv {
   private static int MAX_ROW_WEIGTH = 128000000;
   private static Logger LOG = Logger.getLogger(YtMREnv.class);
   final static String MR_USER_NAME = System.getProperty("user.name");
+
   public YtMREnv(final ProcessRunner runner, final String tag, final String master) {
     super(runner, tag, master);
   }
 
   @SuppressWarnings("UnusedDeclaration")
   public YtMREnv(final ProcessRunner runner, final String user, final String master,
-                    final Action<CharSequence> errorsProc,
-                    final Action<CharSequence> outputProc) {
+                 final Action<CharSequence> errorsProc,
+                 final Action<CharSequence> outputProc) {
     super(runner, user, master, errorsProc, outputProc);
   }
 
@@ -89,74 +93,72 @@ public class YtMREnv extends RemoteMREnv {
 
   @Override
   public MRPath[] list(final MRPath prefix) {
-    final List<String> defaultOptionsEntity = defaultOptions();
 
-    defaultOptionsEntity.add("get");
-    defaultOptionsEntity.add("--format");
-    defaultOptionsEntity.add("json");
-
-    final List<String> optionEntity = new ArrayList<>();
-    optionEntity.addAll(defaultOptionsEntity);
-    final String path = localPath(prefix);
+    final List<String> attributes = new ArrayList<>();
+    attributes.add("--attribute type");
+    attributes.add("--attribute sorted");
+    attributes.add("--attribute row_count");
+    attributes.add("--attribute uncompressed_data_size");
+    attributes.add("--attribute key");
     final List<MRPath> result = new ArrayList<>();
-    if (!prefix.isDirectory()) { // trying an easy way first
-      optionEntity.add(path + "/@");
-      final ConcatAction resultProcessor = new ConcatAction();
-      executeCommand(optionEntity, resultProcessor, defaultErrorsProcessor, null);
 
-      try {
-        final JsonParser parser = JSONTools.parseJSON(resultProcessor.sequence());
-        extractTableFromJson(prefix, result, parser);
-      } catch (IOException| ParseException e) {
-        LOG.warn(e);
-        return new MRPath[0];
+    final List<String> optionEntity = defaultOptions();
+    optionEntity.add(prefix.isDirectory() ? "list" : "get");
+    optionEntity.add("--format");
+    optionEntity.add("json");
+    optionEntity.addAll(attributes);
+    final String localPath = localPath(prefix);
+    optionEntity.add(prefix.isDirectory() ? localPath.substring(0, localPath.length() - 1) : localPath);
+    final ConcatAction resultProcessor = new ConcatAction();
+    executeCommand(optionEntity, resultProcessor, defaultErrorsProcessor, null);
+    final Iterator<JsonNode> response;
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY,true);
+    mapper.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT,true);
+    try {
+      final JsonParser parser = JSONTools.parseJSON(resultProcessor.sequence());
+      JsonNode nodes = mapper.readTree(parser);
+      if (!prefix.isDirectory()) {
+        readNode(prefix,result, mapper, nodes);
+        return result.toArray(new MRPath[result.size()]);
       }
+      response = nodes.elements();
     }
-    else {
-      final List<String> options = defaultOptions();
-      options.add("list");
-      final String nodePath = path.substring(0, path.length() - 1);
-      options.add(nodePath);
-      //final ConcatAction builder = new ConcatAction(" ");
-      executeCommand(options, new Action<CharSequence>(){
-        @Override
-        public void invoke(CharSequence arg) {
-          result.addAll(Arrays.asList(list(MRPath.create(prefix, arg.toString()))));
-        }
-      }, defaultErrorsProcessor, null);
+    catch (Exception e) {
+
+      defaultErrorsProcessor.invoke("exception oocured " + e);
+      throw new RuntimeException(e);
+      //return new MRPath[0];
     }
-    if (result.isEmpty()) {
-      updateState(prefix, new MRTableState(prefix.path,false, false, "0", 0, 0, 0, System.currentTimeMillis()));
-      return new MRPath[]{prefix};
+    while (response.hasNext()) {
+      final YTResponse r;
+      final JsonNode node = response.next();
+      readNode(prefix, result, mapper, node);
     }
-    else
-      return result.toArray(new MRPath[result.size()]);
+    return result.toArray(new MRPath[result.size()]);
   }
 
-  private void extractTableFromJson(final MRPath prefixPath, List<MRPath> result, JsonParser parser) throws IOException, ParseException {
-    final String prefix = localPath(prefixPath);
-    // TODO: cache mapper
-    final ObjectMapper mapper = new ObjectMapper();
-
-    final JsonNode metaJSON = mapper.readTree(parser);
-    if (metaJSON == null) {
+  private void readNode(MRPath prefix, List<MRPath> result, ObjectMapper mapper, JsonNode node) {
+    YTResponse r;
+    if (node == null)
       return;
+    try {
+      r = mapper.readValue(node.toString(), YTResponse.class);
+    }catch (Exception e){
+      throw new RuntimeException(e);
     }
-
-    final JsonNode typeNode = metaJSON.get("type");
-    if (typeNode != null && !typeNode.isMissingNode()) {
-      final String name = metaJSON.get("key").asText(); /* it's a name in Yt */
-      final String path = prefixPath.isDirectory()? localPath(prefixPath) + "/" + name : localPath(prefixPath);
-
-      if (typeNode.textValue().equals("table")) {
-        final long size = metaJSON.get("uncompressed_data_size").longValue();
-        boolean sorted = metaJSON.get("sorted").asBoolean();
-        final long recordsCount = metaJSON.has("row_count") ? metaJSON.get("row_count").longValue() : 0;
-        final MRTableState sh = new MRTableState(path, true, sorted, "" + size, size, recordsCount / 10, recordsCount, /*ts*/ System.currentTimeMillis());
-        final MRPath localPath = findByLocalPath(path, sorted);
-        result.add(localPath);
-        updateState(localPath, sh);
-      }
+    final MRTableState state;
+    if (r.attributes.type.equals("table")) {
+      final MRPath path = prefix.isDirectory() ? MRPath.create(prefix, r.attributes.key) : prefix;
+      state = new MRTableState(path.path,
+          true, r.attributes.sorted,
+          Long.toString(r.attributes.uncompressed_data_size),
+          r.attributes.row_count, r.attributes.uncompressed_data_size,
+          r.attributes.row_count, System.currentTimeMillis());
+      result.add(path);
+      updateState(prefix, state);
+    } else {
+      result.addAll(Arrays.asList(list(MRPath.create(prefix, r.attributes.key))));
     }
   }
 
@@ -450,6 +452,39 @@ public class YtMREnv extends RemoteMREnv {
         return CharSeqTools.trim(seq);
       else
         return seq;
+    }
+  }
+
+  public static class YTResponse {
+    final YTTableDescriptor attributes;
+    final String value;
+    @JsonCreator
+    public YTResponse(@JsonProperty("$attributes") final YTTableDescriptor attributes,
+                      @JsonProperty("$value") final String value) {
+      this.attributes = attributes;
+      this.value = value;
+    }
+  }
+
+  public static class YTTableDescriptor {
+    public final String key;
+    public final String type;
+    public final boolean sorted;
+    public final long row_count;
+    public final long uncompressed_data_size;
+
+    @JsonCreator
+    public  YTTableDescriptor(@JsonProperty("key") final String key,
+                           @JsonProperty("type") final String type,
+                           @JsonProperty("sorted") boolean sorted,
+                           @JsonProperty("row_count") int row_count,
+                           @JsonProperty("uncompressed_data_size") int uncompressed_data_size)
+    {
+      this.key = key;
+      this.type = type;
+      this.sorted = sorted;
+      this.row_count = row_count;
+      this.uncompressed_data_size = uncompressed_data_size;
     }
   }
 
