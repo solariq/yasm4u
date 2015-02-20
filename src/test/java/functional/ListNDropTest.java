@@ -1,5 +1,6 @@
 package functional;
 
+import com.spbsu.commons.func.Processor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -9,6 +10,7 @@ import solar.mr.MRTestUtils;
 import solar.mr.proc.impl.MRPath;
 import solar.mr.routines.MRRecord;
 
+import static org.junit.Assert.assertNotNull;
 import static solar.mr.MRTestUtils.*;
 import static org.junit.Assert.assertEquals;
 
@@ -47,6 +49,32 @@ public final class ListNDropTest extends BaseMRTest {
     env.delete(MRPath.createFromURI(IN_TABLE_NAME_1));
     result = env.list(MRPath.createFromURI(IN_TABLE_NAME_PREFIX));
     assertEquals(2, result.length);
+  }
+
+  @Test
+  public void notExistance(){
+    MRPath[] result = env.list(MRPath.create("/home/__no_existant"));
+    env.sample(MRPath.create("/home/__no_existant"), new Processor<MRRecord>() {
+      @Override
+      public void process(MRRecord arg) {
+
+      }
+    });
+
+    result = env.list(MRPath.create("/home/__no_existant/__no_existant"));
+    env.sample(MRPath.create("/home/__no_existant/__no_existant"), new Processor<MRRecord>() {
+      @Override
+      public void process(MRRecord arg) {
+
+      }
+    });
+
+    env.sample(MRPath.create("/log/__no_existant/__no_existant"), new Processor<MRRecord>() {
+      @Override
+      public void process(MRRecord arg) {
+
+      }
+    });
   }
 
   @After
