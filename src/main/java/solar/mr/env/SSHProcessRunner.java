@@ -10,6 +10,7 @@ import java.util.List;
 import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqTools;
+import com.sun.tools.javac.util.Assert;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import solar.mr.proc.impl.WhiteboardImpl;
@@ -153,13 +154,11 @@ public class SSHProcessRunner implements ProcessRunner {
         if (input == null) {
           final String runner = transferFile(SSHProcessRunner.class.getResource("/mr/ssh/runner.pl"), ".pl", remoteResources);
           final StringBuilder finalCommand = new StringBuilder();
-          finalCommand.append("perl ").append(runner).append(" run ").append(command).append(" 2>>/tmp/runner-errors-" + WhiteboardImpl.USER + ".txt\n");
-          println(finalCommand.toString());
-          toProxy.append("export YT_ERROR_FORMAT=json;\n");
-          toProxy.flush();
-          toProxy.append(finalCommand);
-          toProxy.flush();
-          final CharSequence[] split = CharSeqTools.split(fromProxy.readLine(), "\t");
+          println(command.toString() + "\n");
+          finalCommand.append("export YT_ERROR_FORMAT=json;\n");
+          finalCommand.append("perl ").append(runner).append(" run ").append(command).append(" 2>>/tmp/runner-errors-").append(WhiteboardImpl.USER).append(".txt\n");
+          final String commandOutput = communicate(finalCommand.toString());
+          final CharSequence[] split = CharSeqTools.split(commandOutput, "\t");
           final String pid = split[0].toString();
           final String output = split[1].toString();
 
@@ -188,7 +187,7 @@ public class SSHProcessRunner implements ProcessRunner {
           final OutputStream toProxy = process.getOutputStream();
           final LineNumberReader fromProxy = new LineNumberReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF-8")));
 
-          final String finalCommand = "cat - | " + command + "; echo $?\n";
+          final String finalCommand = "cat - | " + command + "; echo $?";
           println(finalCommand);
           toProxy.write(finalCommand.getBytes(StreamTools.UTF));
           toProxy.flush();
@@ -211,14 +210,12 @@ public class SSHProcessRunner implements ProcessRunner {
   }
 
   private String transferFile(URL url, @Nullable String suffix, List<File> remoteResources) throws IOException, InterruptedException {
-    toProxy.append("mktemp").append(suffix != null ? " --suffix " + suffix : "").append(";\n");
-    toProxy.flush();
-    final String remoteTmpRunner = fromProxy.readLine();
+    final String remoteTmpRunner = communicate("mktemp" + (suffix != null ? " --suffix " + suffix : "") + ";");
     //System.out.println("remoteTmpRunner = " + remoteTmpRunner);
+
     final File remoteResource = new File(remoteTmpRunner);
-    toProxy.append("rm -f ").append(remoteResource.getAbsolutePath()).append(";echo Ok;\n");
-    toProxy.flush();
-    final String outputResult = fromProxy.readLine();
+    final String outputResult = communicate("rm -f " + remoteResource.getAbsolutePath() + "; echo Ok;");
+    Assert.check("Ok".equals(outputResult));
     //System.out.println("outputResult = " + outputResult);
     if ("file".equals(url.getProtocol())) {
       int rc = 1;
@@ -242,6 +239,18 @@ public class SSHProcessRunner implements ProcessRunner {
     }
     remoteResources.add(remoteResource);
     return remoteResource.getAbsolutePath();
+  }
+
+  private String communicate(String command) throws IOException {
+    String result;
+    do {
+      initProxyLink();
+      toProxy.append(command).append('\n');
+      toProxy.flush();
+      result = fromProxy.readLine();
+    }
+    while (result == null);
+    return result;
   }
 
   private static void println(String finalCommand) {
