@@ -156,8 +156,7 @@ public class CompositeMREnv implements MREnv {
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
-      if (originalStates[i] != null)
-        setCopy(path, originalStates[i], result[i] = localShardHolder.getValue());
+      setCopy(path, originalStates[i], result[i] = localShardHolder.getValue());
     }
     return result;
   }
@@ -216,9 +215,7 @@ public class CompositeMREnv implements MREnv {
       return null;
     final MRTableState original = localState.getFirst();
     final MRTableState local = localState.getSecond();
-    if ((original.modtime() < state.modtime()
-            || !original.equals(state))
-            || !local.equals(localCopy.resolve(shard))) {
+    if (!original.equals(state) || !local.equals(localCopy.resolve(shard))) {
       setCopy(shard, original, null);
       return null;
     }

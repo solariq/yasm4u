@@ -18,6 +18,8 @@ import solar.mr.proc.impl.MRPath;
 import solar.mr.routines.MRRecord;
 
 import java.io.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -114,6 +116,9 @@ public class YtMREnv extends RemoteMREnv {
 
     mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY,true);
     mapper.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
+    DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+    dateFormat.setTimeZone(TimeZone.getTimeZone("GMT")); // sets Server's time zone
+    mapper.getSerializationConfig().with(dateFormat);
     try {
       final JsonParser parser = JSONTools.parseJSON(resultProcessor.sequence());
       JsonNode nodes = mapper.readTree(parser);

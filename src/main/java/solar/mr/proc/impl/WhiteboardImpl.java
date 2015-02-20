@@ -108,8 +108,9 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
   public <T> T get(final String resource) {
     try {
       final Object value = increment.get(resource);
-      if (value != null && value != CharSeq.EMPTY)
-        return (T) value;
+      if (value != null)
+        return value != CharSeq.EMPTY ? (T) value : null;
+
       if (state.containsKey(resource))
         return (T)state.get(resource);
 
@@ -156,7 +157,9 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
   public <T> void set(final String uri, final T data) {
     if (data == CharSeq.EMPTY)
       throw new IllegalArgumentException("User remove instead");
-    if (!data.equals(state.get(uri)))
+    if (data.equals(state.get(uri)))
+      increment.remove(uri);
+    else
       increment.put(uri, data);
   }
 
