@@ -212,7 +212,7 @@ public class CompositeMREnv implements MREnv {
       return null;
     final MRTableState original = localState.getFirst();
     final MRTableState local = localState.getSecond();
-    if ((original.snapshotTime() > state.snapshotTime()
+    if ((original.modtime() < state.modtime()
             || !original.equals(state))
             || !local.equals(localCopy.resolve(shard))) {
       setCopy(shard, original, null);
