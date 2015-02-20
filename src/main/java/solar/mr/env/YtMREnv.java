@@ -4,9 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.*;
 import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.random.FastRandom;
@@ -20,7 +18,6 @@ import solar.mr.proc.impl.MRPath;
 import solar.mr.routines.MRRecord;
 
 import java.io.*;
-import java.text.ParseException;
 import java.util.*;
 
 /**
@@ -99,6 +96,7 @@ public class YtMREnv extends RemoteMREnv {
     attributes.add("--attribute sorted");
     attributes.add("--attribute row_count");
     attributes.add("--attribute uncompressed_data_size");
+    attributes.add("--attribute modification_time");
     attributes.add("--attribute key");
     final List<MRPath> result = new ArrayList<>();
 
@@ -113,8 +111,9 @@ public class YtMREnv extends RemoteMREnv {
     executeCommand(optionEntity, resultProcessor, defaultErrorsProcessor, null);
     final Iterator<JsonNode> response;
     ObjectMapper mapper = new ObjectMapper();
+
     mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY,true);
-    mapper.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT,true);
+    mapper.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
     try {
       final JsonParser parser = JSONTools.parseJSON(resultProcessor.sequence());
       JsonNode nodes = mapper.readTree(parser);
@@ -124,8 +123,9 @@ public class YtMREnv extends RemoteMREnv {
       }
       response = nodes.elements();
     }
-    catch (IOException e) {
-      defaultErrorsProcessor.invoke("exception ocured " + e);
+    catch (Exception e) {
+
+      defaultErrorsProcessor.invoke("exception oocured " + e);
       throw new RuntimeException(e);
       //return new MRPath[0];
     }
@@ -149,15 +149,15 @@ public class YtMREnv extends RemoteMREnv {
     final MRTableState state;
     if (r.attributes.type.equals("table")) {
       final MRPath path = prefix.isDirectory() ? MRPath.create(prefix, r.attributes.key) : prefix;
-      state = new MRTableState(path.path,
+      state = new MRTableState(localPath(path),
           true, r.attributes.sorted,
           Long.toString(r.attributes.uncompressed_data_size),
           r.attributes.row_count, r.attributes.uncompressed_data_size,
-          r.attributes.row_count, System.currentTimeMillis());
+          r.attributes.row_count, r.attributes.modification_time.getTime(), System.currentTimeMillis());
       result.add(path);
-      updateState(prefix, state);
+      updateState(path, state);
     } else {
-      result.addAll(Arrays.asList(list(MRPath.create(prefix, r.attributes.key + "/"))));
+      result.addAll(Arrays.asList(list(MRPath.create(prefix, r.attributes.key))));
     }
   }
 
@@ -232,7 +232,7 @@ public class YtMREnv extends RemoteMREnv {
     options.add("table");
     options.add(localPath(shard));
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
-    updateState(shard, new MRTableState(shard.path, true, false, "0", 0, 0, 0, System.currentTimeMillis()));
+    updateState(shard, new MRTableState(shard.path, true, false, "0", 0, 0, 0, System.currentTimeMillis(), System.currentTimeMillis()));
   }
 
   public void delete(final MRPath table) {
@@ -262,8 +262,7 @@ public class YtMREnv extends RemoteMREnv {
         + MAX_ROW_WEIGTH
         + "}}}'");
     executeMapOrReduceCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
-    MRTableState state  = resolve(table);
-    updateState(table, new MRTableState(table.path, true, true, state.crc(), state.length(), state.keysCount(), state.recordsCount(), System.currentTimeMillis()));
+    wipeState(table);
   }
 
   @Override
@@ -471,19 +470,22 @@ public class YtMREnv extends RemoteMREnv {
     public final boolean sorted;
     public final long row_count;
     public final long uncompressed_data_size;
+    public final Date modification_time;
 
     @JsonCreator
     public  YTTableDescriptor(@JsonProperty("key") final String key,
                            @JsonProperty("type") final String type,
                            @JsonProperty("sorted") boolean sorted,
                            @JsonProperty("row_count") long row_count,
-                           @JsonProperty("uncompressed_data_size") long uncompressed_data_size)
+                           @JsonProperty("uncompressed_data_size") long uncompressed_data_size,
+                           @JsonProperty("modification_time") Date modificationTime)
     {
       this.key = key;
       this.type = type;
       this.sorted = sorted;
       this.row_count = row_count;
       this.uncompressed_data_size = uncompressed_data_size;
+      this.modification_time = modificationTime;
     }
   }
 
