@@ -124,23 +124,25 @@ public class LocalMREnv implements MREnv {
   private void writeFile(final Reader content, final MRPath shard, final boolean append) {
     final File file = file(shard);
     file.getParentFile().mkdirs();
-    /*try {
+    final File tempFile = new File(file.getAbsolutePath() + ".temp");
+    try {
+      if (append)
+        FileUtils.copyFile(file, tempFile);
 
-
-      FileUtils.forceMkdir(file.getParentFile());
-    }
-    catch (IOException e) {
-      throw new RuntimeException(e);
-    }*/
-
-    try (final FileWriter out = new FileWriter(file, append)) {
-      StreamTools.transferData(content, out);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    } finally {
+      try (final FileWriter out = new FileWriter(tempFile, true)) {
+        StreamTools.transferData(content, out);
+      }
+      file.delete();
+      tempFile.renameTo(file);
       if (!shard.sorted && !shard.isDirectory())
         //noinspection ResultOfMethodCallIgnored
         file(new MRPath(shard.mount, shard.path, true)).delete();
+    }
+    catch (IOException ioe) {
+      throw new RuntimeException(ioe);
+    }
+    finally {
+      tempFile.delete();
     }
   }
 
@@ -179,16 +181,19 @@ public class LocalMREnv implements MREnv {
   @Override
   public MRPath[] list(MRPath prefix) {
     final File prefixFile = file(prefix);
-    final List<MRPath> result = new ArrayList<>();
+    final Map<String, MRPath> result = new HashMap<>();
     StreamTools.visitFiles(prefixFile, new Processor<String>() {
       @Override
       public void process(String path) {
         final MRPath file = findByFile(new File(prefixFile, path));
-        if (!file.isDirectory())
-          result.add(file);
+        if (!file.isDirectory()) {
+          if (file.sorted || !result.containsKey(file.absolutePath()))
+            result.put(file.absolutePath(), file);
+        }
       }
     });
-    return result.toArray(new MRPath[result.size()]);
+
+    return result.values().toArray(new MRPath[result.size()]);
   }
 
   @Override
@@ -235,9 +240,6 @@ public class LocalMREnv implements MREnv {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    final File unsortedFile = file(new MRPath(shard.mount, shard.path, false));
-    if (unsortedFile.exists())
-      unsortedFile.delete();
   }
 
   private long modtime(File file) {

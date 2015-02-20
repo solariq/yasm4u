@@ -36,6 +36,10 @@ public class CompositeMREnv implements MREnv {
     this.original = original;
     this.localCopy = localCopy;
     copyState = new WhiteboardImpl(localCopy, "MREnvState", WhiteboardImpl.USER);
+    for (final String uri : copyState.snapshot().keys()) {
+      //noinspection ConstantConditions
+      original.updateState(MRPath.createFromURI(uri), copyState.<Pair<MRTableState, MRTableState>>get(uri).first);
+    }
   }
 
   public CompositeMREnv(RemoteMREnv original) {
@@ -100,7 +104,7 @@ public class CompositeMREnv implements MREnv {
         }
       }, jar))
         return false;
-      final MRTableState[] outAfter = original.resolveAll(out);
+      final MRTableState[] outAfter = original.resolveAll(out, false);
       for(int i = 0; i < out.length; i++) {
         setCopy(out[i], outAfter[i], localOutAfter[i]);
       }
@@ -233,7 +237,15 @@ public class CompositeMREnv implements MREnv {
 
   @Override
   public void sort(MRPath shard) {
+    final MRTableState unsorted = original.resolve(shard, true);
+    final MRTableState localShard = localShard(shard, unsorted);
     original.sort(shard);
+    if (localShard != null) {
+      final MRPath sortedPath = new MRPath(shard.mount, shard.path, true);
+      final MRTableState sortedOriginal = original.resolve(sortedPath);
+      localCopy.sort(shard);
+      setCopy(sortedPath, sortedOriginal, localCopy.resolve(sortedPath));
+    }
   }
 
   @Override

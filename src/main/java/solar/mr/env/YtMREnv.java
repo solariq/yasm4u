@@ -232,7 +232,6 @@ public class YtMREnv extends RemoteMREnv {
     options.add("table");
     options.add(localPath(shard));
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
-    updateState(shard, new MRTableState(shard.path, true, false, "0", 0, 0, 0, System.currentTimeMillis(), System.currentTimeMillis()));
   }
 
   public void delete(final MRPath table) {

@@ -70,6 +70,10 @@ public class MRPath implements Serializable {
     return isRoot() || path.endsWith("/");
   }
 
+  public String absolutePath() {
+    return mount.prefix + path;
+  }
+
   public enum Mount {
     ROOT("/"),
     TEMP("/tmp/"),
