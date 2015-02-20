@@ -79,7 +79,6 @@ public final class VarsTest extends BaseMRTest {
     vars.set(INT_VAR, INT_VAL);
     vars.set(STRING_VAR, STRING_VAL);
     final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(Map1.class, vars);
-    mrProcess.wb().wipe();
     mrProcess.execute();
     mrProcess.wb().wipe();
     List<MRRecord> records = readRecords(env, OUT_TABLE_NAME_1);
