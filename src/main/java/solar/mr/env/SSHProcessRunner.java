@@ -187,7 +187,7 @@ public class SSHProcessRunner implements ProcessRunner {
           final OutputStream toProxy = process.getOutputStream();
           final LineNumberReader fromProxy = new LineNumberReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF-8")));
 
-          final String finalCommand = "cat - | " + command + "; echo $?";
+          final String finalCommand = "cat - | " + command + " >/dev/null; echo $?\n";
           println(finalCommand);
           toProxy.write(finalCommand.getBytes(StreamTools.UTF));
           toProxy.flush();
