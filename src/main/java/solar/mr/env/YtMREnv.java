@@ -157,7 +157,7 @@ public class YtMREnv extends RemoteMREnv {
       result.add(path);
       updateState(prefix, state);
     } else {
-      result.addAll(Arrays.asList(list(MRPath.create(prefix, r.attributes.key))));
+      result.addAll(Arrays.asList(list(MRPath.create(prefix, r.attributes.key + "/"))));
     }
   }
 
