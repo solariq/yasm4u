@@ -836,12 +836,16 @@ public class YtMREnv extends RemoteMREnv {
 
     @Override
     public void reportError(CharSequence msg) {
-      errorProcessor.invoke(msg);
+      if (System.getProperty("user.name").equals("minamoto")) {
+        errorProcessor.invoke(msg);
+      }
     }
 
     @Override
     public void warn(String msg) {
-      errorProcessor.invoke(msg);
+      if (System.getProperty("user.name").equals("minamoto")) {
+        errorProcessor.invoke(msg);
+      }
     }
   }
 }
