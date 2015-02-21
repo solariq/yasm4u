@@ -123,12 +123,18 @@ public class CompositeMREnv implements MREnv {
     final MRTableState[] originalStates = original.resolveAll(paths);
     for(int i = 0; i < paths.length; i++) {
       final MRPath path = paths[i];
+      if (!originalStates[i].isAvailable()) {
+        localCopy.delete(path);
+        copyState.remove(path.resource().toString());
+        continue;
+      }
       final MRTableState local = localShard(path, originalStates[i]);
       if (local != null && local.isAvailable()) {
         result[i] = local;
         continue;
       }
 
+      localShard(path, originalStates[i]);
       final ArrayBlockingQueue<CharSeq> readqueue = new ArrayBlockingQueue<>(1000);
       final Holder<MRTableState> localShardHolder = new Holder<>();
       final Thread readThread = new Thread() {
@@ -214,13 +220,13 @@ public class CompositeMREnv implements MREnv {
     if (localState == null)
       return null;
     final MRTableState original = localState.getFirst();
-    final MRTableState local = localState.getSecond();
-    if (!original.equals(state) || !local.equals(localCopy.resolve(shard))) {
+    final MRTableState newCopy = localCopy.resolve(shard);
+    if (!original.equals(state) || !newCopy.isAvailable()) {
       setCopy(shard, original, null);
       return null;
     }
 
-    return local;
+    return newCopy;
   }
 
   private void setCopy(MRPath path, MRTableState original, MRTableState local) {
