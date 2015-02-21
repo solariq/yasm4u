@@ -45,7 +45,7 @@ public class MRPath implements Serializable {
       return null;
     if ("".equals(path))
       return new MRPath(Mount.ROOT, "", false);
-    return new MRPath(mount, path.substring(0, path.lastIndexOf('/') + 1), false);
+    return new MRPath(mount, path.substring(0, path.substring(0, path.length() - 1).lastIndexOf('/') + 1), false);
   }
 
   public MRPath[] parents() {

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.util.EmptyIterator;
 import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.random.FastRandom;
@@ -126,16 +127,13 @@ public class YtMREnv extends RemoteMREnv {
         readNode(prefix,result, mapper, nodes);
         return result.toArray(new MRPath[result.size()]);
       }
-      response = nodes.elements();
+      response = nodes != null ? nodes.elements() : new EmptyIterator<JsonNode>();
     }
     catch (Exception e) {
-
-      defaultErrorsProcessor.invoke("exception oocured " + e);
       throw new RuntimeException(e);
       //return new MRPath[0];
     }
     while (response.hasNext()) {
-      final YTResponse r;
       final JsonNode node = response.next();
       readNode(prefix, result, mapper, node);
     }
@@ -162,7 +160,7 @@ public class YtMREnv extends RemoteMREnv {
       result.add(path);
       updateState(path, state);
     } else {
-      result.addAll(Arrays.asList(list(MRPath.create(prefix, r.attributes.key))));
+      result.addAll(Arrays.asList(list(MRPath.create(prefix, r.attributes.key + "/"))));
     }
   }
 
@@ -385,7 +383,10 @@ public class YtMREnv extends RemoteMREnv {
 
   @Override
   protected boolean isFat(MRPath path) {
-    return false;
+//    final String localPath = localPath(path);
+//    if ("//home/mobilesearch/logprocessing.daily/paradiso".equals(localPath))
+//      return true;
+    return path.isDirectory();
   }
 
   @Override

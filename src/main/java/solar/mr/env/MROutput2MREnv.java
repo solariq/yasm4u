@@ -78,12 +78,20 @@ public class MROutput2MREnv extends MROutputBase {
 
   @Override
   protected void push(int tableNo, CharSequence record) {
-    queues[tableNo].add(new CharSeqComposite(record, new CharSeqChar('\n')));
+    try {
+      queues[tableNo].put(new CharSeqComposite(record, new CharSeqChar('\n')));
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public void interrupt() {
     for(int i = 0; i < queues.length; i++) {
-      queues[i].add(CharSeq.EMPTY);
+      try {
+        queues[i].put(CharSeq.EMPTY);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 }

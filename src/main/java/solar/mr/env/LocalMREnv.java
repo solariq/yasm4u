@@ -132,11 +132,13 @@ public class LocalMREnv implements MREnv {
       try (final FileWriter out = new FileWriter(tempFile, true)) {
         StreamTools.transferData(content, out);
       }
-      file.delete();
-      tempFile.renameTo(file);
-      if (!shard.sorted && !shard.isDirectory())
-        //noinspection ResultOfMethodCallIgnored
-        file(new MRPath(shard.mount, shard.path, true)).delete();
+      if (crc(file) != crc(tempFile)) {
+        file.delete();
+        tempFile.renameTo(file);
+        if (!shard.sorted && !shard.isDirectory())
+          //noinspection ResultOfMethodCallIgnored
+          file(new MRPath(shard.mount, shard.path, true)).delete();
+      }
     }
     catch (IOException ioe) {
       throw new RuntimeException(ioe);
