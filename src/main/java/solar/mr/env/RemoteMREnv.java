@@ -257,12 +257,22 @@ public abstract class RemoteMREnv implements MREnv {
     for(final MRPath path : paths) {
       final MRPath parent = path.parent();
 
-      if (parents.get(parent) == 1 && (parent.level() < 2 || parent.mount == MRPath.Mount.TEMP)) {
+      if (isFat(parent)) {
         result.add(path);
         parents.remove(parent);
       }
     }
-    result.addAll(findBestPrefixes(parents.keySet()));
+    final Set<MRPath> bestPrefixes = findBestPrefixes(parents.keySet());
+    for(final MRPath path : paths) {
+      final MRPath parent = path.parent();
+
+      if (bestPrefixes.contains(parent) && parents.get(parent) == 1) {
+        result.add(path);
+        bestPrefixes.remove(parent);
+      }
+    }
+
+    result.addAll(bestPrefixes);
     return result;
   }
 

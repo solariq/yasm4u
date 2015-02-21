@@ -328,11 +328,11 @@ public class YtMREnv extends RemoteMREnv {
     options.add(localPath(errorsPath));
 
     executeMapOrReduceCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
-    final int[] errorsCount = new int[]{0};
-    errorsCount[0] += read(errorsPath, new ErrorsTableHandler(errorsPath, errorsHandler));
-    delete(errorsPath);
+    final int errorsCount = read(errorsPath, new ErrorsTableHandler(errorsPath, errorsHandler));
+    if (errorsCount == 0)
+      delete(errorsPath);
 
-    return errorsCount[0] == 0;
+    return errorsCount == 0;
   }
 
   @Override
@@ -383,10 +383,10 @@ public class YtMREnv extends RemoteMREnv {
 
   @Override
   protected boolean isFat(MRPath path) {
-//    final String localPath = localPath(path);
-//    if ("//home/mobilesearch/logprocessing.daily/paradiso".equals(localPath))
-//      return true;
-    return path.isDirectory();
+    final String localPath = localPath(path);
+    if ("//home/mobilesearch/logprocessing.daily/paradiso/".equals(localPath))
+      return true;
+    return false;
   }
 
   @Override

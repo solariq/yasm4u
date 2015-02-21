@@ -26,16 +26,15 @@ public class ErrorsTableHandler extends MRRoutine {
   @Override
   public void process(final MRRecord record) {
     CharSequence[] parts = CharSeqTools.split(record.value, '\t', new CharSequence[4]);
-    errorsHandler.error(record.key, record.sub, new MRRecord(MRPath.create(parts[0].toString()), parts[1].toString(), parts[2].toString(), parts[3]));
+    final MRRecord realRecord = new MRRecord(MRPath.create(parts[0].toString()), parts[1].toString(), parts[2].toString(), parts[3]);
     try {
       final Class clazz = Class.forName(record.key);
       if (clazz.isAssignableFrom(Throwable.class)){
         Throwable th = (Throwable)new ObjectInputStream(new ByteArrayInputStream(CharSeqTools.parseBase64(record.value))).readObject();
-        th.printStackTrace(System.err);
+        errorsHandler.error(th, realRecord);
       }
     } catch (ClassNotFoundException e) {
-      System.err.println(record.value);
-      System.err.println(record.key + "\t" + record.sub.replace("\\n", "\n").replace("\\t", "\t"));
+      errorsHandler.error(record.key, record.sub, realRecord);
     }
     catch (IOException e) {
       throw new RuntimeException(e);

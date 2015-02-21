@@ -78,7 +78,7 @@ public class LocalMREnv implements MREnv {
     final File file = file(path);
     if (file.exists()) {
       final long[] recordsAndKeys = countRecordsAndKeys(file);
-      return new MRTableState(file.getAbsolutePath(), true, true, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], modtime(file), System.currentTimeMillis());
+      return new MRTableState(file.getAbsolutePath(), true, path.sorted, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], modtime(file), System.currentTimeMillis());
     }
     return new MRTableState(file.getAbsolutePath(), path.sorted);
   }

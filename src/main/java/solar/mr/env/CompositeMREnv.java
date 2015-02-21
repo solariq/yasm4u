@@ -230,6 +230,7 @@ public class CompositeMREnv implements MREnv {
       copyState.snapshot();
     }
     else copyState.remove(uri);
+    copyState.snapshot();
   }
 
   @Override

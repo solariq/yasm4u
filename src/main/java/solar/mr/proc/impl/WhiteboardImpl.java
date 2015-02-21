@@ -157,7 +157,8 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
   public <T> void set(final String uri, final T data) {
     if (data == CharSeq.EMPTY)
       throw new IllegalArgumentException("User remove instead");
-    if (data.equals(state.get(uri)))
+    final Object current = state.get(uri);
+    if ((data.getClass().isArray() && Arrays.equals((Object[])data, (Object[])current)) ||data.equals(current))
       increment.remove(uri);
     else
       increment.put(uri, data);
@@ -166,7 +167,6 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
   @Override
   public void remove(final String var) {
     increment.put(var, CharSeq.EMPTY);
-    env.append(myShard, new CharSeqReader(var + "\t\n"));
   }
 
   @Override
@@ -198,8 +198,8 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
       builder.append(converter.convert(entry.getValue())).append('\n');
     }
 
-    if (builder.length() > 0)
-      env.write(myShard, new CharSeqReader(builder.build()));
+//    if (builder.length() > 0)
+    env.write(myShard, new CharSeqReader(builder.build()));
     increment.clear();
   }
 
