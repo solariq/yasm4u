@@ -29,15 +29,17 @@ public class ErrorsTableHandler extends MRRoutine {
     final MRRecord realRecord = new MRRecord(MRPath.create(parts[0].toString()), parts[1].toString(), parts[2].toString(), parts[3]);
     try {
       final Class clazz = Class.forName(record.key);
-      if (clazz.isAssignableFrom(Throwable.class)){
-        Throwable th = (Throwable)new ObjectInputStream(new ByteArrayInputStream(CharSeqTools.parseBase64(record.value))).readObject();
+      if (Throwable.class.isAssignableFrom(clazz)){
+        final Throwable th = (Throwable)new ObjectInputStream(new ByteArrayInputStream(CharSeqTools.parseBase64(record.sub))).readObject();
         errorsHandler.error(th, realRecord);
+        return;
       }
     } catch (ClassNotFoundException e) {
-      errorsHandler.error(record.key, record.sub, realRecord);
+      // skip
     }
     catch (IOException e) {
       throw new RuntimeException(e);
     }
+    errorsHandler.error(record.key, record.sub, realRecord);
   }
 }

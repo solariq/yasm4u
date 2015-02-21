@@ -41,16 +41,17 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
       int counter = 0;
       @Override
       public void error(final String type, final String cause, final MRRecord rec) {
-        System.err.println(rec.source + "\t" + type + "\t" + cause);
-        System.err.println(rec.toString());
+        System.err.print(type + "\t" + cause);
+        System.err.println("\t" + rec.source + "\t" + rec.key + "\t" + rec.sub);
+//        System.err.println(rec.toString());
         counter++;
       }
 
       @Override
       public void error(final Throwable th, final MRRecord rec) {
-        System.err.print(rec.source + "\t");
+        System.err.print(rec.source + "\t" + rec.key + "\t" + rec.sub);
         th.printStackTrace(System.err);
-        System.err.println(rec.toString());
+//        System.err.println(rec.toString());
         counter++;
       }
 
