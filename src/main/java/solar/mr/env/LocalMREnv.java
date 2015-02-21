@@ -124,7 +124,7 @@ public class LocalMREnv implements MREnv {
   private void writeFile(final Reader content, final MRPath shard, final boolean append) {
     final File file = file(shard);
     file.getParentFile().mkdirs();
-    final File tempFile = new File(file.getAbsolutePath() + ".temp");
+    File tempFile = new File(file.getAbsolutePath() + ".temp");
     try {
       if (append)
         FileUtils.copyFile(file, tempFile);
@@ -135,6 +135,7 @@ public class LocalMREnv implements MREnv {
       if (crc(file) != crc(tempFile)) {
         file.delete();
         tempFile.renameTo(file);
+        tempFile = null;
         if (!shard.sorted && !shard.isDirectory())
           //noinspection ResultOfMethodCallIgnored
           file(new MRPath(shard.mount, shard.path, true)).delete();
@@ -144,7 +145,8 @@ public class LocalMREnv implements MREnv {
       throw new RuntimeException(ioe);
     }
     finally {
-      tempFile.delete();
+      if (tempFile != null)
+        tempFile.delete();
     }
   }
 
