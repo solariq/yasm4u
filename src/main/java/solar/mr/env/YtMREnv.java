@@ -383,10 +383,11 @@ public class YtMREnv extends RemoteMREnv {
 
   @Override
   protected boolean isFat(MRPath path) {
-    final String localPath = localPath(path);
+    /*final String localPath = localPath(path);
     if ("//home/mobilesearch/logprocessing.daily/paradiso/".equals(localPath))
       return true;
-    return false;
+    return false;*/
+    return path.isDirectory();
   }
 
   @Override
