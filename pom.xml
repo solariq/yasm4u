@@ -110,9 +110,9 @@
     </plugins>
   </build>
 
-  <modules>
+  <!--modules>
     <module>commons</module>
-  </modules>
+  </modules-->
 </project>
 <!-- Local Variables: -->
 <!-- mode: nxml -->
