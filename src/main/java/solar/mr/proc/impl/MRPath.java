@@ -165,7 +165,7 @@ public class MRPath implements Serializable {
 
     MRPath mrPath = (MRPath) o;
 
-    //if (sorted != mrPath.sorted) return false;
+    if (sorted != mrPath.sorted) return false;
     if (mount != mrPath.mount) return false;
     return path.equals(mrPath.path);
   }
@@ -174,7 +174,7 @@ public class MRPath implements Serializable {
   public int hashCode() {
     int result = mount.hashCode();
     result = 31 * result + path.hashCode();
-    //result = 31 * result + (sorted ? 1 : 0);
+    result = 31 * result + (sorted ? 1 : 0);
     return result;
   }
 }
