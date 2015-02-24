@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.util.EmptyIterator;
 import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
@@ -534,8 +536,10 @@ public class YtMREnv extends RemoteMREnv {
           warn("Shold looks like uuid: " + arg);
           return;
         }
-        reportError("Msg: " + arg.toString() + " appears here by mistake!!!!");
-        reportError(e.getMessage());
+        if (System.getProperty("user.name").equals("minamoto")) {
+          reportError("Msg: " + arg.toString() + " appears here by mistake!!!!");
+          reportError(e.getMessage());
+        }
         processor.invoke(arg);
       } catch (IOException e) {
         throw new RuntimeException(e);
@@ -808,12 +812,14 @@ public class YtMREnv extends RemoteMREnv {
 
     @Override
     public void reportError(final CharSequence errorMsg) {
-      errorProcessor.invoke(errorMsg);
+      if (System.getProperty("user.name").equals("minamoto"))
+        errorProcessor.invoke(errorMsg);
     }
 
     @Override
     public void warn(final String msg) {
-      errorProcessor.invoke(msg);
+      if (System.getProperty("user.name").equals("minamoto"))
+        errorProcessor.invoke(msg);
     }
   }
 
