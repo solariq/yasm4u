@@ -81,6 +81,8 @@ public abstract class MROutputBase implements MROutput {
   }
 
   public void parse(CharSequence arg) {
+    if (arg.length() == 0)
+      return;
     final CharSequence[] split = CharSeqTools.split(arg, '\t');
 
     if (split.length == 1) {
