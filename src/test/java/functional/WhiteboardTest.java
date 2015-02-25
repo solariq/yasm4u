@@ -7,8 +7,8 @@ import solar.mr.env.LocalMREnv;
 import solar.mr.proc.Whiteboard;
 import solar.mr.proc.impl.WhiteboardImpl;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.io.LineNumberReader;
+import java.util.*;
 
 import static junit.framework.Assert.assertEquals;
 
@@ -32,5 +32,21 @@ public class WhiteboardTest extends BaseMRTest {
       assertEquals(map.get(key), map1.get(key));
     }
     wb.wipe();
+  }
+  
+  @Test
+  public void list() {
+    ArrayList<String> l1 = new ArrayList<>();
+    l1.add("one");
+    l1.add("two");
+    
+    Whiteboard wb = new WhiteboardImpl(env, "TEST");
+    wb.set("var:list", l1);
+    wb.snapshot();
+    List<?> l2 = wb.get("var:list");
+    assertEquals(l1.size(), l2.size());
+    for (Iterator<?> i1 = l1.iterator(),i2 = l2.iterator(); i1.hasNext() && i2.hasNext(); ) {
+      assertEquals(i1.next(), i2.next());
+    }
   }
 }
