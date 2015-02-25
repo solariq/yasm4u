@@ -48,5 +48,6 @@ public class WhiteboardTest extends BaseMRTest {
     for (Iterator<?> i1 = l1.iterator(),i2 = l2.iterator(); i1.hasNext() && i2.hasNext(); ) {
       assertEquals(i1.next(), i2.next());
     }
+    wb.wipe();
   }
 }
