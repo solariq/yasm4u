@@ -196,6 +196,9 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--format");
     options.add("\"<has_subkey=true>yamr\"");
     options.add(localPath);
+    options.add("--table-writer '{\"table_writer\"={\"max_row_weight\" = "
+      + MAX_ROW_WEIGTH
+      + "}}'");
     MRTools.CounterInputStream cis = new MRTools.CounterInputStream(new LineNumberReader(content), 0, 0, 0);
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, cis);
     updateState(shard, MRTools.updateTableShard(localPath, false, cis));
@@ -210,6 +213,9 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--format");
     options.add("\"<has_subkey=true>yamr\"");
     options.add("\"<append=true>" + localPath + "\"");
+    options.add("--table-writer '{\"table_writer\"={\"max_row_weight\" = "
+      + MAX_ROW_WEIGTH
+      + "}}'");
     final MRTableState cachedState = resolve(shard, true);
     if (cachedState != null) {
       MRTools.CounterInputStream cis = new MRTools.CounterInputStream(new LineNumberReader(content), cachedState.recordsCount(), cachedState.keysCount(), cachedState.length());
