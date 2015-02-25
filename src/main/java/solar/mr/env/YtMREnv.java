@@ -242,7 +242,7 @@ public class YtMREnv extends RemoteMREnv {
     options.add("-r");
     options.add("table");
     options.add(localPath(shard));
-    executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
+    executeCommand(options, /* defaultOutputProcessor */null, defaultErrorsProcessor, null);
   }
 
   public void delete(final MRPath table) {
