@@ -76,14 +76,21 @@ public class CompositeMREnv implements MREnv {
       if (outputExistence) {
         boolean ffDisabled = Boolean.getBoolean("yasm4u.disableFF");
         System.out.println("Fast forwarding execution " + (ffDisabled? "(ignored)" : "") + builder.toString());
-        if (!ffDisabled)
+        if (!ffDisabled) {
+          final MRTableState[] outAfter = original.resolveAll(out, false);
+          for(int i = 0; i < out.length; i++) {
+            setCopy(out[i], outAfter[i], localOutAfter[i]);
+          }
+
           return true;
+        }
       }
     }
     final MultiMap<MRPath, CharSequence> needToAddToSample = new MultiMap<>();
     try {
-      if (!original.execute(builder, new MRErrorsHandler() {
+      final boolean rc = original.execute(builder, new MRErrorsHandler() {
         int counter = 0;
+
         @Override
         public void error(String type, String cause, MRRecord record) {
           needToAddToSample.put(record.source, record.toString());
@@ -102,8 +109,13 @@ public class CompositeMREnv implements MREnv {
         public int errorsCount() {
           return counter;
         }
-      }, jar))
+      }, jar);
+      if (!rc) {
+        for(int i = 0; i < out.length; i++) {
+          setCopy(out[i], null, null);
+        }
         return false;
+      }
       final MRTableState[] outAfter = original.resolveAll(out, false);
       for(int i = 0; i < out.length; i++) {
         setCopy(out[i], outAfter[i], localOutAfter[i]);

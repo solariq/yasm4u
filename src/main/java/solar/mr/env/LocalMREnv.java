@@ -222,7 +222,7 @@ public class LocalMREnv implements MREnv {
     read(shard, new Processor<MRRecord>() {
       @Override
       public void process(final MRRecord arg) {
-        sort.add(Pair.create(arg.key + '\t' + arg.value, arg));
+        sort.add(Pair.create(arg.key + '\t' + arg.sub, arg));
       }
     });
     Collections.sort(sort, new Comparator<Pair<String, MRRecord>>() {

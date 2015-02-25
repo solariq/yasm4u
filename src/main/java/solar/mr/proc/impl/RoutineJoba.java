@@ -40,22 +40,22 @@ public class RoutineJoba implements Joba {
 
   @Override
   public boolean run(final Whiteboard wb) {
+    final MRPath[] inputResolved = resolveAll(input, wb);
+    final MRPath[] outputResolved = resolveAll(output, wb);
     if (type == MRRoutineBuilder.RoutineType.REDUCE) {
-      for (int i = 0; i < input.length; i++) {
-        final String resourceName = input[i];
-        wb.processAs(resourceName, new Processor<MRPath>() {
-          @Override
-          public void process(MRPath shard) {
-            wb.env().sort(new MRPath(shard.mount, shard.path, false));
-            wb.set(resourceName, new MRPath(shard.mount, shard.path, true));
-          }
-        });
+      for (int i = 0; i < inputResolved.length; i++) {
+        final MRPath resourceName = inputResolved[i];
+        if (!resourceName.sorted) {
+          final MRPath sortedPath = new MRPath(resourceName.mount, resourceName.path, false);
+          wb.env().sort(sortedPath);
+          inputResolved[i] = sortedPath;
+        }
       }
     }
 
     final MethodRoutineBuilder builder = new MethodRoutineBuilder();
-    builder.addInput(resolveAll(input, wb));
-    builder.addOutput(resolveAll(output, wb));
+    builder.addInput(inputResolved);
+    builder.addOutput(outputResolved);
     builder.setState(wb.snapshot());
     builder.setMethodName(method.getName());
     builder.setType(type);

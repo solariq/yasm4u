@@ -88,6 +88,8 @@ public abstract class RemoteMREnv implements MREnv {
 
       final MRPath[] input = builder.input();
       for (int i = 0; i < input.length; i++) {
+        to.append(Integer.toString(i)).append("\n");
+        to.flush();
         env.sample(input[i], new Processor<MRRecord>() {
           @Override
           public void process(MRRecord arg) {
@@ -247,7 +249,7 @@ public abstract class RemoteMREnv implements MREnv {
     while (itPath.hasNext()) {
       final MRPath path = itPath.next();
       final MRPath parent = path.parent();
-      if (parent.isRoot() && isFat(path)) {
+      if (parent.isRoot() || isFat(path)) {
         result.add(path);
         itPath.remove();
       }
