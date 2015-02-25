@@ -1,19 +1,17 @@
 package solar.mr.env;
 
+import com.spbsu.commons.io.StreamTools;
+import com.spbsu.commons.seq.CharSeqBuilder;
+import com.spbsu.commons.seq.CharSeqTools;
+import org.apache.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
+import solar.mr.proc.impl.WhiteboardImpl;
+
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
-
-
-import com.spbsu.commons.io.StreamTools;
-import com.spbsu.commons.seq.CharSeqBuilder;
-import com.spbsu.commons.seq.CharSeqTools;
-import com.sun.tools.javac.util.Assert;
-import org.apache.log4j.Logger;
-import org.jetbrains.annotations.Nullable;
-import solar.mr.proc.impl.WhiteboardImpl;
 
 /**
  * User: solar
@@ -215,7 +213,8 @@ public class SSHProcessRunner implements ProcessRunner {
 
     final File remoteResource = new File(remoteTmpRunner);
     final String outputResult = communicate("rm -f " + remoteResource.getAbsolutePath() + "; echo Ok;");
-    Assert.check("Ok".equals(outputResult));
+    if (!"Ok".equals(outputResult))
+      throw new RuntimeException("Ssh Ok-test wasn't passed!");
     //System.out.println("outputResult = " + outputResult);
     if ("file".equals(url.getProtocol())) {
       int rc = 1;
