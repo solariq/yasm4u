@@ -66,7 +66,7 @@ public class YtMREnv extends RemoteMREnv {
     final List<String> options = defaultOptions();
     options.add("read");
     options.add("--format");
-    options.add("\"<has_subkey=true>\"yamr");
+    options.add("<has_subkey=true>yamr");
     options.add(localPath(shard));
     executeCommand(options, new MRRoutine(shard) {
       @Override
@@ -82,7 +82,7 @@ public class YtMREnv extends RemoteMREnv {
     final List<String> options = defaultOptions();
     options.add("read");
     options.add("--format");
-    options.add("\"<has_subkey=true>yamr\"");
+    options.add("<has_subkey=true>yamr");
     options.add(localPath(table) + "[:#100]");
     executeCommand(options, new MRRoutine(table) {
       @Override
@@ -97,12 +97,18 @@ public class YtMREnv extends RemoteMREnv {
   public MRPath[] list(final MRPath prefix) {
 
     final List<String> attributes = new ArrayList<>();
-    attributes.add("--attribute type");
-    attributes.add("--attribute sorted");
-    attributes.add("--attribute row_count");
-    attributes.add("--attribute uncompressed_data_size");
-    attributes.add("--attribute modification_time");
-    attributes.add("--attribute key");
+    attributes.add("--attribute");
+    attributes.add("type");
+    attributes.add("--attribute");
+    attributes.add("sorted");
+    attributes.add("--attribute");
+    attributes.add("row_count");
+    attributes.add("--attribute");
+    attributes.add("uncompressed_data_size");
+    attributes.add("--attribute");
+    attributes.add("modification_time");
+    attributes.add("--attribute");
+    attributes.add("key");
     final List<MRPath> result = new ArrayList<>();
 
     final List<String> optionEntity = defaultOptions();
@@ -177,11 +183,12 @@ public class YtMREnv extends RemoteMREnv {
       options.add("merge");
       // is sorted enough?
       //options.add("--spec '{\"combine_chunks\"=true;\"merge_by\"=[\"key\"];\"mode\"=\"sorted\"}'");
-      options.add("--spec '{\"combine_chunks\"=true;}'");
+      options.add("--spec");
+      options.add("{\"combine_chunks\"=true;}");
       options.add("--src");
       options.add(localPath(sh));
       options.add("--dst");
-      options.add("\"<append=true>\"" + localPath(to));
+      options.add("<append=true>" + localPath(to));
       //options.add("--mode sorted");
       executeMapOrReduceCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     }
@@ -194,11 +201,12 @@ public class YtMREnv extends RemoteMREnv {
     final List<String> options = defaultOptions();
     options.add("write");
     options.add("--format");
-    options.add("\"<has_subkey=true>yamr\"");
+    options.add("<has_subkey=true>yamr");
     options.add(localPath);
-    options.add("--table-writer '{\"max_row_weight\" = "
+    options.add("--table-writer");
+    options.add("{\"max_row_weight\" = "
       + MAX_ROW_WEIGTH
-      + "}'");
+      + "}");
     MRTools.CounterInputStream cis = new MRTools.CounterInputStream(new LineNumberReader(content), 0, 0, 0);
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, cis);
     updateState(shard, MRTools.updateTableShard(localPath, false, cis));
@@ -211,11 +219,12 @@ public class YtMREnv extends RemoteMREnv {
     final List<String> options = defaultOptions();
     options.add("write");
     options.add("--format");
-    options.add("\"<has_subkey=true>yamr\"");
-    options.add("\"<append=true>" + localPath + "\"");
-    options.add("--table-writer '{\"max_row_weight\" = "
+    options.add("<has_subkey=true>yamr");
+    options.add("<append=true>" + localPath);
+    options.add("--table-writer");
+    options.add("{\"max_row_weight\" = "
       + MAX_ROW_WEIGTH
-      + "}'");
+      + "}");
     final MRTableState cachedState = resolve(shard, true);
     if (cachedState != null) {
       MRTools.CounterInputStream cis = new MRTools.CounterInputStream(new LineNumberReader(content), cachedState.recordsCount(), cachedState.keysCount(), cachedState.length());
@@ -255,7 +264,7 @@ public class YtMREnv extends RemoteMREnv {
     /* if (!resolve(table, false).isAvailable())
       return; */
     options.add("remove");
-    options.add("-r ");
+    options.add("-r");
     options.add(localPath(table));
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     wipeState(table);
@@ -270,12 +279,14 @@ public class YtMREnv extends RemoteMREnv {
     options.add(localPath(table));
     options.add("--dst");
     options.add(localPath(table));
-    options.add("--sort-by key");
-    options.add("--spec '{\"weight\"=5;\"sort_job_io\" = {\"table_writer\" = {\"max_row_weight\" = "
+    options.add("--sort-by");
+    options.add("key");
+    options.add("--spec");
+    options.add("{\"weight\"=5;\"sort_job_io\" = {\"table_writer\" = {\"max_row_weight\" = "
         + MAX_ROW_WEIGTH
         + "}};\"merge_job_io\" = {\"table_writer\" = {\"max_row_weight\" = "
         + MAX_ROW_WEIGTH
-        + "}}}'");
+        + "}}}");
     executeMapOrReduceCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     wipeState(table);
   }
@@ -287,7 +298,8 @@ public class YtMREnv extends RemoteMREnv {
     switch (builder.getRoutineType()) {
       case REDUCE:
         options.add("reduce");
-        options.add("--reduce-by key");
+        options.add("--reduce-by");
+        options.add("key");
         //options.add("--spec '{\"weight\"=5}'");
         break;
       case MAP:
@@ -296,10 +308,12 @@ public class YtMREnv extends RemoteMREnv {
       default:
         throw new IllegalArgumentException("unsupported operation: " + builder.getRoutineType());
     }
-    options.add("--spec '{\"weight\"=5;\"job_io\" = {\"table_writer\" = {\"max_row_weight\" = " + MAX_ROW_WEIGTH + "}}}'");
-    options.add("--memory-limit 3000");
+    options.add("--spec");
+    options.add("{\"weight\"=5;\"job_io\" = {\"table_writer\" = {\"max_row_weight\" = " + MAX_ROW_WEIGTH + "}}}");
+    options.add("--memory-limit");
+    options.add("3000");
     options.add("--format");
-    options.add("\"<has_subkey=true;enable_table_index=true>yamr\"");
+    options.add("<has_subkey=true;enable_table_index=true>yamr");
     MRPath[] in = builder.input();
     MRPath[] out = builder.output();
 
@@ -312,13 +326,10 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--local-file");
     options.add(jar.getAbsolutePath());
 
-    options.add("'/usr/local/java8/bin/java ");
+    options.add("/usr/local/java8/bin/java -XX:-UsePerfData -Xmx2G -Xms2G -jar " + jar.getName()); /* please do not append to the rest of the command */
     //options.add(" -Dcom.sun.management.jmxremote.port=50042 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false");
     //options.add("-Xint -XX:+UnlockDiagnosticVMOptions -XX:+LogVMOutput -XX:LogFile=/dev/stderr ");
-    options.add("-XX:-UsePerfData -Xmx2G -Xms2G -jar ");
-    options.add(jar.getName()); /* please do not append to the rest of the command */
     //options.add("| sed -ne \"/^[0-9]\\*\\$/p\" -ne \"/\\t/p\" )'");
-    options.add("'");
 
     int inputCount = 0;
     for(final MRPath sh : in) {

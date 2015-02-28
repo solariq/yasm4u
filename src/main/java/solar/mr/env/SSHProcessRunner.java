@@ -6,6 +6,7 @@ import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.logging.Interval;
 import com.sun.tools.javac.util.Assert;
+import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import solar.mr.proc.impl.WhiteboardImpl;
@@ -96,57 +97,45 @@ public class SSHProcessRunner implements ProcessRunner {
 
       { // Run command
 
-        List<File> localResources = new ArrayList<>();
-        List<File> remoteResources = new ArrayList<>();
-        int index = 0;
-        CharSeqBuilder command = new CharSeqBuilder();
-        command.append(mrBinaryPath);
-        while (index < options.size()) {
-          String opt = options.get(index++);
-          switch (opt) {
-            case "-map":
-            case "-reduce":
-            case "-reducews": {
-              command.append(" ").append(opt);
-              String routine = options.get(index++);
-              for (int i = 0; i < remoteResources.size(); i++) {
-                File remoteFile = remoteResources.get(i);
-                File localFile = localResources.get(i);
-                routine = routine.replace(localFile.getName(), remoteFile.getName());
+        final List<File> localResources = new ArrayList<>();
+        final List<File> remoteResources = new ArrayList<>();
+        { //hunting for resources
+          int index = 0;
+          while (index < options.size()) {
+            final String opt = options.get(index++);
+            switch (opt) {
+              case "--local-file":
+              case "--reduce-local-file":
+              case "-file": {
+                final File localResource = new File(options.get(index));
+                localResources.add(localResource);
+                final String name = localResource.getName();
+                final String ext = name.lastIndexOf('.') >= 0 ? name.substring(name.lastIndexOf('.')) : "";
+                final String remoteFile = transferFile(localResource.toURI().toURL(), ext, remoteResources, false);
+                options.set(index, remoteFile);
+                index++;
+                break;
               }
-              command.append(" \'").append(routine).append("\'");
             }
-              break;
-            case "-file": {
-              command.append(" ").append(opt);
-              final File localResource = new File(options.get(index++));
-              localResources.add(localResource);
-              command.append(" ").append(transferFile(localResource.toURI().toURL(), ".jar", remoteResources, false));
-              break;
-            }
-            case "--local-file":
-            case "--reduce-local-file": {
-              command.append(" ").append(opt);
-              final File localResource = new File(options.get(index++));
-              localResources.add(localResource);
-              command.append(" ").append(transferFile(localResource.toURI().toURL(), ".jar", remoteResources, false));
-              /* in Yt --local-file appears after map/reduce */
-              for (int i = 0; i < remoteResources.size(); i++) {
-                File remoteFile = remoteResources.get(i);
-                File localFile = localResources.get(i);
-                int optAbsoluteIndex = options.indexOf(localFile.getAbsolutePath());
-                options.remove(optAbsoluteIndex);
-                options.add(optAbsoluteIndex, remoteFile.getAbsolutePath());
-                int optIndex = options.indexOf(localFile.getName());
-                options.remove(optIndex);
-                options.add(optIndex, remoteFile.getName());
-              }
-              break;
-            }
-            default:
-              command.append(" \"").append(opt.replace("$", ".")).append("\"");
           }
         }
+        int index = 0;
+        CharSequence command;
+        {
+          CharSeqBuilder commandBuilder = new CharSeqBuilder();
+          commandBuilder.append(mrBinaryPath);
+          while (index < options.size()) {
+            final String opt = options.get(index++);
+            commandBuilder.append(" \"").append(opt.replace("$", ".").replace("\"", "\\\"")).append("\"");
+          }
+          command = commandBuilder.build();
+          for (int i = 0; i < remoteResources.size(); i++) {
+            final File remoteResource = remoteResources.get(i);
+            final File localResource = remoteResources.get(i);
+            command = CharSeqTools.replace(command, localResource.getName(), remoteResource.getName());
+          }
+        }
+
         if (input == null) {
           final String runner = transferFile(SSHProcessRunner.class.getResource("/mr/ssh/runner.pl"), ".pl", remoteResources, true);
           final StringBuilder finalCommand = new StringBuilder();
