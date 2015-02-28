@@ -36,8 +36,7 @@ public abstract class MRReduce extends MRRoutine {
             if (record == null)
               record = recordsQueue.poll(MAX_OPERATION_TIME, TimeUnit.SECONDS);
               if (record == null) {
-                System.err.println("REduce(poll(1)) is too slow for key: " + record.key);
-                throw new RuntimeException("key: " + record.key);
+                throw new RuntimeException("key: record is null");
               }
             if (record == EOF)
               return;
@@ -49,7 +48,7 @@ public abstract class MRReduce extends MRRoutine {
                   try {
                     record = recordsQueue.poll(MAX_OPERATION_TIME, TimeUnit.SECONDS);
                     if (record == null) {
-                      throw new RuntimeException("key: " + key);
+                      throw new RuntimeException("key: record is null");
                     }
                   } catch (InterruptedException e) {
                     // skip, need to empty queue
