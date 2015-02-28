@@ -46,8 +46,8 @@ public class RoutineJoba implements Joba {
       for (int i = 0; i < inputResolved.length; i++) {
         final MRPath resourceName = inputResolved[i];
         if (!resourceName.sorted) {
-          final MRPath sortedPath = new MRPath(resourceName.mount, resourceName.path, false);
-          wb.env().sort(sortedPath);
+          wb.env().sort(resourceName);
+          final MRPath sortedPath = new MRPath(resourceName.mount, resourceName.path, true);
           inputResolved[i] = sortedPath;
         }
       }
