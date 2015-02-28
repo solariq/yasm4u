@@ -12,4 +12,7 @@ import java.util.List;
  */
 public interface ProcessRunner {
   Process start(List<String> options, final InputStream input);
+  Process start(String... options);
+  Process start(InputStream input, String... options);
+  void close();
 }

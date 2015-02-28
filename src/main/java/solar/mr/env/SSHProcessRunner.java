@@ -1,8 +1,11 @@
 package solar.mr.env;
 
+import com.spbsu.commons.func.Action;
 import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqTools;
+import com.spbsu.commons.util.logging.Interval;
+import com.sun.tools.javac.util.Assert;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import solar.mr.proc.impl.WhiteboardImpl;
@@ -10,8 +13,7 @@ import solar.mr.proc.impl.WhiteboardImpl;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * User: solar
@@ -19,6 +21,7 @@ import java.util.List;
  * Time: 12:28
  */
 public class SSHProcessRunner implements ProcessRunner {
+  public static final String SSH_COMMAND = "ssh -o PasswordAuthentication=no -o ConnectionAttempts=1 -o ConnectTimeout=1";
   private static Logger LOG = Logger.getLogger(SSHProcessRunner.class);
   private final String proxyHost;
   private final String mrBinaryPath;
@@ -44,10 +47,9 @@ public class SSHProcessRunner implements ProcessRunner {
     }
     while (true) {
       try {
-        process = Runtime.getRuntime().exec("ssh -o PasswordAuthentication=no " + proxyHost + " bash -s");
+        process = Runtime.getRuntime().exec(SSH_COMMAND + " " + proxyHost + " bash -s");
         toProxy = new OutputStreamWriter(process.getOutputStream(), Charset.forName("UTF-8"));
         fromProxy = new LineNumberReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF-8")));
-        LineNumberReader error = new LineNumberReader(new InputStreamReader(process.getErrorStream(), Charset.forName("UTF-8")));
         toProxy.append("export YT_ERROR_FORMAT=json\n");
         toProxy.flush();
         toProxy.append("echo Ok\n");
@@ -55,12 +57,15 @@ public class SSHProcessRunner implements ProcessRunner {
         final String response = fromProxy.readLine();
         if (response != null && response.equals("Ok"))
           break;
-        error.close();
+        StreamTools.transferData(process.getErrorStream(), System.err);
+        process.getErrorStream().close();
         toProxy.close();
         fromProxy.close();
         process.waitFor();
       }
-      catch (Exception e) {
+      catch (IOException e) {
+        // skip
+      } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
     }
@@ -81,9 +86,7 @@ public class SSHProcessRunner implements ProcessRunner {
   @Override
   protected void finalize() throws Throwable {
     super.finalize();
-    toProxy.close();
-    fromProxy.close();
-    process.destroy();
+    close();
   }
 
   @Override
@@ -93,11 +96,6 @@ public class SSHProcessRunner implements ProcessRunner {
 
       { // Run command
 
-//        toProxy.append("export YT_PREFIX=//userdata/;\n");
-//        toProxy.append("export MR_RUNTIME=YT;\n");
-//        toProxy.flush();
-//        toProxy.append("echo $MR_RUNTIME;\n"); toProxy.flush();
-//        System.out.println(fromProxy.readLine());
         List<File> localResources = new ArrayList<>();
         List<File> remoteResources = new ArrayList<>();
         int index = 0;
@@ -123,7 +121,7 @@ public class SSHProcessRunner implements ProcessRunner {
               command.append(" ").append(opt);
               final File localResource = new File(options.get(index++));
               localResources.add(localResource);
-              command.append(" ").append(transferFile(localResource.toURI().toURL(), ".jar", remoteResources));
+              command.append(" ").append(transferFile(localResource.toURI().toURL(), ".jar", remoteResources, false));
               break;
             }
             case "--local-file":
@@ -131,7 +129,7 @@ public class SSHProcessRunner implements ProcessRunner {
               command.append(" ").append(opt);
               final File localResource = new File(options.get(index++));
               localResources.add(localResource);
-              command.append(" ").append(transferFile(localResource.toURI().toURL(), ".jar", remoteResources));
+              command.append(" ").append(transferFile(localResource.toURI().toURL(), ".jar", remoteResources, false));
               /* in Yt --local-file appears after map/reduce */
               for (int i = 0; i < remoteResources.size(); i++) {
                 File remoteFile = remoteResources.get(i);
@@ -146,42 +144,25 @@ public class SSHProcessRunner implements ProcessRunner {
               break;
             }
             default:
-              command.append(" ").append(opt.replace("$", "."));
+              command.append(" \"").append(opt.replace("$", ".")).append("\"");
           }
         }
         if (input == null) {
-          final String runner = transferFile(SSHProcessRunner.class.getResource("/mr/ssh/runner.pl"), ".pl", remoteResources);
+          final String runner = transferFile(SSHProcessRunner.class.getResource("/mr/ssh/runner.pl"), ".pl", remoteResources, true);
           final StringBuilder finalCommand = new StringBuilder();
           println(command.toString() + "\n");
-          finalCommand.append("export YT_ERROR_FORMAT=json;\n");
           finalCommand.append("perl ").append(runner).append(" run ").append(command).append(" 2>>/tmp/runner-errors-").append(WhiteboardImpl.USER).append(".txt\n");
           final String commandOutput = communicate(finalCommand.toString());
           final CharSequence[] split = CharSeqTools.split(commandOutput, "\t");
           final String pid = split[0].toString();
           final String output = split[1].toString();
 
-          final File tempFile = File.createTempFile("wait", ".sh");
-          //noinspection ResultOfMethodCallIgnored
-          tempFile.delete();
-          tempFile.deleteOnExit();
-
-          final StringBuilder waitCmd = new StringBuilder();
-          waitCmd.append("remote=").append(proxyHost).append("\n");
-          waitCmd.append("runner=").append(runner).append("\n");
-          waitCmd.append("pid=").append(pid).append("\n");
-          waitCmd.append("dir=").append(output).append("\n");
-          waitCmd.append("\n");
-          waitCmd.append("function gc() {\n");
-          for (final File remoteResource : remoteResources) {
-            waitCmd.append("  ssh -o PasswordAuthentication=no ").append(proxyHost).append(" rm -rf ").append(remoteResource.getAbsolutePath()).append(";\n");
-          }
-          waitCmd.append("}\n");
-          waitCmd.append(StreamTools.readStream(SSHProcessRunner.class.getResourceAsStream("/mr/ssh/wait.sh")));
-          StreamTools.writeChars(waitCmd, tempFile);
-          return Runtime.getRuntime().exec("bash " + tempFile.getAbsolutePath());
+          final File tempFile = generateWaitScript(remoteResources, runner, pid, output);
+          final ProcessBuilder builder = new ProcessBuilder("bash", tempFile.getAbsolutePath());
+          return builder.start();
         }
         else {
-          final Process process = Runtime.getRuntime().exec("ssh -o PasswordAuthentication=no " + proxyHost + " bash -s");
+          final Process process = Runtime.getRuntime().exec(SSH_COMMAND + " " + proxyHost + " bash -s");
           final OutputStream toProxy = process.getOutputStream();
           final LineNumberReader fromProxy = new LineNumberReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF-8")));
 
@@ -207,7 +188,51 @@ public class SSHProcessRunner implements ProcessRunner {
     }
   }
 
-  private String transferFile(URL url, @Nullable String suffix, List<File> remoteResources) throws IOException, InterruptedException {
+  private File generateWaitScript(List<File> remoteResources, String runner, String pid, String output) throws IOException {
+    final File tempFile = File.createTempFile("wait", ".sh");
+    //noinspection ResultOfMethodCallIgnored
+    tempFile.delete();
+    tempFile.deleteOnExit();
+
+    final StringBuilder waitCmd = new StringBuilder();
+    waitCmd.append("SSH=\"").append(SSH_COMMAND).append("\"\n");
+    waitCmd.append("remote=").append(proxyHost).append("\n");
+    waitCmd.append("runner=").append(runner).append("\n");
+    waitCmd.append("pid=").append(pid).append("\n");
+    waitCmd.append("dir=").append(output).append("\n");
+    waitCmd.append("\n");
+    waitCmd.append("function gc() {\n");
+    for (final File remoteResource : remoteResources) {
+      waitCmd.append("  " + SSH_COMMAND + " ").append(proxyHost).append(" rm -rf ").append(remoteResource.getAbsolutePath()).append(";\n");
+    }
+    waitCmd.append("}\n");
+    waitCmd.append(StreamTools.readStream(SSHProcessRunner.class.getResourceAsStream("/mr/ssh/wait.sh")));
+    StreamTools.writeChars(waitCmd, tempFile);
+    return tempFile;
+  }
+
+  @Override
+  public Process start(String... options) {
+    return start(Arrays.asList(options), null);
+  }
+
+  @Override
+  public Process start(InputStream input, String... options) {
+    return start(Arrays.asList(options), input);
+  }
+
+  @Override
+  public void close() {
+    try {
+      process.destroy();
+      toProxy.close();
+      fromProxy.close();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private String transferFile(URL url, @Nullable String suffix, List<File> remoteResources, boolean isText) throws IOException, InterruptedException {
     final String remoteTmpRunner = communicate("mktemp" + (suffix != null ? " --suffix " + suffix : "") + ";");
     //System.out.println("remoteTmpRunner = " + remoteTmpRunner);
 
@@ -216,7 +241,21 @@ public class SSHProcessRunner implements ProcessRunner {
     if (!"Ok".equals(outputResult))
       throw new RuntimeException("Ssh Ok-test wasn't passed!");
     //System.out.println("outputResult = " + outputResult);
-    if ("file".equals(url.getProtocol())) {
+    if (isText) {
+      final StringBuilder builder = new StringBuilder();
+      final int[] countBytes = new int[1];
+      CharSeqTools.processLines(new InputStreamReader(url.openStream()), new Action<CharSequence>() {
+        @Override
+        public void invoke(CharSequence sequence) {
+          countBytes[0] += sequence.toString().getBytes(StreamTools.UTF).length + 1;
+          builder.append(sequence).append("\n");
+        }
+      });
+      final String result = communicate("dd bs=1 count=" + countBytes[0] + " 2>/dev/null >" + remoteResource.getAbsolutePath() + ";\n" + builder.toString() + "echo Ok;");
+      if (!"Ok".equals(result))
+        throw new RuntimeException();
+    }
+    else if ("file".equals(url.getProtocol())) {
       int rc = 1;
       int delay = 1000;
       int tries = 0;

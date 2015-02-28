@@ -6,6 +6,7 @@ import com.spbsu.commons.io.StreamTools;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -138,6 +139,20 @@ public class LocalProcessRunner implements ProcessRunner {
     catch (IOException|InterruptedException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Override
+  public Process start(String... options) {
+    return start(Arrays.asList(options), null);
+  }
+
+  @Override
+  public Process start(InputStream input, String... options) {
+    return start(Arrays.asList(options), input);
+  }
+
+  @Override
+  public void close() {
   }
 
   private void initShell() {
