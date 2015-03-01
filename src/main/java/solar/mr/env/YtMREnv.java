@@ -309,7 +309,7 @@ public class YtMREnv extends RemoteMREnv {
         throw new IllegalArgumentException("unsupported operation: " + builder.getRoutineType());
     }
     options.add("--spec");
-    options.add("{\"weight\"=5;\"job_io\" = {\"table_writer\" = {\"max_row_weight\" = " + MAX_ROW_WEIGTH + "}}}");
+    options.add("{weight=5;job_io = {table_writer = {max_row_weight = " + MAX_ROW_WEIGTH + "}}}");
     options.add("--memory-limit");
     options.add("3000");
     options.add("--format");
@@ -326,11 +326,10 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--local-file");
     options.add(jar.getAbsolutePath());
 
-    options.add("/usr/local/java8/bin/java -XX:-UsePerfData -Xmx2G -Xms2G -jar " + jar.getName()); /* please do not append to the rest of the command */
+    options.add("/usr/local/java8/bin/java -XX:-UsePerfData -Xmx2G -Xms2G -jar " + jar.getName());
     //options.add(" -Dcom.sun.management.jmxremote.port=50042 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false");
     //options.add("-Xint -XX:+UnlockDiagnosticVMOptions -XX:+LogVMOutput -XX:LogFile=/dev/stderr ");
     //options.add("| sed -ne \"/^[0-9]\\*\\$/p\" -ne \"/\\t/p\" )'");
-
     int inputCount = 0;
     for(final MRPath sh : in) {
       if (!resolve(sh, false).isAvailable())
