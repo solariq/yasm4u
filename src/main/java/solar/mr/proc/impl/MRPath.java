@@ -74,6 +74,12 @@ public class MRPath implements Serializable {
     return mount.prefix + path;
   }
 
+  public String tableName() {
+    if (isDirectory())
+      throw new RuntimeException("this is directory");
+    return path.substring(path.lastIndexOf("/") + 1);
+  }
+
   public enum Mount {
     ROOT("/"),
     TEMP("/tmp/"),
@@ -96,7 +102,7 @@ public class MRPath implements Serializable {
    * @param source this parameter contains path+query+fragment parts of URI.
    */
   public static MRPath create(String source) {
-    if (source.equals("//"))
+    if (source.contains("//"))
       throw new RuntimeException("//");
 
     final int attrsStart = source.indexOf("?") + 1;
@@ -135,8 +141,11 @@ public class MRPath implements Serializable {
   }
 
   public static MRPath create(MRPath parent, String path) {
-    if (path.equals("//"))
+    if (path.contains("//"))
       throw new RuntimeException("//");
+    
+    if (path.startsWith("/"))
+      throw new RuntimeException("path started with /");
 
     if (!parent.isDirectory())
       throw new IllegalArgumentException("Parent must be directory but [" + parent + "] is not.");
@@ -145,11 +154,13 @@ public class MRPath implements Serializable {
 
   public static MRPath createFromURI(String uriS) {
     try {
-      if (uriS.equals("//"))
-        throw new RuntimeException("//");
-
+      /*if (uriS.equals("//"))
+        throw new RuntimeException("//");*/
+      
       final URI uri = new URI(uriS);
       if ("mr".equals(uri.getScheme())) {
+        if (uri.getPath().contains("//"))
+          throw new RuntimeException("//");
         return create(uri.getPath() + (uri.getQuery() != null ? "?" + uri.getQuery() : ""));
       }
       else throw new IllegalArgumentException("Unsupported protocol: " + uri.getScheme() + " in URI: [" + uriS + "]");
