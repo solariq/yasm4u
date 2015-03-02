@@ -10,6 +10,7 @@ import solar.mr.proc.impl.StateImpl;
 import solar.mr.routines.MRRecord;
 
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
 * User: solar
@@ -22,63 +23,76 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
   public final int MAX_OPERATION_TIME = 600;
   private final State state;
   private final MRPath[] inputTables;
+  private final long timeout;
   private int currentInputIndex = 0;
   private boolean interrupted = false;
+  private AtomicReference<CharSequence> next = new AtomicReference<>();
+  private Throwable unhandled;
+  private MRRecord currentRecord;
 
   public MRRoutine(MRPath[] inputTables, MRErrorsHandler output, State state) {
     this.inputTables = inputTables;
     this.output = output;
     this.state = state;
+    this.timeout = state.available(VAR_TIMELIMITPERRECORD) ? (long) state.get(VAR_TIMELIMITPERRECORD) : TimeUnit.MINUTES.toMillis(1);
+
+    final Thread routineTh = new Thread(new Runnable() {
+      @Override
+      public void run() {
+        CharSequence next;
+        do {
+          next = MRRoutine.this.next.get();
+          if (next != null) {
+            invokeInner(next);
+            MRRoutine.this.next.set(null);
+          }
+        }
+        while (next != CharSeq.EMPTY);
+      }
+    });
+    routineTh.setDaemon(true);
+    routineTh.setName("MRRoutine thread");
+    routineTh.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+      @Override
+      public void uncaughtException(Thread t, Throwable e) {
+        unhandled = e;
+      }
+    });
+    routineTh.start();
   }
 
   public MRRoutine(MRPath... inputTables) {
     this(inputTables, new DefaultMRErrorsHandler(), new StateImpl());
   }
 
-  final ExecutorService executor = Executors.newFixedThreadPool(1);
-
   @Override
   public void invoke(final CharSequence record) {
-    final Future<?> submit = executor.submit(new Runnable() {
-      @Override
-      public void run() {
-        invokeInner(record);
-      }
-    });
+    final long time = System.currentTimeMillis();
+    int count = 0;
 
-    try {
-      if (state.available(VAR_TIMELIMITPERRECORD))
-        //noinspection ConstantConditions
-        submit.get(state.<Long>get(VAR_TIMELIMITPERRECORD), TimeUnit.MILLISECONDS);
-      else
-        submit.get(1, TimeUnit.MINUTES);
-    } catch (InterruptedException | ExecutionException e) {
-      throw new RuntimeException(e);
-    } catch (TimeoutException e) {
-      throw new RuntimeException(e);
+    next.set(record);
+    while (!next.compareAndSet(null, null)) {
+      if (++count % 100000 == 0 && System.currentTimeMillis() - time > timeout)
+        output.error(new TimeoutException(), currentRecord);
     }
+    if (unhandled != null)
+      output.error(unhandled, currentRecord);
   }
 
+  private final CharSequence[] split = new CharSequence[3];
   private void invokeInner(CharSequence record) {
     if (record == CharSeq.EMPTY)
       onEndOfInput();
     if (interrupted || record.length() == 0) // this is trash and ugar but we need to read entire stream before closing it, so that YaMR won't gone mad
       return;
-    final CharSequence[] split = new CharSequence[3];
     int parts = CharSeqTools.trySplit(record, '\t', split);
     if (parts == 1) // switch table record
       currentInputIndex = CharSeqTools.parseInt(split[0]);
     else if (parts < 3)
       output.error("Illegal record", "Contains 2 fields only!", new MRRecord(currentTable(), split[0].toString(), "", split[1]));
     else {
-      final MRRecord mrRecord = new MRRecord(currentTable(), split[0].toString(), split[1].toString(), split[2]);
-      try {
-        process(mrRecord);
-      }
-      catch (Exception e) {
-        output.error(e, mrRecord);
-        interrupt();
-      }
+      currentRecord = new MRRecord(currentTable(), split[0].toString(), split[1].toString(), split[2]);
+      process(currentRecord);
     }
   }
 
@@ -100,4 +114,7 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
     return inputTables;
   }
 
+  public MRRecord currentRecord() {
+    return currentRecord;
+  }
 }

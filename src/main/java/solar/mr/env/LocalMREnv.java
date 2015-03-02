@@ -62,11 +62,15 @@ public class LocalMREnv implements MREnv {
   public boolean execute(MRRoutineBuilder builder, final MRErrorsHandler errorsHandler) {
     final MROutputBase output = new MROutput2MREnv(this, builder.output(), errorsHandler);
     final MRRoutine routine = builder.build(output);
-
-    for (final MRPath path : routine.input()) {
-      read(path, routine);
+    try {
+      for (final MRPath path : routine.input()) {
+        read(path, routine);
+      }
+      routine.invoke(CharSeq.EMPTY);
     }
-    routine.invoke(CharSeq.EMPTY);
+    catch (Throwable th) {
+      errorsHandler.error(th, routine.currentRecord());
+    }
 
     output.interrupt();
     output.join();
@@ -103,7 +107,7 @@ public class LocalMREnv implements MREnv {
     return read(shard, routine);
   }
 
-  private int read(MRPath shard, MRRoutine routine) {
+  protected int read(MRPath shard, MRRoutine routine) {
     try {
       final File file = file(shard);
       if (file.exists()) {
@@ -358,5 +362,9 @@ public class LocalMREnv implements MREnv {
     }
     recordsAnsKeys[1] = keys.size();
     return recordsAnsKeys;
+  }
+
+  public File home() {
+    return home;
   }
 }
