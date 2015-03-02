@@ -28,7 +28,6 @@ import java.util.Random;
  * Date: 12.10.14
  * Time: 10:35
  */
-@SuppressWarnings("deprecation")
 public class MRProcTest {
 
   private final static String TEST_SERVER_PROXY = "dodola";

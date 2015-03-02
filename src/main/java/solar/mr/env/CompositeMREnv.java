@@ -7,10 +7,8 @@ import com.spbsu.commons.system.RuntimeUtils;
 import com.spbsu.commons.util.Holder;
 import com.spbsu.commons.util.MultiMap;
 import com.spbsu.commons.util.Pair;
-import solar.mr.MREnv;
-import solar.mr.MRErrorsHandler;
-import solar.mr.MRRoutineBuilder;
-import solar.mr.MRTableState;
+import gnu.trove.list.array.TIntArrayList;
+import solar.mr.*;
 import solar.mr.proc.Whiteboard;
 import solar.mr.proc.impl.MRPath;
 import solar.mr.proc.impl.WhiteboardImpl;
@@ -20,6 +18,8 @@ import java.io.File;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /**
@@ -38,7 +38,9 @@ public class CompositeMREnv implements MREnv {
     copyState = new WhiteboardImpl(localCopy, "MREnvState", WhiteboardImpl.USER);
     for (final String uri : copyState.snapshot().keys()) {
       //noinspection ConstantConditions
-      original.updateState(MRPath.createFromURI(uri), copyState.<Pair<MRTableState, MRTableState>>get(uri).first);
+      final Pair state = copyState.get(uri);
+      if (state != null && state.first instanceof MRTableState)
+        original.updateState(MRPath.createFromURI(uri), (MRTableState)state.first);
     }
   }
 
@@ -132,7 +134,7 @@ public class CompositeMREnv implements MREnv {
 
   public MRTableState[] sync(final MRPath... paths) {
     final MRTableState[] result = new MRTableState[paths.length];
-    final MRTableState[] originalStates = original.resolveAll(paths);
+    final MRTableState[] originalStates = resolveAll(paths);
     for(int i = 0; i < paths.length; i++) {
       final MRPath path = paths[i];
       if (!originalStates[i].isAvailable()) {
@@ -181,17 +183,48 @@ public class CompositeMREnv implements MREnv {
 
   @Override
   public MRPath[] list(MRPath prefix) {
-    return original.list(prefix);
+    final String resourceString = prefix.resource().toString();
+    final Pair<Long, MRPath[]> cache = copyState.snapshot().get(resourceString);
+    final long now = System.currentTimeMillis();
+    if (cache != null && now - cache.first < MRTools.FRESHNESS_TIMEOUT) {
+      resolveAll(cache.second);
+      return cache.second;
+    }
+    final MRPath[] result = original.list(prefix);
+    copyState.set(resourceString, Pair.create(now, result));
+    return result;
   }
 
   @Override
   public MRTableState resolve(MRPath path) {
-    return original.resolve(path);
+    return resolveAll(path)[0];
   }
 
   @Override
   public MRTableState[] resolveAll(MRPath... path) {
-    return original.resolveAll(path);
+    final long now = System.currentTimeMillis();
+    final MRTableState[] result = new MRTableState[path.length];
+    final List<MRPath> toResolve = new ArrayList<>();
+    final TIntArrayList toResolvePositions = new TIntArrayList();
+    for(int i = 0; i < path.length; i++) {
+      final MRPath mrPath = path[i];
+      if (mrPath.isDirectory())
+        throw new IllegalArgumentException("Resolved resource must not be directory: " + path);
+      final Pair<MRTableState, MRTableState> cache = copyState.get(mrPath.resource().toString());
+      if (cache == null || now - cache.first.snapshotTime() >= MRTools.FRESHNESS_TIMEOUT) {
+        toResolve.add(mrPath);
+        toResolvePositions.add(i);
+      } else {
+        result[i] = cache.second;
+      }
+    }
+    final MRTableState[] resolvedAtOriginal = original.resolveAll(toResolve.toArray(new MRPath[toResolve.size()]));
+    for(int i = 0; i < resolvedAtOriginal.length; i++) {
+      final int originalIndex = toResolvePositions.get(i);
+      result[originalIndex] = resolvedAtOriginal[i];
+      localShard(path[originalIndex], resolvedAtOriginal[i]);
+    }
+    return result;
   }
 
   @Override
@@ -208,22 +241,34 @@ public class CompositeMREnv implements MREnv {
   @Override
   public void write(MRPath shard, Reader content) {
     original.write(shard, content);
+    localCopy.write(shard, content);
+    setCopy(shard, original.resolve(shard), localCopy.resolve(shard));
   }
 
   @Override
   public void append(MRPath shard, Reader content) {
-    original.append(shard, content);
+    if (localShard(shard, null) != null) {
+      original.append(shard, content);
+      localCopy.append(shard, content);
+      setCopy(shard, original.resolve(shard), localCopy.resolve(shard));
+    }
+    else {
+      original.append(shard, content);
+      setCopy(shard, null, null);
+    }
   }
 
   @Override
   public void copy(MRPath[] from, MRPath to, boolean append) {
     original.copy(from, to, append);
+    setCopy(to, null, null);
   }
 
   @Override
   public void delete(MRPath shard) {
     localCopy.delete(shard);
     original.delete(shard);
+    setCopy(shard, null, null);
   }
 
   private MRTableState localShard(MRPath shard, MRTableState state) {
@@ -233,9 +278,12 @@ public class CompositeMREnv implements MREnv {
       return null;
     final MRTableState original = localState.getFirst();
     final MRTableState newCopy = localCopy.resolve(shard);
-    if (!original.equals(state) || !newCopy.isAvailable()) {
+    if ((state != null && !original.equals(state)) || !newCopy.isAvailable()) {
       setCopy(shard, original, null);
       return null;
+    }
+    else if (state != null && state.snapshotTime() > original.snapshotTime()) {
+      setCopy(shard, state, newCopy); // update metaTS
     }
 
     return newCopy;

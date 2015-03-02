@@ -9,12 +9,15 @@ import solar.mr.proc.impl.MRPath;
 import solar.mr.proc.impl.StateImpl;
 import solar.mr.routines.MRRecord;
 
+import java.util.concurrent.*;
+
 /**
 * User: solar
 * Date: 23.09.14
 * Time: 11:19
 */
 public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSequence> {
+  public static final String VAR_TIMELIMITPERRECORD = "var:timelimitperrecord";
   private final MRErrorsHandler output;
   public final int MAX_OPERATION_TIME = 600;
   private final State state;
@@ -32,8 +35,31 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
     this(inputTables, new DefaultMRErrorsHandler(), new StateImpl());
   }
 
+  final ExecutorService executor = Executors.newFixedThreadPool(1);
+
   @Override
   public void invoke(final CharSequence record) {
+    final Future<?> submit = executor.submit(new Runnable() {
+      @Override
+      public void run() {
+        invokeInner(record);
+      }
+    });
+
+    try {
+      if (state.available(VAR_TIMELIMITPERRECORD))
+        //noinspection ConstantConditions
+        submit.get(state.<Long>get(VAR_TIMELIMITPERRECORD), TimeUnit.MILLISECONDS);
+      else
+        submit.get(1, TimeUnit.MINUTES);
+    } catch (InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    } catch (TimeoutException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private void invokeInner(CharSequence record) {
     if (record == CharSeq.EMPTY)
       onEndOfInput();
     if (interrupted || record.length() == 0) // this is trash and ugar but we need to read entire stream before closing it, so that YaMR won't gone mad

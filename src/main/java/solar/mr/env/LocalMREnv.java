@@ -94,18 +94,22 @@ public class LocalMREnv implements MREnv {
 
   @Override
   public int read(final MRPath shard, final Processor<MRRecord> seq) {
+    final MRRoutine routine = new MRRoutine(shard) {
+      @Override
+      public void process(final MRRecord arg) {
+        seq.process(arg);
+      }
+    };
+    return read(shard, routine);
+  }
+
+  private int read(MRPath shard, MRRoutine routine) {
     try {
-      final int[] counter = new int[]{0};
       final File file = file(shard);
-      if (file.exists())
-        CharSeqTools.processLines(new FileReader(file), new MRRoutine(shard) {
-          @Override
-          public void process(final MRRecord arg) {
-            counter[0]++;
-            seq.process(arg);
-          }
-        });
-      return counter[0];
+      if (file.exists()) {
+        return CharSeqTools.processLines(new FileReader(file), routine);
+      }
+      return 0;
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -123,16 +127,16 @@ public class LocalMREnv implements MREnv {
 
   private void writeFile(final Reader content, final MRPath shard, final boolean append) {
     final File file = file(shard);
-    file.getParentFile().mkdirs();
     File tempFile = new File(file.getAbsolutePath() + ".temp");
     try {
-      if (append)
+      FileUtils.forceMkdir(file.getParentFile());
+      if (append && file.exists())
         FileUtils.copyFile(file, tempFile);
 
       try (final FileWriter out = new FileWriter(tempFile, true)) {
         StreamTools.transferData(content, out);
       }
-      if (crc(file) != crc(tempFile)) {
+      if (!crc(file).equals(crc(tempFile))) {
         file.delete();
         tempFile.renameTo(file);
         tempFile = null;

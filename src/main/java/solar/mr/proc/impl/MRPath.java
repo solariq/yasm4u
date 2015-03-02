@@ -28,7 +28,7 @@ public class MRPath implements Serializable {
       if (!isDirectory())
         return new URI("mr", "", mount.prefix + path, "sorted=" + Boolean.toString(sorted), "");
       else
-        return new URI("mr", "", mount.prefix + path);
+        return new URI("mr://" + mount.prefix + path);
     } catch (URISyntaxException e) {
       // should never happen
       throw new RuntimeException(e);
