@@ -212,6 +212,9 @@ public abstract class RemoteMREnv implements MREnv {
     final Set<MRPath> unknown = new HashSet<>();
     for(int i = 0; i < paths.length; i++) {
       MRPath path = paths[i];
+      if (path.isDirectory())
+        throw new IllegalArgumentException("Path must not be directory");
+
       final MRTableState shard = cachedState(path);
       if (shard != null) {
         if (time - shard.snapshotTime() < MRTools.FRESHNESS_TIMEOUT) {

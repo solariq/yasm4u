@@ -100,7 +100,8 @@ public class YtMREnv extends RemoteMREnv {
 
   @Override
   public MRPath[] list(final MRPath prefix) {
-
+    if (!prefix.isDirectory())
+      throw new IllegalArgumentException("Prefix must be directory");
     final List<String> attributes = new ArrayList<>();
     attributes.add("--attribute");
     attributes.add("type");

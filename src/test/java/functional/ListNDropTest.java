@@ -53,15 +53,15 @@ public final class ListNDropTest extends BaseMRTest {
 
   @Test
   public void notExistance(){
-    MRPath[] result = env.list(MRPath.create("/home/__no_existant"));
-    env.sample(MRPath.create("/home/__no_existant"), new Processor<MRRecord>() {
+    MRPath[] result = env.list(MRPath.create("/home/__no_existant/"));
+    env.sample(MRPath.create("/home/__no_existant/"), new Processor<MRRecord>() {
       @Override
       public void process(MRRecord arg) {
 
       }
     });
 
-    result = env.list(MRPath.create("/home/__no_existant/__no_existant"));
+    result = env.list(MRPath.create("/home/__no_existant/__no_existant/"));
     env.sample(MRPath.create("/home/__no_existant/__no_existant"), new Processor<MRRecord>() {
       @Override
       public void process(MRRecord arg) {

@@ -79,6 +79,8 @@ public class LocalMREnv implements MREnv {
 
   @Override
   public MRTableState resolve(MRPath path) {
+    if (path.isDirectory())
+      throw new IllegalArgumentException("Path must not be directory");
     final File file = file(path);
     if (file.exists()) {
       final long[] recordsAndKeys = countRecordsAndKeys(file);
@@ -196,6 +198,8 @@ public class LocalMREnv implements MREnv {
 
   @Override
   public MRPath[] list(MRPath prefix) {
+    if (!prefix.isDirectory())
+      throw new IllegalArgumentException("Prefix must be directory");
     final File prefixFile = file(prefix);
     final Map<String, MRPath> result = new HashMap<>();
     StreamTools.visitFiles(prefixFile, new Processor<String>() {

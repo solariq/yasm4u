@@ -115,6 +115,9 @@ public class YaMREnv extends RemoteMREnv {
 
   @Override
   public MRPath[] list(MRPath prefix) {
+    if (!prefix.isDirectory())
+      throw new IllegalArgumentException("Prefix must be directory");
+
     final List<MRTableState> states = new ArrayList<>();
     final List<String> options = defaultOptions();
     options.add("-list");
