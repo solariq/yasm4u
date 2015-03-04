@@ -230,7 +230,7 @@ public abstract class RemoteMREnv implements MREnv {
       return result;
     // after this cycle all entries of paths array must be in the shardsCache
     for (final MRPath prefix : findBestPrefixes(unknown)) {
-      list(prefix.parent());
+      list(prefix.isDirectory() ? prefix : prefix.parent());
     }
     final MRTableState[] states = resolveAll(paths, true);
     for(int i = 0; i < states.length; i++) {
