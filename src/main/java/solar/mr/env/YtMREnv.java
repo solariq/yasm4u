@@ -229,8 +229,8 @@ public class YtMREnv extends RemoteMREnv {
     options.add("<append=true>" + localPath);
     options.add("--table-writer");
     options.add("{\"max_row_weight\" = "
-      + MAX_ROW_WEIGTH
-      + "}");
+            + MAX_ROW_WEIGTH
+            + "}");
     final MRTableState cachedState = resolve(shard, true);
     if (cachedState != null) {
       MRTools.CounterInputStream cis = new MRTools.CounterInputStream(new LineNumberReader(content), cachedState.recordsCount(), cachedState.keysCount(), cachedState.length());
@@ -338,8 +338,10 @@ public class YtMREnv extends RemoteMREnv {
     //options.add("| sed -ne \"/^[0-9]\\*\\$/p\" -ne \"/\\t/p\" )'");
     int inputCount = 0;
     for(final MRPath sh : in) {
-      if (!resolve(sh, false).isAvailable())
+      if (!resolve(sh, false).isAvailable()) {
+        defaultErrorsProcessor.invoke("WARNING! " + sh + " isn't available. ");
         continue;
+      }
       options.add("--src");
       options.add(localPath(sh));
       inputCount++;
@@ -347,7 +349,7 @@ public class YtMREnv extends RemoteMREnv {
 
     /* Otherwise Yt fails with wrong command syntax. */
     if (inputCount == 0) {
-      defaultErrorsProcessor.invoke("WARNING!: operation was skiped");
+      defaultErrorsProcessor.invoke("WARNING!: operation: " + builder.getRoutineType() + " " + builder.toString() + " is skipped");
       return true;
     }
 
