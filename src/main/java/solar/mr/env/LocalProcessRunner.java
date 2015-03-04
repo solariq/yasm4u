@@ -40,35 +40,20 @@ public class LocalProcessRunner implements ProcessRunner {
       throw new RuntimeException(e);
     }
 
-    final ArrayList<String> command = new ArrayList<>();
-    command.add(binaryPath);
-    for (int i = 0; i < options.size(); ++i) {
-      final String opt = options.get(i);
-      switch(opt) {
-        case "-map":
-        case "-reduce":
-        case "-reducews":
-          command.add(opt);
-          command.add("'" + options.get(++i) + "'");
-          break;
-        default:
-          command.add(opt.replace("$", "."));
-          break;
-      }
-    }
     final StringBuilder sb = new StringBuilder();
     if (input != null) {
       sb.append("cat - |");
     }
-    for (final String c:command) {
-      sb.append(c).append(" ");
+    sb.append(binaryPath);
+    for (final String opt:options) {
+      sb.append(" ").append(opt.replace("$", "."));
     }
-
+    
     try {
-      final File output = File.createTempFile("yasm4u", "out");
+      final File output = File.createTempFile("yasm4u.", ".out");
       output.deleteOnExit();
 
-      final File error = File.createTempFile("yasm4u", "err");
+      final File error = File.createTempFile("yasm4u.", ".err");
       error.deleteOnExit();
       sb.append(" 1> " + output.getAbsolutePath() + " 2>" + error.getAbsolutePath()
           + "; echo \"<EOF>\";exit\n");
