@@ -65,13 +65,15 @@ public class YaMREnv extends RemoteMREnv {
     final List<String> options = defaultOptions();
     options.add("-read");
     options.add(localPath(shard));
-    executeCommand(options, new MRRoutine(shard) {
+    final MRRoutine outputProcessor = new MRRoutine(shard) {
       @Override
       public void process(final MRRecord arg) {
         recordsCount[0]++;
         linesProcessor.process(arg);
       }
-    }, defaultErrorsProcessor, null);
+    };
+    executeCommand(options, outputProcessor, defaultErrorsProcessor, null);
+    outputProcessor.invoke(CharSeq.EMPTY);
     return recordsCount[0];
   }
 
@@ -101,12 +103,14 @@ public class YaMREnv extends RemoteMREnv {
     options.add(localPath(table));
     options.add("-count");
     options.add("" + 100);
-    executeCommand(options, new MRRoutine(table) {
+    final MRRoutine outputProcessor = new MRRoutine(table) {
       @Override
       public void process(final MRRecord arg) {
         linesProcessor.process(arg);
       }
-    }, defaultErrorsProcessor, null);
+    };
+    executeCommand(options, outputProcessor, defaultErrorsProcessor, null);
+    outputProcessor.invoke(CharSeq.EMPTY);
   }
 
   @Override
@@ -323,6 +327,7 @@ public class YaMREnv extends RemoteMREnv {
     }, null);
     final MRRoutine errorProcessor = new ErrorsTableHandler(errorsPath, errorsHandler);
     errorsCount[0] += read(errorsPath, errorProcessor);
+    errorProcessor.invoke(CharSeq.EMPTY);
     delete(errorsPath);
 
     if (errorsCount[0] == 0) {

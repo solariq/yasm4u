@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.util.EmptyIterator;
 import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.random.FastRandom;
+import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqReader;
 import com.spbsu.commons.seq.CharSeqTools;
@@ -68,13 +69,15 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--format");
     options.add("<has_subkey=true>yamr");
     options.add(localPath(shard));
-    executeCommand(options, new MRRoutine(shard) {
+    final MRRoutine outputProcessor = new MRRoutine(shard) {
       @Override
       public void process(final MRRecord arg) {
         recordsCount[0]++;
         linesProcessor.process(arg);
       }
-    }, defaultErrorsProcessor, null);
+    };
+    executeCommand(options, outputProcessor, defaultErrorsProcessor, null);
+    outputProcessor.invoke(CharSeq.EMPTY);
     return recordsCount[0];
   }
 
@@ -84,12 +87,14 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--format");
     options.add("<has_subkey=true>yamr");
     options.add(localPath(table) + "[:#100]");
-    executeCommand(options, new MRRoutine(table) {
+    final MRRoutine outputProcessor = new MRRoutine(table) {
       @Override
       public void process(final MRRecord arg) {
         linesProcessor.process(arg);
       }
-    }, defaultErrorsProcessor, null);
+    };
+    executeCommand(options, outputProcessor, defaultErrorsProcessor, null);
+    outputProcessor.invoke(CharSeq.EMPTY);
   }
 
 

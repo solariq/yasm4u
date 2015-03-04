@@ -104,7 +104,9 @@ public class LocalMREnv implements MREnv {
         seq.process(arg);
       }
     };
-    return read(shard, routine);
+    int count = read(shard, routine);
+    routine.invoke(CharSeq.EMPTY);
+    return count;
   }
 
   protected int read(MRPath shard, MRRoutine routine) {
@@ -178,12 +180,14 @@ public class LocalMREnv implements MREnv {
     final File file = file(shard);
     if (file.exists()) {
       try {
-        CharSeqTools.processLines(new FileReader(file), new MRRoutine(shard) {
+        final MRRoutine routine = new MRRoutine(shard) {
           @Override
           public void process(final MRRecord arg) {
             seq.process(arg);
           }
-        });
+        };
+        CharSeqTools.processLines(new FileReader(file), routine);
+        routine.invoke(CharSeq.EMPTY);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }

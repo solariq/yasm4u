@@ -210,7 +210,7 @@ public class CompositeMREnv implements MREnv {
       final MRPath mrPath = path[i];
       if (mrPath.isDirectory())
         throw new IllegalArgumentException("Resolved resource must not be directory: " + path);
-      final Pair<MRTableState, MRTableState> cache = copyState.get(mrPath.resource().toString());
+      final Pair<MRTableState, MRTableState> cache = copyState.snapshot().get(mrPath.resource().toString());
       if (cache == null || now - cache.first.snapshotTime() >= MRTools.FRESHNESS_TIMEOUT) {
         toResolve.add(mrPath);
         toResolvePositions.add(i);

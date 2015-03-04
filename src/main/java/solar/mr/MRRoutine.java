@@ -29,14 +29,15 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
   private AtomicReference<CharSequence> next = new AtomicReference<>();
   private Throwable unhandled;
   private MRRecord currentRecord;
+  private Thread routineTh;
 
   public MRRoutine(MRPath[] inputTables, MRErrorsHandler output, State state) {
     this.inputTables = inputTables;
     this.output = output;
     this.state = state;
-    this.timeout = state.available(VAR_TIMELIMITPERRECORD) ? (long) state.get(VAR_TIMELIMITPERRECORD) : TimeUnit.MINUTES.toMillis(1);
+    this.timeout = (state != null && state.available(VAR_TIMELIMITPERRECORD)) ? (long) state.get(VAR_TIMELIMITPERRECORD) : TimeUnit.MINUTES.toMillis(1);
 
-    final Thread routineTh = new Thread(new Runnable() {
+    routineTh = new Thread(new Runnable() {
       @Override
       public void run() {
         CharSequence next;
@@ -47,7 +48,7 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
             MRRoutine.this.next.set(null);
           }
         }
-        while (next != CharSeq.EMPTY);
+        while (next != CharSeq.EMPTY && isStopped);
       }
     });
     routineTh.setDaemon(true);
@@ -65,18 +66,25 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
     this(inputTables, new DefaultMRErrorsHandler(), new StateImpl());
   }
 
+  private boolean isStopped = false;
   @Override
   public void invoke(final CharSequence record) {
+    if (isStopped)
+      return;
     final long time = System.currentTimeMillis();
     int count = 0;
 
     next.set(record);
-    while (!next.compareAndSet(null, null)) {
+    while (unhandled != null && !next.compareAndSet(null, null)) {
       if (++count % 100000 == 0 && System.currentTimeMillis() - time > timeout)
-        output.error(new TimeoutException(), currentRecord);
+        unhandled = new TimeoutException();
     }
-    if (unhandled != null)
+    if (unhandled != null) {
       output.error(unhandled, currentRecord);
+      isStopped = true;
+      //noinspection deprecation
+      routineTh.stop();
+    }
   }
 
   private final CharSequence[] split = new CharSequence[3];
@@ -116,5 +124,11 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
 
   public MRRecord currentRecord() {
     return currentRecord;
+  }
+
+  @Override
+  protected void finalize() throws Throwable {
+    super.finalize();
+    isStopped = true;
   }
 }
