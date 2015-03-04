@@ -172,7 +172,7 @@ public class YtMREnv extends RemoteMREnv {
           r.attributes.row_count, r.attributes.uncompressed_data_size,
           r.attributes.row_count, r.attributes.modification_time.getTime(), System.currentTimeMillis());
       result.add(path);
-      updateState(path, state);
+      updateState(new MRPath(path.mount, path.path, state.isSorted()), state);
     } else {
       result.addAll(Arrays.asList(list(MRPath.create(prefix, r.attributes.key + "/"))));
     }
@@ -323,11 +323,6 @@ public class YtMREnv extends RemoteMREnv {
     MRPath[] in = builder.input();
     MRPath[] out = builder.output();
 
-    for(final MRPath o: out) {
-      options.add("--dst");
-      options.add(localPath(o));
-      createTable(o); /* lazy materialization */
-    }
 
     options.add("--local-file");
     options.add(jar.getAbsolutePath());
@@ -351,6 +346,12 @@ public class YtMREnv extends RemoteMREnv {
     if (inputCount == 0) {
       defaultErrorsProcessor.invoke("WARNING!: operation: " + builder.getRoutineType() + " " + builder.toString() + " is skipped");
       return true;
+    }
+
+    for(final MRPath o: out) {
+      options.add("--dst");
+      options.add(localPath(o));
+      createTable(o); /* lazy materialization */
     }
 
     final MRPath errorsPath = MRPath.create("/tmp/errors-" + Integer.toHexString(new FastRandom().nextInt()));
