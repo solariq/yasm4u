@@ -5,7 +5,6 @@ import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.logging.Interval;
-import com.sun.tools.javac.util.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
