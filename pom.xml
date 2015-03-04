@@ -56,9 +56,9 @@
       <version>4.11</version>
     </dependency>
   </dependencies>
-  <modules>
+  <!-- modules>
     <module>../jmll/commons</module>
-  </modules>
+  </modules-->
 
   <!-- till syncronization end we need special rule to
        compile sources.-->
