@@ -112,11 +112,6 @@ public class SSHProcessRunner implements ProcessRunner {
                 final String ext = name.lastIndexOf('.') >= 0 ? name.substring(name.lastIndexOf('.')) : "";
                 final String remoteFile = transferFile(localResource.toURI().toURL(), ext, remoteResources, false);
                 options.set(index, remoteFile);
-                for (int i = index + 1; i < options.size(); ++i) {
-                  if (options.get(i).contains(name)){
-                    options.set(i, options.get(i).replace(name, remoteFile.substring(remoteFile.lastIndexOf("/") + 1)));
-                  }
-                }
                 index++;
                 break;
               }
@@ -135,7 +130,7 @@ public class SSHProcessRunner implements ProcessRunner {
           command = commandBuilder.build();
           for (int i = 0; i < remoteResources.size(); i++) {
             final File remoteResource = remoteResources.get(i);
-            final File localResource = remoteResources.get(i);
+            final File localResource = localResources.get(i);
             command = CharSeqTools.replace(command, localResource.getName(), remoteResource.getName());
           }
         }
