@@ -6,6 +6,7 @@ import com.spbsu.commons.seq.CharSeqTools;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.EnumSet;
 
 /**
  * User: solar
@@ -16,6 +17,7 @@ public class MRPath implements Serializable {
   public final Mount mount;
   public final String path;
   public final boolean sorted;
+  private final static EnumSet<Mount> mounts = EnumSet.allOf(Mount.class);
 
   public MRPath(Mount mount, String path, boolean sorted) {
     this.mount = mount;
@@ -65,9 +67,13 @@ public class MRPath implements Serializable {
   public boolean isRoot() {
     return "".equals(path) && mount == Mount.ROOT;
   }
+  
+  public boolean isMountRoot() {
+    return "".equals(path) && mounts.contains(mount);
+  }
 
   public boolean isDirectory() {
-    return isRoot() || path.endsWith("/");
+    return isMountRoot() || path.endsWith("/");
   }
 
   public String absolutePath() {
