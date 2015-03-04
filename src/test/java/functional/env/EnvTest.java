@@ -16,13 +16,14 @@ import static org.junit.Assert.assertNotNull;
 @RunWith(Parameterized.class)
 public class EnvTest extends BaseMRTest {
   @Test
-  public void resolveNotExistantShouldntBeNull(){
+  public void resolveNotExistantShouldntBeNull() {
     MRTableState notExists = null;
     assertNotNull(notExists = env.resolve(MRPath.create("/tmp/__not_exists")));
     assertFalse(notExists.isAvailable());
-
-    notExists = null;
-    assertNotNull(notExists = env.resolve(MRPath.create("/tmp/__not_exists/")));
-    assertFalse(notExists.isAvailable());
+  }
+   
+  @Test(expected = IllegalArgumentException.class)
+  public void resolveNotExistantDirectory() {
+    env.resolve(MRPath.create("/tmp/__not_exists/"));
   }
 }
