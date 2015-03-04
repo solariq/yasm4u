@@ -27,7 +27,7 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
   private int currentInputIndex = 0;
   private boolean interrupted = false;
   private AtomicReference<CharSequence> next = new AtomicReference<>();
-  private Throwable unhandled;
+  private volatile Throwable unhandled;
   private MRRecord currentRecord;
   private Thread routineTh;
 
@@ -48,7 +48,7 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
             MRRoutine.this.next.set(null);
           }
         }
-        while (next != CharSeq.EMPTY && isStopped);
+        while (next != CharSeq.EMPTY && !isStopped);
       }
     });
     routineTh.setDaemon(true);
@@ -75,7 +75,7 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
     int count = 0;
 
     next.set(record);
-    while (unhandled != null && !next.compareAndSet(null, null)) {
+    while (unhandled == null && !next.compareAndSet(null, null)) {
       if (++count % 100000 == 0 && System.currentTimeMillis() - time > timeout)
         unhandled = new TimeoutException();
     }
