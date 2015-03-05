@@ -7,6 +7,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import solar.mr.MRTestUtils;
+import solar.mr.env.LocalMREnv;
 import solar.mr.proc.impl.MRPath;
 import solar.mr.routines.MRRecord;
 
@@ -52,16 +53,31 @@ public final class ListNDropTest extends BaseMRTest {
   }
 
   @Test
-  public void notExistance(){
+  public void notExistance() {
     MRPath[] result = env.list(MRPath.create("/home/__no_existant/"));
+    assertEquals(0, result.length);
+    env.sample(MRPath.create("/home/__no_existant"), new Processor<MRRecord>() {
+      @Override
+      public void process(MRRecord arg) {
+
+      }
+    });
+  }
+  
+  @Test(expected = IllegalArgumentException.class)
+  public void exceptionNotExistance() {
+    if (env instanceof LocalMREnv) /* there're no resolve in the middle */
+      throw new IllegalArgumentException("It's expected!!!");
     env.sample(MRPath.create("/home/__no_existant/"), new Processor<MRRecord>() {
       @Override
       public void process(MRRecord arg) {
 
       }
     });
+  }
 
-    result = env.list(MRPath.create("/home/__no_existant/__no_existant/"));
+  @Test
+  public void testNestedNotExistance() {
     env.sample(MRPath.create("/home/__no_existant/__no_existant"), new Processor<MRRecord>() {
       @Override
       public void process(MRRecord arg) {
