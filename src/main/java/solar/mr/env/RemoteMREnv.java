@@ -230,7 +230,7 @@ public abstract class RemoteMREnv implements MREnv {
       return result;
     // after this cycle all entries of paths array must be in the shardsCache
     for (final MRPath prefix : findBestPrefixes(unknown)) {
-      list(prefix.isDirectory() ? prefix : prefix.parent());
+      list(prefix);
     }
     final MRTableState[] states = resolveAll(paths, true);
     for(int i = 0; i < states.length; i++) {
@@ -244,9 +244,15 @@ public abstract class RemoteMREnv implements MREnv {
   protected abstract boolean isFat(MRPath path);
 
   private Set<MRPath> findBestPrefixes(Set<MRPath> paths) {
-    if (paths.size() < 2)
-      return paths;
     final Set<MRPath> result = new HashSet<>();
+    if (paths.size() < 2) {
+      for (MRPath p:paths) {
+        if (p.isDirectory())
+          result.add(p);
+      }
+      return result;
+    }
+
     final TObjectIntMap<MRPath> parents = new TObjectIntHashMap<>();
     final Iterator<MRPath> itPath = paths.iterator();
     while (itPath.hasNext()) {
