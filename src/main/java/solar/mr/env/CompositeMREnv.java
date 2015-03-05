@@ -268,6 +268,7 @@ public class CompositeMREnv implements MREnv {
   public void delete(MRPath shard) {
     localCopy.delete(shard);
     original.delete(shard);
+    copyState.remove(shard.parent().resource().toString());
     setCopy(shard, null, null);
   }
 
