@@ -229,8 +229,14 @@ public abstract class RemoteMREnv implements MREnv {
     if (cachedOnly)
       return result;
     // after this cycle all entries of paths array must be in the shardsCache
-    for (final MRPath prefix : findBestPrefixes(unknown)) {
-      list(prefix.isDirectory() ? prefix : prefix.parent());
+    Set<MRPath> pathSet = findBestPrefixes(unknown);
+    for (final MRPath prefix : pathSet) {
+      final MRPath toList = prefix.isDirectory() ? prefix : prefix.parent();
+      /* TODO: It definitely duty of findBestPrefixes to not fall into mount root scanning,
+       * for now let's do so */
+      if (toList.isMountRoot())
+        continue;
+      list(toList);
     }
     final MRTableState[] states = resolveAll(paths, true);
     for(int i = 0; i < states.length; i++) {
@@ -252,7 +258,7 @@ public abstract class RemoteMREnv implements MREnv {
     while (itPath.hasNext()) {
       final MRPath path = itPath.next();
       final MRPath parent = path.parent();
-      if (parent.isRoot() || isFat(path)) {
+      if (parent.isMountRoot() || isFat(path)) {
         result.add(path);
         itPath.remove();
       }
