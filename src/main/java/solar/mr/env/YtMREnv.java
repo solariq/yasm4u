@@ -538,8 +538,8 @@ public class YtMREnv extends RemoteMREnv {
       /* table guid 5ad-2a7267-3f10191-8b0038b3 */
       if (arg.length() > 18
           && arg.charAt(3) == '-'
-          && arg.charAt(10) == '-'
-          && arg.charAt(18) == '-')
+          && (arg.charAt(10) == '-' || arg.charAt(9) == '-')
+          && (arg.charAt(18) == '-' || arg.charAt(17) == '-'))
         return;
       try {
         final JsonParser parser = JSONTools.parseJSON(arg);
