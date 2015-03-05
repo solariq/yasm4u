@@ -1,6 +1,7 @@
 package solar.mr.env;
 
 import com.spbsu.commons.io.StreamTools;
+import com.spbsu.commons.seq.CharSeqBuilder;
 
 
 import java.io.*;
@@ -40,13 +41,13 @@ public class LocalProcessRunner implements ProcessRunner {
       throw new RuntimeException(e);
     }
 
-    final StringBuilder sb = new StringBuilder();
+    final CharSeqBuilder sb = new CharSeqBuilder();
     if (input != null) {
       sb.append("cat - |");
     }
     sb.append(binaryPath);
     for (final String opt:options) {
-      sb.append(" ").append(opt.replace("$", "."));
+      sb.append(" \"").append(opt.replace("$", ".")).append("\"");
     }
     
     try {
@@ -58,10 +59,10 @@ public class LocalProcessRunner implements ProcessRunner {
       sb.append(" 1> " + output.getAbsolutePath() + " 2>" + error.getAbsolutePath()
           + "; echo \"<EOF>\";exit\n");
 
-      final String cmd = sb.toString();
+      final CharSequence cmd = sb.build();
       println(cmd);
       if (input != null) {
-        toShell.append(sb.toString());
+        toShell.append(cmd);
         toShell.flush();
         StreamTools.transferData(new InputStreamReader(input, Charset.forName("UTF-8")), toShell);
         toShell.close();
@@ -73,7 +74,7 @@ public class LocalProcessRunner implements ProcessRunner {
       }
       else {
 
-        toShell.append(sb.toString());
+        toShell.append(cmd);
         toShell.flush();
         fromShell.readLine(); /* eats <EOF> */
         toShell.close();
@@ -143,7 +144,7 @@ public class LocalProcessRunner implements ProcessRunner {
   private void initShell() {
   }
 
-  private final void println(final String cmd) {
+  private final void println(final CharSequence cmd) {
     System.out.println(System.currentTimeMillis() + ":" + cmd);
   }
 }
