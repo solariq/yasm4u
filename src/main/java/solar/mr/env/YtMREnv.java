@@ -535,6 +535,12 @@ public class YtMREnv extends RemoteMREnv {
 
     @Override
     public void invoke(CharSequence arg) {
+      /* table guid 5ad-2a7267-3f10191-8b0038b3 */
+      if (arg.length() > 18
+          && arg.charAt(3) == '-'
+          && arg.charAt(10) == '-'
+          && arg.charAt(18) == '-')
+        return;
       try {
         final JsonParser parser = JSONTools.parseJSON(arg);
         final ObjectMapper mapper = new ObjectMapper();
@@ -545,7 +551,6 @@ public class YtMREnv extends RemoteMREnv {
           processor.invoke(arg);
           return;
         }
-
         JsonNode errors = metaJSON.get("inner_errors").get(0);
         do {
           code = errors.get("code").asInt();
@@ -555,16 +560,6 @@ public class YtMREnv extends RemoteMREnv {
         } while (errors.size() != 0);
         errorCodeResolver(arg, metaJSON, code);
       } catch (JsonParseException e) {
-        if ((arg.charAt(4) == '-'
-            && arg.charAt(8) == '-'
-            && arg.charAt(16) == '-')
-            || (arg.charAt(4) == '-'
-            && arg.charAt(11) == '-'
-            && arg.charAt(19) == '-')) {
-          /* it's uid of new created table */
-          warn("Shold looks like uuid: " + arg);
-          return;
-        }
         if (System.getProperty("user.name").equals("minamoto")) {
           reportError("Msg: " + arg.toString() + " appears here by mistake!!!!");
           reportError(e.getMessage());
