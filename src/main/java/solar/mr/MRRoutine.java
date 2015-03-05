@@ -35,7 +35,7 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
     this.inputTables = inputTables;
     this.output = output;
     this.state = state;
-    this.timeout = (state != null && state.available(VAR_TIMELIMITPERRECORD)) ? (long) state.get(VAR_TIMELIMITPERRECORD) : TimeUnit.MINUTES.toMillis(1);
+    this.timeout = (state != null && state.available(VAR_TIMELIMITPERRECORD)) ? state.<Long>get(VAR_TIMELIMITPERRECORD) : TimeUnit.MINUTES.toMillis(1);
 
     routineTh = new Thread(new Runnable() {
       @Override
