@@ -47,7 +47,9 @@ public class LocalProcessRunner implements ProcessRunner {
     }
     sb.append(binaryPath);
     for (final String opt:options) {
-      sb.append(" ").append(opt.replace("$", "."));
+      sb.append(" \"")
+        .append(opt.replace("$", "."))
+        .append("\"");
     }
     
     try {
