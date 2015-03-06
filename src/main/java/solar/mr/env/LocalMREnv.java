@@ -148,7 +148,7 @@ public class LocalMREnv implements MREnv {
         file.delete();
         tempFile.renameTo(file);
         tempFile = null;
-        if (!shard.sorted && !shard.isDirectory())
+        if (!shard.isDirectory())
           //noinspection ResultOfMethodCallIgnored
           file(new MRPath(shard.mount, shard.path, true)).delete();
       }
