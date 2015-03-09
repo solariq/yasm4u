@@ -271,7 +271,11 @@ public class YtMREnv extends RemoteMREnv {
       return; */
     options.add("remove");
     options.add("-r");
-    options.add(localPath(table));
+    final String path = localPath(table);
+    if (table.isDirectory())
+      options.add(path.substring(0, path.lastIndexOf("/")));
+    else
+      options.add(path);
     executeCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     wipeState(table);
   }
