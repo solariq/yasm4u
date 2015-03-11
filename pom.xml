@@ -107,6 +107,32 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <file>
+          <missing>../jmll/commons</missing>
+        </file>
+      </activation>
+      <id>standalone-build</id>
+      <modules>
+        <module>commons</module>
+      </modules>
+    </profile>
+    <profile>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <file>
+          <exists>../jmll/commons</exists>
+        </file>
+      </activation>
+      <id>dev</id>
+      <modules>
+        <!--module>../jmll/commons</module-->
+      </modules>
+    </profile>
+  </profiles>
 
   <!--modules>
     <module>commons</module>
