@@ -91,7 +91,7 @@ public class AnnotatedMRProcess extends CompositeJobaBuilder {
         throw new IllegalArgumentException("No data for " + name + " available at the whiteboard");
       if (resolution.getClass().isArray()) {
         for (final Object next : (Object[]) resolution) {
-          candidates.add(MessageFormat.format(format.toString(), next));
+          candidates.add(MessageFormat.format(format.toString(), convertToString(next)));
         }
       }
       else candidates.add(MessageFormat.format(format.toString(), resolution));
@@ -106,6 +106,12 @@ public class AnnotatedMRProcess extends CompositeJobaBuilder {
     }
 
     return new String[]{resource};
+  }
+
+  private static Object convertToString(Object next) {
+    if (next instanceof MRPath)
+      return ((MRPath) next).resource().toString();
+    return next;
   }
 
   private static String[] resolveNames(String[] input, Whiteboard wb) {
