@@ -1,7 +1,6 @@
 package yamr;
 
 import com.spbsu.commons.util.logging.Interval;
-import com.sun.tools.javac.util.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -97,11 +96,12 @@ public class MRPrimitivesTest {
       Interval.start();
       fakeMREnv.execute(builder, new DefaultMRErrorsHandler());
       Interval.stopAndPrint();
-      Assert.check(Interval.time() < 2000);
+      if (Interval.time() >= 2000)
+        throw new RuntimeException("interval >= 2000");
     }
     catch (RuntimeException re) {
       re.printStackTrace();
-      Assert.check(false);
+      throw re;
     }
   }
 
@@ -114,11 +114,13 @@ public class MRPrimitivesTest {
       fakeMREnv.execute(builder, new DefaultMRErrorsHandler() {
         @Override
         public void error(Throwable th, MRRecord record) {
-          Assert.check("0".equals(record.key));
+          if (!"0".equals(record.key)){
+            throw new RuntimeException("unexpected key: " + record.key);
+          }
           super.error(th, record);
         }
       });
-      Assert.check(false);
+      throw new RuntimeException("unexpected");
     }
     catch (RuntimeException re) {
       if (!(re.getCause() instanceof TimeoutException))
