@@ -59,7 +59,7 @@ public final class ProfilerMREnv implements MREnv {
     });
     final Operation routineType = convertToOperation(builder.getRoutineType());
     incrementTime(routineType, System.currentTimeMillis() - start);
-    mergeMaps(routineType == Operation.MAP ? mapHostsTime: reduceHostsTime, stat);
+    mergeMaps(routineType == Operation.MAP ? mapHostsTime : reduceHostsTime, stat);
     return result;
   }
 
@@ -138,6 +138,14 @@ public final class ProfilerMREnv implements MREnv {
     finally {
       incrementTime(Operation.SAMPLE, System.currentTimeMillis() - start);
     }
+  }
+
+  @Override
+  public void get(MRPath prefix) {
+    if (prefix.isDirectory())
+      throw new IllegalArgumentException("Prefix must be table");
+    list(prefix.parent());
+    return;
   }
 
   @Override

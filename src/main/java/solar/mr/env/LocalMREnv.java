@@ -195,6 +195,14 @@ public class LocalMREnv implements MREnv {
   }
 
   @Override
+  public void get(MRPath prefix) {
+    if (prefix.isDirectory())
+      throw new IllegalArgumentException("Prefix must be table");
+    list(prefix.parent());
+    return;
+  }
+
+  @Override
   public MRPath[] list(MRPath prefix) {
     if (!prefix.isDirectory())
       throw new IllegalArgumentException("Prefix must be directory");

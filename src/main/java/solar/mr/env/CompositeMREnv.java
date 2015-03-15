@@ -182,6 +182,13 @@ public class CompositeMREnv implements MREnv {
   }
 
   @Override
+  public void get(MRPath prefix) {
+    if (prefix.isDirectory())
+      throw new IllegalArgumentException("Prefix must be table");
+    list(prefix.parent());
+  }
+
+  @Override
   public MRPath[] list(MRPath prefix) {
     final String resourceString = prefix.resource().toString();
     final Pair<Long, MRPath[]> cache = copyState.snapshot().get(resourceString);

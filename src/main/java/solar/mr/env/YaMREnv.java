@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
  * Time: 17:08
  */
 public class YaMREnv extends RemoteMREnv {
-
   public YaMREnv(final ProcessRunner runner, final String user, final String master) {
     super(runner, user, master);
   }
@@ -111,6 +110,14 @@ public class YaMREnv extends RemoteMREnv {
     };
     executeCommand(options, outputProcessor, defaultErrorsProcessor, null);
     outputProcessor.invoke(CharSeq.EMPTY);
+  }
+
+  @Override
+  public void get(MRPath prefix) {
+    if (prefix.isDirectory())
+      throw new IllegalArgumentException("Prefix must be table");
+    list(prefix.parent());
+    return;
   }
 
   @Override

@@ -17,6 +17,7 @@ import com.spbsu.commons.seq.CharSeqReader;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.JSONTools;
 import org.apache.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import solar.mr.*;
 import solar.mr.proc.impl.MRPath;
 import solar.mr.routines.MRRecord;
@@ -97,33 +98,53 @@ public class YtMREnv extends RemoteMREnv {
     outputProcessor.invoke(CharSeq.EMPTY);
   }
 
+  @Override
+  public void get(final MRPath prefix){
+    if (prefix.isDirectory())
+      throw new IllegalArgumentException("Prefix must be table");
+    final List<String> attributes = getAttributesOptions();
+    final List<String> optionEntity = defaultOptions();
+    optionEntity.add("get");
+    optionEntity.add("--format");
+    optionEntity.add("json");
+    optionEntity.addAll(attributes);
+    optionEntity.add(localPath(prefix));
+
+    final ConcatAction resultProcessor = new ConcatAction();
+    executeCommand(optionEntity, resultProcessor, defaultErrorsProcessor, null);
+    final Iterator<JsonNode> response;
+    ObjectMapper mapper = new ObjectMapper();
+
+    mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY,true);
+    mapper.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
+    DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+    dateFormat.setTimeZone(TimeZone.getTimeZone("GMT")); // sets Server's time zone
+    mapper.getSerializationConfig().with(dateFormat);
+    try {
+      final JsonParser parser = JSONTools.parseJSON(resultProcessor.sequence());
+      JsonNode nodes = mapper.readTree(parser);
+      readNode(prefix,null, mapper, nodes);
+    }
+    catch (Exception e) {
+      throw new RuntimeException(e);
+      //return new MRPath[0];
+    }
+  }
 
   @Override
   public MRPath[] list(final MRPath prefix) {
     if (!prefix.isDirectory())
       throw new IllegalArgumentException("Prefix must be directory");
-    final List<String> attributes = new ArrayList<>();
-    attributes.add("--attribute");
-    attributes.add("type");
-    attributes.add("--attribute");
-    attributes.add("sorted");
-    attributes.add("--attribute");
-    attributes.add("row_count");
-    attributes.add("--attribute");
-    attributes.add("uncompressed_data_size");
-    attributes.add("--attribute");
-    attributes.add("modification_time");
-    attributes.add("--attribute");
-    attributes.add("key");
+    final List<String> attributes = getAttributesOptions();
     final List<MRPath> result = new ArrayList<>();
 
     final List<String> optionEntity = defaultOptions();
-    optionEntity.add(prefix.isDirectory() ? "list" : "get");
+    optionEntity.add("list");
     optionEntity.add("--format");
     optionEntity.add("json");
     optionEntity.addAll(attributes);
     final String localPath = localPath(prefix);
-    optionEntity.add(prefix.isDirectory() ? localPath.substring(0, localPath.length() - 1) : localPath);
+    optionEntity.add(localPath.substring(0, localPath.length() - 1));
     final ConcatAction resultProcessor = new ConcatAction();
     executeCommand(optionEntity, resultProcessor, defaultErrorsProcessor, null);
     final Iterator<JsonNode> response;
@@ -154,6 +175,24 @@ public class YtMREnv extends RemoteMREnv {
     return result.toArray(new MRPath[result.size()]);
   }
 
+  @NotNull
+  private List<String> getAttributesOptions() {
+    final List<String> attributes = new ArrayList<>();
+    attributes.add("--attribute");
+    attributes.add("type");
+    attributes.add("--attribute");
+    attributes.add("sorted");
+    attributes.add("--attribute");
+    attributes.add("row_count");
+    attributes.add("--attribute");
+    attributes.add("uncompressed_data_size");
+    attributes.add("--attribute");
+    attributes.add("modification_time");
+    attributes.add("--attribute");
+    attributes.add("key");
+    return attributes;
+  }
+
   private void readNode(MRPath prefix, List<MRPath> result, ObjectMapper mapper, JsonNode node) {
     YTResponse r;
     if (node == null)
@@ -171,10 +210,12 @@ public class YtMREnv extends RemoteMREnv {
           Long.toString(r.attributes.uncompressed_data_size),
           r.attributes.row_count, r.attributes.uncompressed_data_size,
           r.attributes.row_count, r.attributes.modification_time.getTime(), System.currentTimeMillis());
-      result.add(path);
+      if (result != null)
+        result.add(path);
       updateState(new MRPath(path.mount, path.path, state.isSorted()), state);
     } else {
-      result.addAll(Arrays.asList(list(MRPath.create(prefix, r.attributes.key + "/"))));
+      if (result != null)
+        result.addAll(Arrays.asList(list(MRPath.create(prefix, r.attributes.key + "/"))));
     }
   }
 

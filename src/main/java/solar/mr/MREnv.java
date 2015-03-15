@@ -21,6 +21,7 @@ public interface MREnv {
   MRTableState[] resolveAll(MRPath... strings);
 
   MRPath[] list(MRPath prefix);
+  void get(MRPath prefix);
 
   int read(MRPath shard, Processor<MRRecord> seq);
   void sample(MRPath shard, Processor<MRRecord> seq);
