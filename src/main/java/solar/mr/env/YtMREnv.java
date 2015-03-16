@@ -364,7 +364,9 @@ public class YtMREnv extends RemoteMREnv {
     options.add(localPath(errorsPath));
 
     executeMapOrReduceCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
-    final int errorsCount = read(errorsPath, new ErrorsTableHandler(errorsPath, errorsHandler));
+    final MRRoutine errorProcessor = new ErrorsTableHandler(errorsPath, errorsHandler);
+    final int errorsCount = read(errorsPath, errorProcessor);
+    errorProcessor.invoke(CharSeq.EMPTY);
     if (errorsCount == 0)
       delete(errorsPath);
 
