@@ -228,18 +228,31 @@ public abstract class RemoteMREnv implements MREnv {
 
     if (cachedOnly)
       return result;
-    // after this cycle all entries of paths array must be in the shardsCache
-    Set<MRPath> pathSet = findBestPrefixes(unknown);
-    for (final MRPath prefix : pathSet) {
-      if (prefix.isDirectory()) {
+
+    if (Boolean.getBoolean("yasm4u.getInsteadOfList")) {
+      for (final MRPath u : unknown) {
+        if (u.isDirectory()) {
+          if (u.isMountRoot())
+            continue;
+          list(u);
+        }
+        else
+          get(u);
+      }
+    }
+    else {
+      // after this cycle all entries of paths array must be in the shardsCache
+      Set<MRPath> pathSet = findBestPrefixes(unknown);
+      for (final MRPath prefix : pathSet) {
+        final MRPath toList = prefix.isDirectory() ? prefix : prefix.parent();
         /* TODO: It definitely duty of findBestPrefixes to not fall into mount root scanning,
-       * for now let's do so */
+        * for now let's do so */
+        if (toList.isMountRoot())
+          continue;
+        list(toList);
         if (prefix.isMountRoot())
           continue;
-        list(prefix);
       }
-      else
-        get(prefix);
     }
     final MRTableState[] states = resolveAll(paths, true);
     for(int i = 0; i < states.length; i++) {
