@@ -470,12 +470,12 @@ public class YtMREnv extends RemoteMREnv {
 
   @Override
   public String name() {
-    return "Yt://" + master + "/";
+    return "Yt//" + master + "/";
   }
 
   @Override
   public String toString() {
-    return "Yt://" + user + "@" + master + "/";
+    return "Yt//" + user + "@" + master + "/";
   }
 
   private void executeMapOrReduceCommand(final List<String> options, final Action<CharSequence> outputProcessor, final Action<CharSequence> errorsProcessor, final InputStream contents) {
