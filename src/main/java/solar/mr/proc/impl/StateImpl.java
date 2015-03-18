@@ -108,7 +108,9 @@ public class StateImpl implements State {
         out.writeBoolean(true);
         out.writeUTF(current);
         out.writeUTF(instance.getClass().getName());
-        out.writeUTF(serialization.write(instance).toString());
+        final byte[] b = serialization.write(instance).toString().getBytes("utf-8");
+        out.writeInt(b.length);
+        out.write(b);
       }
     }
     out.writeBoolean(false);
@@ -119,7 +121,9 @@ public class StateImpl implements State {
     while(in.readBoolean()) {
       final String current = in.readUTF();
       final String itemClass = in.readUTF();
-      final Object read = State.SERIALIZATION.read(in.readUTF(), Class.forName(itemClass));
+      final byte[] byteObj = new byte[in.readInt()];
+      in.readFully(byteObj);
+      final Object read = State.SERIALIZATION.read(new String(byteObj, 0, byteObj.length, "utf-8"), Class.forName(itemClass));
       state.put(current, read);
     }
   }
