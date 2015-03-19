@@ -298,22 +298,25 @@ public class LocalMREnv implements MREnv {
     return file;
   }
 
-  public MRPath findByFile(File file) {
+  private MRPath findByFile(File file) {
     final String absolutePath = file.getAbsolutePath();
     final String homePrefix = home.getAbsolutePath();
     String path = absolutePath.substring(homePrefix.length());
     MRPath.Mount mnt;
-    if (path.startsWith("/home/")) {
+    final String HOME_PREFIX = File.separator + "home" + File.separator;
+    final String TEMP_PREFIX = File.separator + "temp" + File.separator;
+    final String ROOT_PREFIX = File.separator;
+    if (path.startsWith(HOME_PREFIX)) {
       mnt = MRPath.Mount.HOME;
-      path = path.substring("/home/".length());
+      path = path.substring(HOME_PREFIX.length());
     }
-    else if (path.startsWith("/temp/")) {
+    else if (path.startsWith(TEMP_PREFIX)) {
       mnt = MRPath.Mount.TEMP;
-      path = path.substring("/temp/".length());
+      path = path.substring(TEMP_PREFIX.length());
     }
-    else if (path.startsWith("/")){
+    else if (path.startsWith(ROOT_PREFIX)){
       mnt = MRPath.Mount.ROOT;
-      path = path.substring("/".length());
+      path = path.substring(ROOT_PREFIX.length());
     }
     else throw new IllegalArgumentException(path);
 
