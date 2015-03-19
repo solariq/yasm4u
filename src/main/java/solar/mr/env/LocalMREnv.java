@@ -227,10 +227,12 @@ public class LocalMREnv implements MREnv {
     try {
       for(int i = 0; i < from.length; i++) {
         final File file = file(from[i]);
-        if (file.exists())
-          writeFile(new FileReader(file), to, append || i > 0);
+        try (final FileReader reader = new FileReader(file)) {
+          if (file.exists())
+            writeFile(reader, to, append || i > 0);
+        }
       }
-    } catch (FileNotFoundException e) {
+    } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -263,6 +265,7 @@ public class LocalMREnv implements MREnv {
         out.append(sort.get(i).getSecond().toString());
         out.append("\n");
       }
+        out.close();
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
