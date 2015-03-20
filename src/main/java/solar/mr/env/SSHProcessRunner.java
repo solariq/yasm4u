@@ -13,6 +13,8 @@ import solar.mr.proc.impl.WhiteboardImpl;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -97,7 +99,7 @@ public class SSHProcessRunner implements ProcessRunner {
       { // Run command
 
         final List<File> localResources = new ArrayList<>();
-        final List<File> remoteResources = new ArrayList<>();
+        final List<String> remoteResources = new ArrayList<>();
         { //hunting for resources
           int index = 0;
           while (index < options.size()) {
@@ -129,7 +131,7 @@ public class SSHProcessRunner implements ProcessRunner {
           }
           command = commandBuilder.build();
           for (int i = 0; i < remoteResources.size(); i++) {
-            final File remoteResource = remoteResources.get(i);
+            final File remoteResource = new File(remoteResources.get(i));
             final File localResource = localResources.get(i);
             command = CharSeqTools.replace(command, localResource.getName(), remoteResource.getName());
           }
@@ -176,7 +178,7 @@ public class SSHProcessRunner implements ProcessRunner {
     }
   }
 
-  private File generateWaitScript(List<File> remoteResources, String runner, String pid, String output) throws IOException {
+  private File generateWaitScript(List<String> remoteResources, String runner, String pid, String output) throws IOException {
     final File tempFile = File.createTempFile("wait", ".sh");
     //noinspection ResultOfMethodCallIgnored
     tempFile.delete();
@@ -190,11 +192,11 @@ public class SSHProcessRunner implements ProcessRunner {
     waitCmd.append("dir=").append(output).append("\n");
     waitCmd.append("\n");
     waitCmd.append("function gc() {\n");
-    for (final File remoteResource : remoteResources) {
-      waitCmd.append("  " + SSH_COMMAND + " ").append(proxyHost).append(" rm -rf ").append(remoteResource.getAbsolutePath()).append(";\n");
+    for (final String remoteResource : remoteResources) {
+      waitCmd.append("  " + SSH_COMMAND + " ").append(proxyHost).append(" rm -rf ").append(remoteResource).append(";\n");
     }
     waitCmd.append("}\n");
-    waitCmd.append(StreamTools.readStream(SSHProcessRunner.class.getResourceAsStream("/mr/ssh/wait.sh")));
+    waitCmd.append(StreamTools.readStream(SSHProcessRunner.class.getResourceAsStream("/mr/ssh/wait.sh")).toString().replaceAll("\r", "\n"));
     StreamTools.writeChars(waitCmd, tempFile);
     return tempFile;
   }
@@ -220,12 +222,12 @@ public class SSHProcessRunner implements ProcessRunner {
     }
   }
 
-  private String transferFile(URL url, @Nullable String suffix, List<File> remoteResources, boolean isText) throws IOException, InterruptedException {
+  private String transferFile(URL url, @Nullable String suffix, List<String> remoteResources, boolean isText) throws IOException, InterruptedException {
     final String remoteTmpRunner = communicate("mktemp" + (suffix != null ? " --suffix " + suffix : "") + ";");
     //System.out.println("remoteTmpRunner = " + remoteTmpRunner);
 
-    final File remoteResource = new File(remoteTmpRunner);
-    final String outputResult = communicate("rm -f " + remoteResource.getAbsolutePath() + "; echo Ok;");
+    final String absolutePath = remoteTmpRunner;
+    final String outputResult = communicate("rm -f " + absolutePath + "; echo Ok;");
     if (!"Ok".equals(outputResult))
       throw new RuntimeException("Ssh Ok-test wasn't passed!");
     //System.out.println("outputResult = " + outputResult);
@@ -239,7 +241,7 @@ public class SSHProcessRunner implements ProcessRunner {
           builder.append(sequence).append("\n");
         }
       });
-      final String result = communicate("dd bs=1 count=" + countBytes[0] + " 2>/dev/null >" + remoteResource.getAbsolutePath() + ";\n" + builder.toString() + "echo Ok;");
+      final String result = communicate("dd bs=1 count=" + countBytes[0] + " 2>/dev/null >" + absolutePath + ";\n" + builder.toString() + "echo Ok;");
       if (!"Ok".equals(result))
         throw new RuntimeException();
     }
@@ -248,14 +250,14 @@ public class SSHProcessRunner implements ProcessRunner {
       int delay = 1000;
       int tries = 0;
       while (rc != 0) {
-        rc = Runtime.getRuntime().exec("scp " + url.getFile() + " " + proxyHost + ":" + remoteResource.getAbsolutePath()).waitFor();
+        rc = Runtime.getRuntime().exec("scp " + url.getFile() + " " + proxyHost + ":" + absolutePath).waitFor();
         if (rc != 0) {
           Thread.sleep(delay * tries++);
         }
       }
     }
     else {
-      final Process exec = Runtime.getRuntime().exec("ssh -o PasswordAuthentication=no proxyHost 'bash cat - > " + remoteResource.getAbsolutePath() + "'");
+      final Process exec = Runtime.getRuntime().exec("ssh -o PasswordAuthentication=no proxyHost 'bash cat - > " + absolutePath + "'");
       final InputStream in = url.openStream();
       final OutputStream out = exec.getOutputStream();
       StreamTools.transferData(in, out);
@@ -263,8 +265,8 @@ public class SSHProcessRunner implements ProcessRunner {
       out.close();
       exec.waitFor();
     }
-    remoteResources.add(remoteResource);
-    return remoteResource.getAbsolutePath();
+    remoteResources.add(absolutePath);
+    return absolutePath;
   }
 
   private String communicate(String command) throws IOException {
