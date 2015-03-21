@@ -594,7 +594,7 @@ public class YtMREnv extends RemoteMREnv {
         final JsonNode metaJSON = mapper.readTree(parser);
         /* TODO: more protective programming */
         int code = 0;
-        if (!metaJSON.has("message")) {
+        if (metaJSON == null || !metaJSON.has("message")) {
           processor.invoke(arg);
           return;
         }
