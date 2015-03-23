@@ -148,7 +148,13 @@ public class SSHProcessRunner implements ProcessRunner {
           final String output = split[1].toString();
 
           final File tempFile = generateWaitScript(remoteResources, runner, pid, output);
-          final ProcessBuilder builder = new ProcessBuilder("bash", tempFile.getAbsolutePath());
+          // TODO: Hack to make Windows work
+          final ProcessBuilder builder;
+          if (System.getProperty("os.name").toLowerCase().startsWith("win")) {
+            builder = new ProcessBuilder("cmd", "/c", "bash -c '(" + tempFile.getAbsolutePath().replaceAll("\\\\", "/") + ")'");
+          } else {
+            builder = new ProcessBuilder("bash", tempFile.getAbsolutePath());
+          }
           return builder.start();
         }
         else {
@@ -237,8 +243,9 @@ public class SSHProcessRunner implements ProcessRunner {
       CharSeqTools.processLines(new InputStreamReader(url.openStream()), new Action<CharSequence>() {
         @Override
         public void invoke(CharSequence sequence) {
-          countBytes[0] += sequence.toString().getBytes(StreamTools.UTF).length + 1;
-          builder.append(sequence).append("\n");
+          String data = sequence.toString().replace('\r', ' ');
+          countBytes[0] += data.getBytes(StreamTools.UTF).length + 1;
+          builder.append(data).append("\n");
         }
       });
       final String result = communicate("dd bs=1 count=" + countBytes[0] + " 2>/dev/null >" + absolutePath + ";\n" + builder.toString() + "echo Ok;");
