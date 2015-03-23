@@ -257,7 +257,12 @@ public class SSHProcessRunner implements ProcessRunner {
       int delay = 1000;
       int tries = 0;
       while (rc != 0) {
-        rc = Runtime.getRuntime().exec("scp " + url.getFile() + " " + proxyHost + ":" + absolutePath).waitFor();
+        if (System.getProperty("os.name").toLowerCase().startsWith("win")) {
+          // TODO: Hack to make scp from cygwin to work on Windows
+          rc = Runtime.getRuntime().exec("scp " + url.getFile().substring(1).replace("C:", "/cygdrive/c").replace("c:", "/cygdrive/c") + " " + proxyHost + ":" + absolutePath).waitFor();
+        } else {
+          rc = Runtime.getRuntime().exec("scp " + url.getFile() + " " + proxyHost + ":" + absolutePath).waitFor();
+        }
         if (rc != 0) {
           Thread.sleep(delay * tries++);
         }

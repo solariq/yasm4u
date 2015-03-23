@@ -21,7 +21,7 @@ import java.util.*;
  * Time: 11:34
  */
 public class LocalMREnv implements MREnv {
-  public static final String DEFAULT_HOME = System.getenv("HOME") + "/.MRSamples";
+  public static final String DEFAULT_HOME = System.getProperty("user.home") + "/.MRSamples";
   private final File home;
 
   public static LocalMREnv createTemp() {
