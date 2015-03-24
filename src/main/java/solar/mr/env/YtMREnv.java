@@ -208,8 +208,8 @@ public class YtMREnv extends RemoteMREnv {
       state = new MRTableState(localPath(path),
           true, r.attributes.sorted,
           Long.toString(r.attributes.uncompressed_data_size),
-          r.attributes.row_count, r.attributes.uncompressed_data_size,
-          r.attributes.row_count, r.attributes.modification_time.getTime(), System.currentTimeMillis());
+          r.attributes.uncompressed_data_size, r.attributes.row_count,
+              r.attributes.row_count, r.attributes.modification_time.getTime(), System.currentTimeMillis());
       if (result != null)
         result.add(path);
       updateState(new MRPath(path.mount, path.path, state.isSorted()), state);
