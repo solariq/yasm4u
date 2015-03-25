@@ -794,7 +794,12 @@ public class YtMREnv extends RemoteMREnv {
 
     @Override
     public void invoke(CharSequence arg) {
-      System.err.println("DEBUG:" + arg);
+      if (arg == CharSeq.EMPTY) {
+        processor.invoke(arg);
+      }
+      warn("DEBUG:" + arg);
+      if (arg.length() == 0)
+        return;
       switch (status) {
         case NONE:
         case INITIALIZING:
