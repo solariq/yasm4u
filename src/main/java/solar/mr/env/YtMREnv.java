@@ -157,11 +157,15 @@ public class YtMREnv extends RemoteMREnv {
     dateFormat.setTimeZone(TimeZone.getTimeZone("GMT")); // sets Server's time zone
     mapper.getSerializationConfig().with(dateFormat);
     try {
-      final JsonParser parser = JSONTools.parseJSON(resultProcessor.sequence());
-      JsonNode nodes = mapper.readTree(parser);
-      if (!prefix.isDirectory()) {
-        readNode(prefix,result, mapper, nodes);
-        return result.toArray(new MRPath[result.size()]);
+      final CharSequence rawListResult = resultProcessor.sequence();
+      JsonNode nodes = null;
+      if (rawListResult.length() != 0) {
+        final JsonParser parser = JSONTools.parseJSON(rawListResult);
+        nodes = mapper.readTree(parser);
+        if (!prefix.isDirectory()) {
+          readNode(prefix, result, mapper, nodes);
+          return result.toArray(new MRPath[result.size()]);
+        }
       }
       response = nodes != null ? nodes.elements() : new EmptyIterator<JsonNode>();
     }
