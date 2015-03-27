@@ -49,6 +49,7 @@ public class MROutput2Writer extends MROutputBase {
         catch (InterruptedException e) {
           // skip
         }
+        stopped = true;
       }
     }, "MR output thread");
     outputThread.setDaemon(true);
@@ -64,12 +65,15 @@ public class MROutput2Writer extends MROutputBase {
   }
 
 
+  private volatile boolean stopped = false;
   @Override
   protected void push(int tableNo, CharSequence record) {
-    queue.add(Pair.create(tableNo, record));
+    if (!stopped)
+      queue.add(Pair.create(tableNo, record));
   }
 
   public void interrupt() {
     queue.add(STOP);
+    stopped = true;
   }
 }
