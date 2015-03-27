@@ -14,7 +14,7 @@ import java.util.concurrent.LinkedTransferQueue;
  * Time: 19:44
  */
 public class MROutput2Writer extends MROutputBase {
-  public static final Pair<Integer, CharSequence> STOP = new Pair<Integer, CharSequence>(-1, "");
+  private static final Pair<Integer, CharSequence> STOP = new Pair<Integer, CharSequence>(-1, "");
   private static Logger LOG = Logger.getLogger(MROutputBase.class);
   private Thread outputThread;
   private int lastActiveTable = 0;
@@ -43,11 +43,8 @@ public class MROutput2Writer extends MROutputBase {
             out.close();
           }
         }
-        catch (IOException e) {
+        catch (IOException | InterruptedException e) {
           LOG.error(e);
-        }
-        catch (InterruptedException e) {
-          // skip
         }
         stopped = true;
       }
