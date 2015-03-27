@@ -3,11 +3,9 @@ package functional;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import solar.mr.env.LocalMREnv;
-import solar.mr.proc.Whiteboard;
-import solar.mr.proc.impl.WhiteboardImpl;
+import ru.yandex.se.yasm4u.domains.wb.Whiteboard;
+import ru.yandex.se.yasm4u.domains.wb.impl.WhiteboardImpl;
 
-import java.io.LineNumberReader;
 import java.util.*;
 
 import static junit.framework.Assert.assertEquals;

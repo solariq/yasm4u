@@ -6,13 +6,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import solar.mr.MRTestUtils;
-import solar.mr.env.LocalMREnv;
-import solar.mr.proc.impl.MRPath;
-import solar.mr.routines.MRRecord;
+import ru.yandex.se.yasm4u.domains.mr.env.LocalMREnv;
+import ru.yandex.se.yasm4u.domains.mr.MRPath;
+import ru.yandex.se.yasm4u.domains.mr.ops.MRRecord;
 
 import static org.junit.Assert.assertNotNull;
-import static solar.mr.MRTestUtils.*;
+import static ru.yandex.se.yasm4u.domains.mr.MRTestUtils.*;
 import static org.junit.Assert.assertEquals;
 
 /**

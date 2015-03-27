@@ -5,19 +5,19 @@ import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.Pair;
 import org.junit.Assert;
 import org.junit.Test;
-import solar.mr.MREnv;
-import solar.mr.MROutput;
-import solar.mr.MRTableState;
-import solar.mr.env.*;
-import solar.mr.proc.AnnotatedMRProcess;
-import solar.mr.proc.State;
-import solar.mr.proc.Whiteboard;
-import solar.mr.proc.impl.WhiteboardImpl;
-import solar.mr.proc.tags.MRMapMethod;
-import solar.mr.proc.tags.MRProcessClass;
-import solar.mr.proc.tags.MRRead;
-import solar.mr.proc.tags.MRReduceMethod;
-import solar.mr.routines.MRRecord;
+import ru.yandex.se.yasm4u.domains.mr.MREnv;
+import ru.yandex.se.yasm4u.domains.mr.MROutput;
+import ru.yandex.se.yasm4u.domains.mr.env.*;
+import ru.yandex.se.yasm4u.domains.mr.ops.impl.MRTableState;
+import ru.yandex.se.yasm4u.domains.mr.routines.ann.AnnotatedMRProcess;
+import ru.yandex.se.yasm4u.domains.wb.State;
+import ru.yandex.se.yasm4u.domains.wb.Whiteboard;
+import ru.yandex.se.yasm4u.domains.wb.impl.WhiteboardImpl;
+import ru.yandex.se.yasm4u.domains.mr.routines.ann.tags.MRMapMethod;
+import ru.yandex.se.yasm4u.domains.mr.routines.ann.tags.MRProcessClass;
+import ru.yandex.se.yasm4u.domains.mr.routines.ann.tags.MRRead;
+import ru.yandex.se.yasm4u.domains.mr.routines.ann.tags.MRReduceMethod;
+import ru.yandex.se.yasm4u.domains.mr.ops.MRRecord;
 
 import java.util.Date;
 import java.util.Iterator;
@@ -136,7 +136,7 @@ public class MRProcTest {
     final Whiteboard wb = new WhiteboardImpl(env, "SAPPCounter");
 //    wb.wipe();
     wb.set("var:date", new Date(2014-1900, 8, 1));
-    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SAPPCounter.class, wb);
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SAPPCounter.class, wb, env);
     int count = mrProcess.<Integer>result();
     Assert.assertEquals(2611709, count);
     mrProcess.wb().wipe();
@@ -170,7 +170,7 @@ public class MRProcTest {
   @Test
   public void testResolve() {
     final MREnv env = LocalMREnv.createTemp();
-    final Whiteboard wb = new WhiteboardImpl(env, "proc", "none");
+    final Whiteboard wb = new WhiteboardImpl(env, "proc");
     wb.set("var:xxx", "yyy");
     final String resolveString = wb.get("{var:xxx}");
     @SuppressWarnings("UnusedDeclaration")
@@ -192,7 +192,7 @@ public class MRProcTest {
   @Test
   public void testResolve2() {
     final MREnv env = LocalMREnv.createTemp();
-    final Whiteboard wb = new WhiteboardImpl(env, "proc", "none");
+    final Whiteboard wb = new WhiteboardImpl(env, "proc");
 
     wb.set("var:xx1", new Date(2014-1900,7,1));
     wb.set("var:xx2", "sometest/{var:xx1,date,yyyyMMdd}");
@@ -284,7 +284,7 @@ public class MRProcTest {
 
     vars.set("var:array1_10", (Object) sb.toString().split(","));
 
-    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SampleSplitter1.class, vars);
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SampleSplitter1.class, vars, env);
     mrProcess.wb().wipe();
     mrProcess.execute();
   }
@@ -317,7 +317,7 @@ public class MRProcTest {
 
     vars.set("var:array1_10", (Object)sb.toString().split(","));
 
-    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(ArraysTest0.class, vars);
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(ArraysTest0.class, vars, env);
     mrProcess.wb().wipe();
     //mrProcess.execute();
   }

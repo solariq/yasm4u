@@ -1,22 +1,21 @@
 package yamr;
 
 import org.junit.Test;
-import solar.mr.MREnv;
-import solar.mr.MROutput;
-import solar.mr.env.ProcessRunner;
-import solar.mr.env.SSHProcessRunner;
-import solar.mr.env.YtMREnv;
-import solar.mr.proc.State;
-import solar.mr.proc.AnnotatedMRProcess;
-import solar.mr.proc.Whiteboard;
-import solar.mr.proc.impl.MRPath;
-import solar.mr.proc.impl.WhiteboardImpl;
-import solar.mr.proc.tags.MRMapMethod;
-import solar.mr.proc.tags.MRProcessClass;
+import ru.yandex.se.yasm4u.domains.mr.MREnv;
+import ru.yandex.se.yasm4u.domains.mr.MROutput;
+import ru.yandex.se.yasm4u.domains.mr.env.ProcessRunner;
+import ru.yandex.se.yasm4u.domains.mr.env.SSHProcessRunner;
+import ru.yandex.se.yasm4u.domains.mr.env.YtMREnv;
+import ru.yandex.se.yasm4u.domains.wb.State;
+import ru.yandex.se.yasm4u.domains.mr.routines.ann.AnnotatedMRProcess;
+import ru.yandex.se.yasm4u.domains.wb.Whiteboard;
+import ru.yandex.se.yasm4u.domains.mr.MRPath;
+import ru.yandex.se.yasm4u.domains.wb.impl.WhiteboardImpl;
+import ru.yandex.se.yasm4u.domains.mr.routines.ann.tags.MRMapMethod;
+import ru.yandex.se.yasm4u.domains.mr.routines.ann.tags.MRProcessClass;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import java.util.Random;
 
 /**
@@ -68,7 +67,7 @@ public class YtTest {
       array.add(Integer.toString(i));
     }
     wb.set("var:array", array.toArray(new String[array.size()]));
-    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SampleSplitter.class, wb);
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SampleSplitter.class, wb, env);
     mrProcess.wb().wipe();
     mrProcess.execute();
   }

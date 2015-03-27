@@ -1,10 +1,9 @@
 package yamr;
 
-import com.spbsu.commons.func.Processor;
-import solar.mr.MRRoutine;
-import solar.mr.env.LocalMREnv;
-import solar.mr.proc.impl.MRPath;
-import solar.mr.routines.MRRecord;
+import ru.yandex.se.yasm4u.domains.mr.ops.impl.MROperation;
+import ru.yandex.se.yasm4u.domains.mr.env.LocalMREnv;
+import ru.yandex.se.yasm4u.domains.mr.MRPath;
+import ru.yandex.se.yasm4u.domains.mr.ops.MRRecord;
 
 /**
  * User: solar
@@ -20,7 +19,7 @@ public class FakeMREnv extends LocalMREnv {
   }
 
   @Override
-  protected int read(MRPath shard, MRRoutine routine) {
+  protected int read(MRPath shard, MROperation routine) {
     if (oneMillionRecordShard.equals(shard)) {
       for (int i = 0; i < 1_000_000; i++) {
         routine.invoke(i +"\t#\tvalue");
