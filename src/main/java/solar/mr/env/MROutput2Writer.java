@@ -44,9 +44,9 @@ public class MROutput2Writer extends MROutputBase {
           }
         }
         catch (IOException | InterruptedException e) {
-          LOG.error(e);
+          e.printStackTrace(System.err); //LOG.error(e);
         }
-        stopped = true;
+        //stopped = true;
       }
     }, "MR output thread");
     outputThread.setDaemon(true);
@@ -62,15 +62,15 @@ public class MROutput2Writer extends MROutputBase {
   }
 
 
-  private volatile boolean stopped = false;
+  //private volatile boolean stopped = false;
   @Override
   protected void push(int tableNo, CharSequence record) {
-    if (!stopped)
-      queue.add(Pair.create(tableNo, record));
+    //if (!stopped)
+    queue.add(Pair.create(tableNo, record));
   }
 
   public void interrupt() {
     queue.add(STOP);
-    stopped = true;
+    //stopped = true;
   }
 }
