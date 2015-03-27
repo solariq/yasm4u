@@ -4,8 +4,8 @@ import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.util.logging.Interval;
 import org.junit.Assert;
 import org.junit.Test;
-import solar.mr.env.ProcessRunner;
-import solar.mr.env.SSHProcessRunner;
+import ru.yandex.se.yasm4u.domains.mr.env.ProcessRunner;
+import ru.yandex.se.yasm4u.domains.mr.env.SSHProcessRunner;
 
 import java.io.IOException;
 import java.util.concurrent.*;

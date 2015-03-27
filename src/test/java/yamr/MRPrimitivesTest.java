@@ -4,15 +4,15 @@ import com.spbsu.commons.util.logging.Interval;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-import solar.mr.DefaultMRErrorsHandler;
-import solar.mr.MROutput;
-import solar.mr.MRRoutine;
-import solar.mr.MRRoutineBuilder;
-import solar.mr.proc.impl.MRPath;
-import solar.mr.proc.impl.WhiteboardImpl;
-import solar.mr.routines.MRMap;
-import solar.mr.routines.MRRecord;
-import solar.mr.routines.MRReduce;
+import ru.yandex.se.yasm4u.domains.mr.MROutput;
+import ru.yandex.se.yasm4u.domains.mr.ops.impl.MROperation;
+import ru.yandex.se.yasm4u.domains.mr.ops.impl.MRRoutineBuilder;
+import ru.yandex.se.yasm4u.domains.mr.MRPath;
+import ru.yandex.se.yasm4u.domains.mr.routines.ann.impl.DefaultMRErrorsHandler;
+import ru.yandex.se.yasm4u.domains.wb.impl.WhiteboardImpl;
+import ru.yandex.se.yasm4u.domains.mr.ops.MRMap;
+import ru.yandex.se.yasm4u.domains.mr.ops.MRRecord;
+import ru.yandex.se.yasm4u.domains.mr.ops.MRReduce;
 
 import java.util.Iterator;
 import java.util.concurrent.TimeoutException;
@@ -35,7 +35,7 @@ public class MRPrimitivesTest {
         return RoutineType.MAP;
       }
       @Override
-      public MRRoutine build(MROutput output) {
+      public MROperation build(MROutput output) {
         return new MRMap(input(), output, state) {
           @Override
           public void map(MRPath table, String sub, CharSequence value, String key) {
@@ -56,7 +56,7 @@ public class MRPrimitivesTest {
         return RoutineType.REDUCE;
       }
       @Override
-      public MRRoutine build(MROutput output) {
+      public MROperation build(MROutput output) {
         return new MRReduce(input(), output, state) {
           @Override
           public void reduce(String key, Iterator<MRRecord> reduce) {
@@ -78,7 +78,7 @@ public class MRPrimitivesTest {
         return RoutineType.MAP;
       }
       @Override
-      public MRRoutine build(MROutput output) {
+      public MROperation build(MROutput output) {
         return new MRMap(input(), output, state) {
           @Override
           public void map(MRPath table, String sub, CharSequence value, String key) {
@@ -88,7 +88,7 @@ public class MRPrimitivesTest {
       }
     };
     final WhiteboardImpl whiteboard = new WhiteboardImpl(fakeMREnv, name.getMethodName());
-    whiteboard.set(MRRoutine.VAR_TIMELIMITPERRECORD, 1000l);
+    whiteboard.set(MROperation.VAR_TIMELIMITPERRECORD, 1000l);
     builder.addInput(FakeMREnv.oneMillionRecordShard);
     builder.setState(whiteboard.snapshot());
     try {
@@ -107,7 +107,7 @@ public class MRPrimitivesTest {
 
   private void runTimeout(MRRoutineBuilder builder) {
     final WhiteboardImpl whiteboard = new WhiteboardImpl(fakeMREnv, name.getMethodName());
-    whiteboard.set(MRRoutine.VAR_TIMELIMITPERRECORD, 1000l);
+    whiteboard.set(MROperation.VAR_TIMELIMITPERRECORD, 1000l);
     builder.addInput(FakeMREnv.oneRecordShard);
     builder.setState(whiteboard.snapshot());
     try {

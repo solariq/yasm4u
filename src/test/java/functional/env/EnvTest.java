@@ -4,10 +4,10 @@ import functional.BaseMRTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import solar.mr.MRTableState;
-import solar.mr.proc.Whiteboard;
-import solar.mr.proc.impl.MRPath;
-import solar.mr.proc.impl.WhiteboardImpl;
+import ru.yandex.se.yasm4u.domains.mr.ops.impl.MRTableState;
+import ru.yandex.se.yasm4u.domains.wb.Whiteboard;
+import ru.yandex.se.yasm4u.domains.mr.MRPath;
+import ru.yandex.se.yasm4u.domains.wb.impl.WhiteboardImpl;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

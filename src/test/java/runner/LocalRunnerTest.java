@@ -1,9 +1,8 @@
 package runner;
 
-import org.junit.Assert;
 import org.junit.Test;
-import solar.mr.env.LocalMREnv;
-import solar.mr.env.LocalProcessRunner;
+import ru.yandex.se.yasm4u.domains.mr.env.LocalMREnv;
+import ru.yandex.se.yasm4u.domains.mr.env.LocalProcessRunner;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
