@@ -43,8 +43,9 @@ public class MROutput2Writer extends MROutputBase {
             out.close();
           }
         }
-        catch (IOException | InterruptedException e) {
-          LOG.error(e);
+        catch (Exception e) {
+          e.printStackTrace(System.err);
+          System.exit(2);
         }
         stopped = true;
       }
