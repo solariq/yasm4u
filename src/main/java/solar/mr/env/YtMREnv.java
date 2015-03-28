@@ -170,8 +170,14 @@ public class YtMREnv extends RemoteMREnv {
       response = nodes != null ? nodes.elements() : new EmptyIterator<JsonNode>();
     }
     catch (Exception e) {
-      throw new RuntimeException(e);
-      //return new MRPath[0];
+      //throw new RuntimeException(e);
+      /* I'm too bothered to with NPE from internals:
+      * java.lang.NullPointerException
+      *  at com.spbsu.commons.seq.CharSeqComposite.length(CharSeqComposite.java:31)
+      *  at solar.mr.env.YtMREnv.list(YtMREnv.java:162)
+      *  ... 3 more
+      */
+      return new MRPath[0];
     }
     while (response.hasNext()) {
       final JsonNode node = response.next();
