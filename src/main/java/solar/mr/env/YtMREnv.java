@@ -127,7 +127,8 @@ public class YtMREnv extends RemoteMREnv {
       readNode(prefix,null, mapper, nodes);
     }
     catch (Exception e) {
-      throw new RuntimeException(e);
+      /* see comment in ::list */
+      //throw new RuntimeException(e);
       //return new MRPath[0];
     }
   }
