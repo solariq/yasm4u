@@ -49,7 +49,7 @@ public class MROutput2Writer extends MROutputBase {
         //stopped = true;
       }
     }, "MR output thread");
-    outputThread.setDaemon(true);
+    //outputThread.setDaemon(true);
     outputThread.start();
   }
 
