@@ -89,6 +89,7 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
             System.err.println(e.getClassName() + ":" + e.getMethodName() + "(" + e.getLineNumber() + ")");
           }
         }
+        unhandled = new TimeoutException();
         System.exit(2);
       }
     }
