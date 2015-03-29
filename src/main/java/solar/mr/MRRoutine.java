@@ -66,7 +66,7 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
     this(inputTables, new DefaultMRErrorsHandler(), new StateImpl());
   }
 
-  private boolean isStopped = false;
+  private volatile boolean isStopped = false;
   @Override
   public void invoke(final CharSequence record) {
     if (isStopped)
@@ -76,8 +76,14 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
 
     next.set(record);
     while (unhandled == null && !next.compareAndSet(null, null)) {
-      if (++count % 100000 == 0 && System.currentTimeMillis() - time > timeout)
+      if (++count % 100000 == 0 && System.currentTimeMillis() - time > timeout) {
+        System.err.println("time out");
         //unhandled = new TimeoutException();
+        StackTraceElement[] stackTrace = routineTh.getStackTrace();
+        for(StackTraceElement e:stackTrace) {
+          System.err.println(e.getClassName() + ":" + e.getMethodName() + "(" + e.getLineNumber() + ")");
+        }
+      }
     }
     if (unhandled != null) {
       output.error(unhandled, currentRecord);
