@@ -77,12 +77,14 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
     next.set(record);
     while (unhandled == null && !next.compareAndSet(null, null)) {
       if (++count % 100000 == 0 && System.currentTimeMillis() - time > timeout) {
-        System.err.println("time out");
+        CharSequence key = CharSeqTools.split(record, '\t')[0];
+        System.err.println("time out: " + key);
         //unhandled = new TimeoutException();
         Thread[] threads = new Thread[Thread.activeCount()];
         Thread.enumerate(threads);
         for (Thread th:threads) {
           StackTraceElement[] stackTrace = th.getStackTrace();
+          System.err.print('\n');
           for(StackTraceElement e : stackTrace) {
             System.err.println(e.getClassName() + ":" + e.getMethodName() + "(" + e.getLineNumber() + ")");
           }
