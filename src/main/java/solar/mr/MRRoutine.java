@@ -79,10 +79,15 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
       if (++count % 100000 == 0 && System.currentTimeMillis() - time > timeout) {
         System.err.println("time out");
         //unhandled = new TimeoutException();
-        StackTraceElement[] stackTrace = routineTh.getStackTrace();
-        for(StackTraceElement e:stackTrace) {
-          System.err.println(e.getClassName() + ":" + e.getMethodName() + "(" + e.getLineNumber() + ")");
+        Thread[] threads = new Thread[Thread.activeCount()];
+        Thread.enumerate(threads);
+        for (Thread th:threads) {
+          StackTraceElement[] stackTrace = th.getStackTrace();
+          for(StackTraceElement e : stackTrace) {
+            System.err.println(e.getClassName() + ":" + e.getMethodName() + "(" + e.getLineNumber() + ")");
+          }
         }
+        System.exit(2);
       }
     }
     if (unhandled != null) {
