@@ -15,6 +15,7 @@ import ru.yandex.se.yasm4u.Routine;
 import ru.yandex.se.yasm4u.domains.mr.MRPath;
 import ru.yandex.se.yasm4u.domains.mr.MREnv;
 import ru.yandex.se.yasm4u.domains.wb.State;
+import ru.yandex.se.yasm4u.domains.wb.StateRef;
 import ru.yandex.se.yasm4u.domains.wb.TempRef;
 import ru.yandex.se.yasm4u.domains.wb.Whiteboard;
 import ru.yandex.se.yasm4u.domains.mr.ops.MRRecord;
@@ -80,7 +81,9 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
   }
 
   @Override
-  public <T> void set(final String uri, final T data) {
+  public <T> void set(String uri, final T data) {
+    if (uri.startsWith("var:"))
+      uri = uri.substring("var:".length());
     if (data == CharSeq.EMPTY)
       throw new IllegalArgumentException("User remove instead");
     final Object current = state.get(uri);
@@ -139,7 +142,7 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
     sync();
     if (!state.isEmpty()) {
       for (String resourceName : keys()) {
-        final Ref<?> ref = Ref.PARSER.convert(resourceName);
+        final Ref<?> ref = Ref.PARSER.convert("var:" + resourceName);
         if (ref instanceof TempRef && MRPath.class.isAssignableFrom(ref.type())) {
           // TODO: remove this dirty hack
           env.delete((MRPath)ref.resolve(new Controller() {
@@ -163,4 +166,13 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
   public Routine[] publicRoutines() {
     return new Routine[0];
   }
+
+  @Override
+  public void visitPublic(Action<Ref<?>> visitor) {
+    super.visitPublic(visitor);
+    for (final Object next : increment.keySet()) {
+      visitor.invoke(new StateRef((String)next, increment.get(next).getClass()));
+    }
+  }
+
 }

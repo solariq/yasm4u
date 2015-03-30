@@ -1,6 +1,5 @@
 package ru.yandex.se.yasm4u.domains.wb;
 
-import com.spbsu.commons.func.types.TypeConverter;
 import ru.yandex.se.yasm4u.Domain;
 import ru.yandex.se.yasm4u.Ref;
 
@@ -13,7 +12,7 @@ import java.net.URISyntaxException;
 * Time: 18:06
 */
 public class StateRef<T> implements Ref<T> {
-  private final String name;
+  public final String name;
   private final Class<T> clazz;
 
   public StateRef(String name, Class<T> clazz) {
@@ -50,13 +49,18 @@ public class StateRef<T> implements Ref<T> {
     return controller.domain(State.class).available(name);
   }
 
-  static {
-    Ref.PARSER.registerProtocol("var", new TypeConverter<String, Ref<?>>() {
-      @Override
-      public Ref<?> convert(final String from) {
-        //noinspection unchecked
-        return new StateRef(from, Object.class);
-      }
-    });
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof StateRef)) return false;
+
+    StateRef stateRef = (StateRef) o;
+
+    return name.equals(stateRef.name);
+  }
+
+  @Override
+  public int hashCode() {
+    return name.hashCode();
   }
 }
