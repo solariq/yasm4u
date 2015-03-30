@@ -591,6 +591,10 @@ public class YtMREnv extends RemoteMREnv {
         return;
       try {
         final JsonParser parser = JSONTools.parseJSON(arg);
+        if (parser == null) {
+          processor.invoke(arg);
+          return;
+        }
         final ObjectMapper mapper = new ObjectMapper();
         final JsonNode metaJSON = mapper.readTree(parser);
         /* TODO: more protective programming */
