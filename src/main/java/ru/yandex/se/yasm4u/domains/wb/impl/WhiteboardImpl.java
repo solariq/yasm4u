@@ -52,7 +52,8 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
       @Override
       public void process(final MRRecord arg) {
         try {
-          state.put(arg.key, marshaling.read(arg.value, marshaling.base.conversionType(Class.forName(arg.sub), CharSequence.class)));
+          final Object read = marshaling.read(arg.value, marshaling.base.conversionType(Class.forName(arg.sub), CharSequence.class));
+          state.put(arg.key, read);
         } catch (ClassNotFoundException e) {
           throw new RuntimeException(e);
         }
@@ -126,9 +127,9 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
     for (Map.Entry<String, Object> entry : state.entrySet()) {
       final Class<?> dataClass = entry.getValue().getClass();
       final TypeConverter<Object, CharSequence> converter = (TypeConverter<Object, CharSequence>)marshaling.base.converter(dataClass, CharSequence.class);
-      final Class[] typeParameters = RuntimeUtils.findTypeParameters(converter.getClass(), TypeConverter.class);
+      final Class<?> conversionType = marshaling.base.conversionType(dataClass, CharSequence.class);
       builder.append(entry.getKey()).append('\t');
-      builder.append(typeParameters[0] != null ? typeParameters[0].getName() : dataClass.getName()).append('\t');
+      builder.append(conversionType.getName()).append('\t');
       builder.append(converter.convert(entry.getValue())).append('\n');
     }
 

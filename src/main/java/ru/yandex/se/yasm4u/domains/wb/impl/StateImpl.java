@@ -109,15 +109,11 @@ public class StateImpl implements State {
       final Object instance = get(current);
       assert instance != null;
       final SerializationRepository<CharSequence> serialization = State.SERIALIZATION;
-      final TypeConverter<CharSequence, ?> converter = serialization.base.converter(CharSequence.class, instance.getClass());
-      if (converter != null && !new ClassFilter<TypeConverter>(Action.class, Whiteboard.class).accept(converter)) {
-        out.writeBoolean(true);
-        out.writeUTF(current);
-        out.writeUTF(instance.getClass().getName());
-        final byte[] b = serialization.write(instance).toString().getBytes("utf-8");
-        out.writeInt(b.length);
-        out.write(b);
-      }
+      final Class conversionType  = serialization.base.conversionType(instance.getClass(), CharSequence.class);
+      out.writeBoolean(true);
+      out.writeUTF(current);
+      out.writeUTF(conversionType.getName());
+      out.writeUTF(serialization.write(instance).toString());
     }
     out.writeBoolean(false);
   }
@@ -129,7 +125,8 @@ public class StateImpl implements State {
       final String itemClass = in.readUTF();
       final byte[] byteObj = new byte[in.readInt()];
       in.readFully(byteObj);
-      final Object read = State.SERIALIZATION.read(new String(byteObj, 0, byteObj.length, "utf-8"), Class.forName(itemClass));
+      final Object read = State.SERIALIZATION.read(new String(byteObj, 0, byteObj.length, "utf-8"),
+          State.SERIALIZATION.base.conversionType(Class.forName(itemClass), CharSequence.class));
       state.put(current, read);
     }
   }

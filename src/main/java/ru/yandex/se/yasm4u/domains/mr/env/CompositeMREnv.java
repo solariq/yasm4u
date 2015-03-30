@@ -1,10 +1,12 @@
 package ru.yandex.se.yasm4u.domains.mr.env;
 
 import com.spbsu.commons.func.Action;
+import com.spbsu.commons.func.Computable;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.io.QueueReader;
 import com.spbsu.commons.seq.*;
 import com.spbsu.commons.system.RuntimeUtils;
+import com.spbsu.commons.util.ArrayTools;
 import com.spbsu.commons.util.Holder;
 import com.spbsu.commons.util.MultiMap;
 import com.spbsu.commons.util.Pair;
@@ -196,11 +198,17 @@ public class CompositeMREnv extends MREnvBase {
   @Override
   public MRPath[] list(MRPath prefix) {
     final String resourceString = prefix.toURI().toString();
-    final Pair<Long, MRPath[]> cache = copyState.snapshot().get(resourceString);
+    final Pair<Long, Ref[]> cache = copyState.snapshot().get(resourceString);
     final long now = System.currentTimeMillis();
     if (cache != null && now - cache.first < MRTools.FRESHNESS_TIMEOUT) {
-      resolveAll(cache.second);
-      return cache.second;
+      final MRPath[] repack = ArrayTools.map(cache.second, MRPath.class, new Computable<Ref, MRPath>() {
+        @Override
+        public MRPath compute(Ref argument) {
+          return (MRPath) argument;
+        }
+      });
+      resolveAll(repack);
+      return repack;
     }
     final MRPath[] result = original.list(prefix);
     copyState.set(resourceString, Pair.create(now, result));
