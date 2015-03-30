@@ -18,11 +18,11 @@ import java.lang.reflect.Method;
 * Time: 13:02
 */
 public class RoutineJoba implements Joba {
-  private final JobExecutorService controller;
-  private final Ref<? extends MRPath>[] input;
-  private final Ref<? extends MRPath>[] output;
-  private final Method method;
-  private final MRRoutineBuilder.RoutineType type;
+  public final JobExecutorService controller;
+  public final Ref<? extends MRPath>[] input;
+  public final Ref<? extends MRPath>[] output;
+  public final Method method;
+  public final MRRoutineBuilder.RoutineType type;
 
   public RoutineJoba(JobExecutorService controller, final Ref<? extends MRPath>[] input, final Ref<? extends MRPath>[] output, final Method method, MRRoutineBuilder.RoutineType type) {
     this.controller = controller;
