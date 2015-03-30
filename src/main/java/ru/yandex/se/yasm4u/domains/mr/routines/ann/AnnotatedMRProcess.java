@@ -1,8 +1,12 @@
 package ru.yandex.se.yasm4u.domains.mr.routines.ann;
 
+import com.spbsu.commons.util.MultiMap;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import ru.yandex.se.yasm4u.*;
 import ru.yandex.se.yasm4u.domains.mr.MREnv;
 import ru.yandex.se.yasm4u.domains.mr.MRPath;
+import ru.yandex.se.yasm4u.domains.mr.routines.MergeRoutine;
 import ru.yandex.se.yasm4u.domains.wb.State;
 import ru.yandex.se.yasm4u.domains.wb.StateRef;
 import ru.yandex.se.yasm4u.domains.wb.Whiteboard;
@@ -20,10 +24,7 @@ import ru.yandex.se.yasm4u.domains.mr.routines.ann.tags.MRReduceMethod;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.regex.Matcher;
@@ -240,20 +241,21 @@ public class AnnotatedMRProcess implements Routine {
     @Override
     public void run() {
       final Method[] methods = processDescription.getMethods();
+      final List<RoutineJoba> jobs = new ArrayList<>();
       for (final Method current : methods) {
         final MRMapMethod mapAnn = current.getAnnotation(MRMapMethod.class);
         if (mapAnn != null) {
           if (!Arrays.equals(current.getParameterTypes(), MAP_PARAMETERS_1) && !Arrays.equals(current.getParameterTypes(), MAP_PARAMETERS_2))
             throw new RuntimeException("Invalid signature for map operation");
           //noinspection unchecked
-          jes.addJoba(new RoutineJoba(jes, resolveNames(mapAnn.input(), jes), resolveNames(mapAnn.output(), jes), current, MRRoutineBuilder.RoutineType.MAP));
+          jobs.add(new RoutineJoba(jes, resolveNames(mapAnn.input(), jes), resolveNames(mapAnn.output(), jes), current, MRRoutineBuilder.RoutineType.MAP));
         }
         final MRReduceMethod reduceAnn = current.getAnnotation(MRReduceMethod.class);
         if (reduceAnn != null) {
           if (!Arrays.equals(current.getParameterTypes(), REDUCE_PARAMETERS))
             throw new RuntimeException("Invalid signature for reduce operation");
           //noinspection unchecked
-          jes.addJoba(new RoutineJoba(jes, resolveNames(reduceAnn.input(), jes), resolveNames(reduceAnn.output(), jes), current, MRRoutineBuilder.RoutineType.REDUCE));
+          jobs.add(new RoutineJoba(jes, resolveNames(reduceAnn.input(), jes), resolveNames(reduceAnn.output(), jes), current, MRRoutineBuilder.RoutineType.REDUCE));
         }
         final MRRead readAnn = current.getAnnotation(MRRead.class);
         if (readAnn != null) {
@@ -263,12 +265,45 @@ public class AnnotatedMRProcess implements Routine {
           jes.addJoba(new ReadJoba(jes, resolveNames(new String[]{readAnn.input()}, jes), (StateRef<?>)convert, current));
         }
       }
+      unmergeJobs(jobs);
+
       final Future<List<?>> future = jes.calculate(produces());
       try {
         future.get();
       } catch (InterruptedException | ExecutionException e) {
         throw new RuntimeException(e);
       }
+    }
+
+    private List<RoutineJoba> unmergeJobs(final List<RoutineJoba> jobs) {
+      final TObjectIntMap<Ref> sharded = new TObjectIntHashMap<>();
+      for (final Joba joba : jobs) {
+        for (final Ref resource : joba.produces()) {
+          sharded.adjustOrPutValue(resource, 1, 1);
+        }
+      }
+
+      final List<RoutineJoba> result = new ArrayList<>();
+
+      final MultiMap<Ref, Ref> shardsMap = new MultiMap<>();
+      for (final RoutineJoba joba : jobs) {
+        final Ref[] outputs = new Ref[joba.produces().length];
+        for(int i = 0; i < outputs.length; i++) {
+          final Ref resourceName = joba.produces()[i];
+          final Collection<Ref> shards = shardsMap.get(resourceName);
+          if (sharded.get(resourceName) > 1) {
+            outputs[i] = Ref.PARSER.convert(resourceName + MergeRoutine.MERGE_DELIM + shards.size());
+            shards.add(outputs[i]);
+          }
+          else outputs[i] = resourceName;
+        }
+        if (!Arrays.equals(outputs, joba.produces())) {
+          //noinspection unchecked
+          result.add(new RoutineJoba(joba.controller, joba.input, outputs, joba.method, joba.type));
+        }
+        else result.add(joba);
+      }
+      return result;
     }
   }
 }
