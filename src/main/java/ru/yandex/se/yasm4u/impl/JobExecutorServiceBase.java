@@ -128,7 +128,7 @@ public abstract class JobExecutorServiceBase implements JobExecutorService {
   }
 
   protected Joba[] jobs() {
-    return steve.toArray(new Joba[availableResources.size()]);
+    return steve.toArray(new Joba[steve.size()]);
   }
 
   protected void invoke(Action<ProgressListener> action) {

@@ -5,11 +5,15 @@ import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.func.types.SerializationRepository;
 import com.spbsu.commons.func.types.TypeConverter;
+import com.spbsu.commons.random.FastRandom;
 import org.jetbrains.annotations.Nullable;
 import ru.yandex.se.yasm4u.Ref;
 import ru.yandex.se.yasm4u.Routine;
+import ru.yandex.se.yasm4u.domains.mr.MRPath;
 import ru.yandex.se.yasm4u.domains.mr.ops.impl.MRTableState;
 import ru.yandex.se.yasm4u.domains.wb.State;
+import ru.yandex.se.yasm4u.domains.wb.StateRef;
+import ru.yandex.se.yasm4u.domains.wb.TempRef;
 import ru.yandex.se.yasm4u.domains.wb.Whiteboard;
 
 import java.io.*;
@@ -137,12 +141,28 @@ public class StateImpl implements State {
   @Override
   public void visitPublic(Action<Ref<?>> visitor) {
     for (final String next : state.keySet()) {
-      visitor.invoke(Ref.PARSER.convert(next));
+      visitor.invoke(new StateRef(next, state.get(next).getClass()));
     }
   }
 
   @Override
   public Routine[] publicRoutines() {
     return new Routine[0];
+  }
+
+  static {
+    Ref.PARSER.registerProtocol("var", new TypeConverter<String, Ref<?>>() {
+      @Override
+      public Ref<?> convert(final String from) {
+        //noinspection unchecked
+        return new StateRef(from, Object.class);
+      }
+    });
+    Ref.PARSER.registerProtocol("temp", new TypeConverter<String, Ref<?>>() {
+      @Override
+      public Ref<?> convert(String from) {
+        return new TempRef<>(from, Object.class);
+      }
+    });
   }
 }

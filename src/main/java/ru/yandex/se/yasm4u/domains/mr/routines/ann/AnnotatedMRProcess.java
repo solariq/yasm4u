@@ -42,9 +42,14 @@ public class AnnotatedMRProcess implements Routine {
   private final Class<?> processDescription;
   private final Whiteboard wb;
   private final MREnv env;
+  private final Ref<?>[] goals;
+  private final JobExecutorService jes;
 
   public AnnotatedMRProcess(final Class<?> processDescription, Whiteboard wb, MREnv env) {
     this.processDescription = processDescription;
+    this.jes = new MainThreadJES(env, wb);
+    this.jes.addRoutine(this);
+    goals = resolveNames(processDescription.getAnnotation(MRProcessClass.class).goal(), jes);
     try {
       processDescription.getConstructor(State.class);
     }
@@ -65,7 +70,7 @@ public class AnnotatedMRProcess implements Routine {
     final List<Ref> input = new ArrayList<>();
     final List<Ref> output = new ArrayList<>();
     if (checkInput(state, input, output)) {
-      return new Joba[]{new MyJoba(input.toArray(new Ref[input.size()]), output.toArray(new Ref[output.size()]), jes)};
+      return new Joba[]{new MyJoba(input.toArray(new Ref[input.size()]), goals, new MainThreadJES(true, jes.domains()))};
     }
     return new Joba[0];
   }
@@ -182,10 +187,12 @@ public class AnnotatedMRProcess implements Routine {
       return results.toArray(new Ref[results.size()]);
     }
     final Ref<?> ref = Ref.PARSER.convert(resource);
-    if (resource.endsWith("*") && ref instanceof MRPath) {
-      final MRPath dir = (MRPath)Ref.PARSER.convert(resource.substring(0, resource.length() - 1));
-      if (dir.isDirectory()) {
-        return jes.domain(MREnv.class).list(dir);
+    if (MRPath.class.isAssignableFrom(ref.type())) {
+      final MRPath resolve = (MRPath)ref.resolve(jes);
+      if (resolve.path.endsWith("*")) {
+        final MRPath dir = resolve.parent();
+        if (dir.isDirectory())
+          return jes.domain(MREnv.class).list(dir);
       }
     }
     return new Ref[]{ref};
@@ -208,9 +215,7 @@ public class AnnotatedMRProcess implements Routine {
   }
 
   public <T> T result() {
-    final JobExecutorService jes = new MainThreadJES(wb, env);
-    jes.addRoutine(this);
-    final Ref[] goals = resolveNames(processDescription.getAnnotation(MRProcessClass.class).goal(), jes);
+    final Ref[] goals = goals();
     final Future<List<?>> calculate = jes.calculate(goals);
     try {
       //noinspection unchecked
@@ -218,6 +223,10 @@ public class AnnotatedMRProcess implements Routine {
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  private Ref[] goals() {
+    return this.goals;
   }
 
   public String[] produces() {
@@ -266,7 +275,9 @@ public class AnnotatedMRProcess implements Routine {
         }
       }
       unmergeJobs(jobs);
-
+      for (RoutineJoba job : jobs) {
+        jes.addJoba(job);
+      }
       final Future<List<?>> future = jes.calculate(produces());
       try {
         future.get();

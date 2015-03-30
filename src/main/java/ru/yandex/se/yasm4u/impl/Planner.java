@@ -49,6 +49,11 @@ public class Planner {
         }
       }
 
+      for (final Joba job : jobs) {
+        consumes.addAll(Arrays.asList(job.consumes()));
+        produces.addAll(Arrays.asList(job.produces()));
+      }
+
       consumes.removeAll(produces);
       final Set<Ref<?>> initialState = new HashSet<>(consumes);
       states.put(initialState, new PossibleState(new ArrayList<Joba>(), 0.));
