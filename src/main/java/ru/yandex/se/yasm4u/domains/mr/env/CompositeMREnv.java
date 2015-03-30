@@ -342,17 +342,4 @@ public class CompositeMREnv extends MREnvBase {
   public String toString() {
     return "CompositeMREnv(" + original.toString() + "," + localCopy.toString() + ")";
   }
-
-  @Override
-  public void visitPublic(Action<Ref<?>> visitor) {
-    final Set<String> keys = copyState.keys();
-    for (final String key : keys) {
-      visitor.invoke(Ref.PARSER.convert(key));
-    }
-  }
-
-  @Override
-  public Routine[] publicRoutines() {
-    return new Routine[0];
-  }
 }

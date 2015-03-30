@@ -12,7 +12,7 @@ public interface Whiteboard extends State {
   State snapshot();
 
   <T> void set(String var, T data);
-  <T> void set(Ref<T> var, T data);
+
   void remove(String var);
 
   void wipe();

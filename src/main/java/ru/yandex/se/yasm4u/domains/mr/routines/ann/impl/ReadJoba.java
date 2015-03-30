@@ -9,7 +9,9 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ArrayBlockingQueue;
 
 
+import com.spbsu.commons.func.Computable;
 import com.spbsu.commons.func.Processor;
+import com.spbsu.commons.util.ArrayTools;
 import ru.yandex.se.yasm4u.JobExecutorService;
 import ru.yandex.se.yasm4u.Joba;
 import ru.yandex.se.yasm4u.Ref;
@@ -26,14 +28,19 @@ import ru.yandex.se.yasm4u.domains.mr.ops.MRRecord;
 * Time: 8:04
 */
 public class ReadJoba implements Joba {
-  private final Ref<? extends MRPath>[] input;
+  private final MRPath[] input;
   private final StateRef output;
   private final JobExecutorService jes;
   private final Method method;
 
-  public ReadJoba(JobExecutorService jes, Ref[] input, StateRef<?> output, Method method) {
+  public ReadJoba(final JobExecutorService jes, Ref<? extends MRPath>[] input, StateRef<?> output, Method method) {
     //noinspection unchecked
-    this.input = (Ref<? extends MRPath>[])input;
+    this.input = ArrayTools.map(input, MRPath.class, new Computable<Ref<? extends MRPath>, MRPath>() {
+      @Override
+      public MRPath compute(Ref<? extends MRPath> argument) {
+        return argument.resolve(jes);
+      }
+    });
     this.output = output;
     this.jes = jes;
     this.method = method;
@@ -80,7 +87,7 @@ public class ReadJoba implements Joba {
     try {
       final Constructor<?> constructor = method.getDeclaringClass().getConstructor(State.class);
       final Whiteboard wb = jes.domain(Whiteboard.class);
-      wb.set(output, method.invoke(constructor.newInstance(wb.snapshot()), new Iterator<MRRecord>() {
+      wb.set(output.name, method.invoke(constructor.newInstance(wb.snapshot()), new Iterator<MRRecord>() {
         MRRecord next = null;
         boolean needs2wait = true;
 

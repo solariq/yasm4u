@@ -8,10 +8,7 @@ import com.spbsu.commons.func.types.TypeConverter;
 import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqReader;
-import com.spbsu.commons.system.RuntimeUtils;
-import ru.yandex.se.yasm4u.Domain;
-import ru.yandex.se.yasm4u.Ref;
-import ru.yandex.se.yasm4u.Routine;
+import ru.yandex.se.yasm4u.*;
 import ru.yandex.se.yasm4u.domains.mr.MRPath;
 import ru.yandex.se.yasm4u.domains.mr.MREnv;
 import ru.yandex.se.yasm4u.domains.wb.State;
@@ -95,11 +92,6 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
   }
 
   @Override
-  public <T> void set(Ref<T> var, T data) {
-    set(var.toURI().toString(), data);
-  }
-
-  @Override
   public void remove(final String var) {
     increment.put(var, CharSeq.EMPTY);
   }
@@ -162,18 +154,4 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
       env.delete(myShard);
     }
   }
-
-  @Override
-  public Routine[] publicRoutines() {
-    return new Routine[0];
-  }
-
-  @Override
-  public void visitPublic(Action<Ref<?>> visitor) {
-    super.visitPublic(visitor);
-    for (final Object next : increment.keySet()) {
-      visitor.invoke(new StateRef((String)next, increment.get(next).getClass()));
-    }
-  }
-
 }

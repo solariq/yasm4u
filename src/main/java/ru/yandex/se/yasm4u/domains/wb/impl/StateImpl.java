@@ -7,6 +7,8 @@ import com.spbsu.commons.func.types.SerializationRepository;
 import com.spbsu.commons.func.types.TypeConverter;
 import com.spbsu.commons.random.FastRandom;
 import org.jetbrains.annotations.Nullable;
+import ru.yandex.se.yasm4u.JobExecutorService;
+import ru.yandex.se.yasm4u.Joba;
 import ru.yandex.se.yasm4u.Ref;
 import ru.yandex.se.yasm4u.Routine;
 import ru.yandex.se.yasm4u.domains.mr.MRPath;
@@ -133,15 +135,13 @@ public class StateImpl implements State {
   }
 
   @Override
-  public void visitPublic(Action<Ref<?>> visitor) {
-    for (final String next : state.keySet()) {
-      visitor.invoke(new StateRef(next, state.get(next).getClass()));
-    }
-  }
-
-  @Override
   public Routine[] publicRoutines() {
-    return new Routine[0];
+    return new Routine[]{new Routine() {
+      @Override
+      public Joba[] buildVariants(Ref[] state, JobExecutorService executor) {
+        return new Joba[]{new PublisherJoba(StateImpl.this)};
+      }
+    }};
   }
 
   static {

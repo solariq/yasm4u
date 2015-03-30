@@ -2,6 +2,7 @@ package ru.yandex.se.yasm4u.impl;
 
 import com.spbsu.commons.func.Evaluator;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import ru.yandex.se.yasm4u.*;
 
 import java.util.*;
@@ -31,16 +32,9 @@ public class Planner {
 
   @NotNull
   public Joba[] build(JobExecutorService jes, Ref<?>... goals) {
-    final Map<Set<Ref<?>>, PossibleState> states = new HashMap<>();
-    final TreeSet<Set<Ref<?>>> order = new TreeSet<>(new Comparator<Set<Ref<?>>>() {
-      @Override
-      public int compare(Set<Ref<?>> o1, Set<Ref<?>> o2) {
-        return Double.compare(states.get(o1).weight, states.get(o2).weight);
-      }
-    });
-
+    final Set<Ref<?>> initialState;
     { // initialize universe and starting state
-      final Set<Ref<?>> consumes = new HashSet<>();
+      Set<Ref<?>> consumes = new HashSet<>();
       final Set<Ref<?>> produces = new HashSet<>();
       for (Routine routine : routines) {
         for (final Joba job : routine.buildVariants(initial, jes)) {
@@ -55,10 +49,46 @@ public class Planner {
       }
 
       consumes.removeAll(produces);
-      final Set<Ref<?>> initialState = new HashSet<>(consumes);
-      states.put(initialState, new PossibleState(new ArrayList<Joba>(), 0.));
-      order.add(initialState);
+      int consumesSize;
+      do {
+        consumesSize = consumes.size();
+        final Iterator<Ref<?>> it = consumes.iterator();
+        Set<Ref<?>> next = new HashSet<>(consumes);
+        while (it.hasNext()) {
+          final Ref<?> res = it.next();
+          next.remove(res);
+          if (buildOptimalPath(jes, next, res) == null)
+            next.add(res);
+        }
+        consumes = next;
+      }
+      while(consumesSize > consumes.size());
+
+      initialState = new HashSet<>(consumes);
     }
+
+
+    final PossibleState best = buildOptimalPath(jes, initialState, goals);
+    if (best == null)
+      throw new IllegalStateException("Unable to create plan to execute");
+    return best.plan.toArray(new Joba[best.plan.size()]);
+  }
+
+  @Nullable
+  protected PossibleState buildOptimalPath(JobExecutorService jes, Set<Ref<?>> initialState, Ref<?>... goals) {
+    final Map<Set<Ref<?>>, PossibleState> states = new HashMap<>();
+    final TreeSet<Set<Ref<?>>> order = new TreeSet<>(new Comparator<Set<Ref<?>>>() {
+      @Override
+      public int compare(Set<Ref<?>> o1, Set<Ref<?>> o2) {
+        final int compare = Double.compare(states.get(o1).weight, states.get(o2).weight);
+        if (compare == 0)
+          return Integer.compare(o1.hashCode(), o2.hashCode());
+        return compare;
+      }
+    });
+
+    states.put(initialState, new PossibleState(new ArrayList<Joba>(), 0.));
+    order.add(initialState);
 
     Set<Ref<?>> current;
     PossibleState best = null;
@@ -97,9 +127,7 @@ public class Planner {
         }
       }
     }
-    if (best == null)
-      throw new IllegalStateException("Unable to create plan to execute");
-    return best.plan.toArray(new Joba[best.plan.size()]);
+    return best;
   }
 
   private class PossibleState {
