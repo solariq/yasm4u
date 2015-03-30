@@ -230,8 +230,6 @@ public class AnnotatedMRProcess implements Routine {
   }
 
   public String[] produces() {
-    final JobExecutorService jes = new MainThreadJES(true, wb, env);
-    final Ref[] goals = resolveNames(processDescription.getAnnotation(MRProcessClass.class).goal(), jes);
     final String[] result = new String[goals.length];
     for(int i = 0; i < result.length; i++) {
       result[i] = goals[i].toURI().toString();

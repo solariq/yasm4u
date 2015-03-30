@@ -1,13 +1,12 @@
 package ru.yandex.se.yasm4u.domains.mr.routines.ann.impl;
 
-import com.spbsu.commons.func.Computable;
-import com.spbsu.commons.util.ArrayTools;
+import ru.yandex.se.yasm4u.Domain;
 import ru.yandex.se.yasm4u.JobExecutorService;
+import ru.yandex.se.yasm4u.Joba;
 import ru.yandex.se.yasm4u.Ref;
 import ru.yandex.se.yasm4u.domains.mr.MREnv;
 import ru.yandex.se.yasm4u.domains.mr.MRPath;
 import ru.yandex.se.yasm4u.domains.mr.ops.impl.MRRoutineBuilder;
-import ru.yandex.se.yasm4u.Joba;
 import ru.yandex.se.yasm4u.domains.wb.Whiteboard;
 
 import java.lang.reflect.Method;
@@ -18,37 +17,34 @@ import java.lang.reflect.Method;
 * Time: 13:02
 */
 public class RoutineJoba implements Joba {
-  public final JobExecutorService controller;
-  public final Ref<? extends MRPath>[] input;
-  public final Ref<? extends MRPath>[] output;
+  public final Domain.Controller controller;
+  public final MRPath[] input;
+  public final MRPath[] output;
   public final Method method;
   public final MRRoutineBuilder.RoutineType type;
 
-  public RoutineJoba(JobExecutorService controller, final Ref<? extends MRPath>[] input, final Ref<? extends MRPath>[] output, final Method method, MRRoutineBuilder.RoutineType type) {
+  public RoutineJoba(Domain.Controller controller, final Ref<? extends MRPath>[] input, final Ref<? extends MRPath>[] output, final Method method, MRRoutineBuilder.RoutineType type) {
     this.controller = controller;
-    this.input = input;
-    this.output = output;
+    //noinspection unchecked
+    this.input = new MRPath[input.length];
+    for(int i = 0; i < input.length; i++) {
+      final MRPath resolve = input[i].resolve(controller);
+      this.input[i] = type == MRRoutineBuilder.RoutineType.REDUCE ? resolve.mksorted() : resolve;
+    }
+    this.output = new MRPath[output.length];
+    for(int i = 0; i < output.length; i++) {
+      final MRPath resolve = output[i].resolve(controller);
+      this.output[i] = resolve;
+    }
     this.method = method;
     this.type = type;
   }
 
   @Override
   public void run() {
-    final MRPath[] inputResolved = ArrayTools.map(input, MRPath.class, new Computable<Ref<? extends MRPath>, MRPath>() {
-      @Override
-      public MRPath compute(Ref<? extends MRPath> argument) {
-        return argument.resolve(controller);
-      }
-    });
-    final MRPath[] outputResolved = ArrayTools.map(output, MRPath.class, new Computable<Ref<? extends MRPath>, MRPath>() {
-      @Override
-      public MRPath compute(Ref<? extends MRPath> argument) {
-        return argument.resolve(controller);
-      }
-    });
     final MethodRoutineBuilder builder = new MethodRoutineBuilder();
-    builder.addInput(inputResolved);
-    builder.addOutput(outputResolved);
+    builder.addInput(input);
+    builder.addOutput(output);
     builder.setState(controller.domain(Whiteboard.class).snapshot());
     builder.setMethodName(method.getName());
     builder.setType(type);

@@ -21,13 +21,6 @@ public class MainThreadJES extends JobExecutorServiceBase {
 
   public MainThreadJES(boolean safe, Domain... domains) {
     super(domains);
-    for(int i = 0; i < domains.length; i++) {
-      final Domain domain = domains[i];
-      final Routine[] routines = domain.publicRoutines();
-      for(int j = 0; j < routines.length; j++) {
-        addRoutine(routines[j]);
-      }
-    }
     this.safe = safe;
   }
 
@@ -37,7 +30,7 @@ public class MainThreadJES extends JobExecutorServiceBase {
 
   @Override
   public Future<List<?>> calculate(Ref<?>... goal) {
-    final Planner planner = new Planner(resources(), routines(), jobs());
+    final Planner planner = new Planner(new Ref[0], routines(), jobs());
     final Joba[] plan = planner.build(this, goal);
     for(int i = 0; i < plan.length; i++) {
       final Joba joba = plan[i];

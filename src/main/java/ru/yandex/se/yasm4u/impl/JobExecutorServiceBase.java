@@ -20,25 +20,25 @@ public abstract class JobExecutorServiceBase implements JobExecutorService {
   private final Map<Class<? extends Domain>, Domain> domainsCache;
   private final Domain[] domains;
   private final List<ProgressListener> listeners = new ArrayList<>();
-  private final List<Ref> availableResources = new ArrayList<>();
   private final List<Routine> routines = new ArrayList<>();
   private final List<Joba> steve = new ArrayList<>();
 
   public JobExecutorServiceBase(Domain... domains) {
     domainsCache = initDomains(domains);
     this.domains = domains;
+    for(int i = 0; i < domains.length; i++) {
+      final Domain domain = domains[i];
+      final Routine[] routines = domain.publicRoutines();
+      for(int j = 0; j < routines.length; j++) {
+        addRoutine(routines[j]);
+      }
+    }
   }
 
   private Map<Class<? extends Domain>, Domain> initDomains(Domain[] domains) {
     final Map<Class<? extends Domain>, Domain> result = new HashMap<>();
     for(int i = 0; i < domains.length; i++) {
       final Domain domain = domains[i];
-      domain.visitPublic(new Action<Ref<?>>() {
-        @Override
-        public void invoke(Ref<?> ref) {
-          availableResources.add(ref);
-        }
-      });
       RuntimeUtils.processSupers(domains[i].getClass(), new Filter<Class<?>>() {
         @Override
         public boolean accept(Class<?> aClass) {
@@ -84,11 +84,6 @@ public abstract class JobExecutorServiceBase implements JobExecutorService {
   }
 
   @Override
-  public void addResource(Ref<?>... resources) {
-    availableResources.addAll(Arrays.asList(resources));
-  }
-
-  @Override
   public <T extends Domain> T domain(Class<T> domClass) {
     //noinspection unchecked
     return (T)domainsCache.get(domClass);
@@ -97,11 +92,6 @@ public abstract class JobExecutorServiceBase implements JobExecutorService {
   @Override
   public Domain[] domains() {
     return domains;
-  }
-
-  @Override
-  public Ref[] state() {
-    return availableResources.toArray(new Ref[availableResources.size()]);
   }
 
   @Override
@@ -121,10 +111,6 @@ public abstract class JobExecutorServiceBase implements JobExecutorService {
 
   protected Routine[] routines() {
     return routines.toArray(new Routine[routines.size()]);
-  }
-
-  protected Ref[] resources() {
-    return availableResources.toArray(new Ref[availableResources.size()]);
   }
 
   protected Joba[] jobs() {

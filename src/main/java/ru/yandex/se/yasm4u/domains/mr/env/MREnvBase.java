@@ -4,6 +4,8 @@ import com.spbsu.commons.func.Action;
 import ru.yandex.se.yasm4u.Ref;
 import ru.yandex.se.yasm4u.Routine;
 import ru.yandex.se.yasm4u.domains.mr.MREnv;
+import ru.yandex.se.yasm4u.domains.mr.routines.MergeRoutine;
+import ru.yandex.se.yasm4u.domains.mr.routines.SortRoutine;
 
 /**
  * User: solar
@@ -12,11 +14,7 @@ import ru.yandex.se.yasm4u.domains.mr.MREnv;
  */
 public abstract class MREnvBase implements MREnv {
   @Override
-  public void visitPublic(Action<Ref<?>> visitor) {
-  }
-
-  @Override
   public Routine[] publicRoutines() {
-    return new Routine[0];
+    return new Routine[]{new MergeRoutine(), new SortRoutine()};
   }
 }
