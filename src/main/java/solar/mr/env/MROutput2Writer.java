@@ -3,9 +3,11 @@ package solar.mr.env;
 import com.spbsu.commons.util.Pair;
 import org.apache.log4j.Logger;
 import solar.mr.proc.impl.MRPath;
+import solar.mr.routines.MRReduce;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.LinkedTransferQueue;
 
 /**
@@ -18,7 +20,7 @@ public class MROutput2Writer extends MROutputBase {
   private static Logger LOG = Logger.getLogger(MROutputBase.class);
   private Thread outputThread;
   private int lastActiveTable = 0;
-  private final LinkedTransferQueue<Pair<Integer, CharSequence>> queue = new LinkedTransferQueue<>();
+  private final ArrayBlockingQueue<Pair<Integer, CharSequence>> queue = new ArrayBlockingQueue<Pair<Integer, CharSequence>>(MRReduce.MAX_REDUCE_SIZE);
 
   public MROutput2Writer(final Writer out, MRPath[] outputTables) {
     /* Builder were created on LocalEnv which doesn't use error table.
@@ -66,11 +68,17 @@ public class MROutput2Writer extends MROutputBase {
   @Override
   protected void push(int tableNo, CharSequence record) {
     if (!stopped)
-      queue.add(Pair.create(tableNo, record));
+      try {
+        queue.put(Pair.create(tableNo, record));
+      }
+      catch (InterruptedException ignored){}
   }
 
   public void interrupt() {
-    queue.add(STOP);
+    try {
+      queue.put(STOP);
+    }
+    catch (InterruptedException ignored){}
     stopped = true;
   }
 }
