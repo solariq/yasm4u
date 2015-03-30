@@ -52,12 +52,14 @@ public class TempRef<T> extends StateRef<T> {
   }
 
   private Ref<T> realRef(Domain.Controller controller) {
-    Ref<T> result = controller.domain(State.class).get(name);
+    final Whiteboard state = controller.domain(Whiteboard.class);
+    Ref<T> result = state.get(name);
     if (result == null) {
       if (name.startsWith("mr://")) {
         final MRPath path = MRPath.createFromURI(name);
         //noinspection unchecked
         result = (Ref<T>)new MRPath(MRPath.Mount.TEMP, WhiteboardImpl.USER + "/" + path.path + "-" + Integer.toHexString(new FastRandom().nextInt()), path.sorted);
+        state.set(name, result);
       }
       else throw new UnsupportedOperationException("Unknown schema for temp allocation: " + name);
     }

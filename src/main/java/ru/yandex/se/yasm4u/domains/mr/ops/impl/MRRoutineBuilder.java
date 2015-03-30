@@ -96,6 +96,7 @@ public abstract class MRRoutineBuilder implements Serializable {
 
   @SuppressWarnings("unchecked")
   private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+    MRPath.create("/dev/null");
     state = (State)in.readObject();
     tablesIn = (List<MRPath>) in.readObject();
     tablesOut = (List<MRPath>) in.readObject();

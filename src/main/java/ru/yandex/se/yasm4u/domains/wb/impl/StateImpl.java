@@ -109,13 +109,11 @@ public class StateImpl implements State {
       final Object instance = get(current);
       assert instance != null;
       final SerializationRepository<CharSequence> serialization = State.SERIALIZATION;
-      final TypeConverter<CharSequence, ?> converter = serialization.base.converter(CharSequence.class, instance.getClass());
-      if (converter != null && !new ClassFilter<TypeConverter>(Action.class, Whiteboard.class).accept(converter)) {
-        out.writeBoolean(true);
-        out.writeUTF(current);
-        out.writeUTF(instance.getClass().getName());
-        out.writeUTF(serialization.write(instance).toString());
-      }
+      final Class conversionType  = serialization.base.conversionType(instance.getClass(), CharSequence.class);
+      out.writeBoolean(true);
+      out.writeUTF(current);
+      out.writeUTF(conversionType.getName());
+      out.writeUTF(serialization.write(instance).toString());
     }
     out.writeBoolean(false);
   }
