@@ -77,7 +77,7 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
     next.set(record);
     while (unhandled == null && !next.compareAndSet(null, null)) {
       if (++count % 100000 == 0 && System.currentTimeMillis() - time > timeout) {
-        System.err.println("time out: " + key);
+        //System.err.println("time out: " + key);
         unhandled = new TimeoutException();
         /* Thread[] threads = new Thread[Thread.activeCount()];
         Thread.enumerate(threads);
