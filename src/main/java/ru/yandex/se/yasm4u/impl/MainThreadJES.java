@@ -3,9 +3,9 @@ package ru.yandex.se.yasm4u.impl;
 import com.spbsu.commons.func.Action;
 import com.spbsu.commons.util.CompleteFuture;
 import ru.yandex.se.yasm4u.Domain;
+import ru.yandex.se.yasm4u.JobExecutorService;
 import ru.yandex.se.yasm4u.Joba;
 import ru.yandex.se.yasm4u.Ref;
-import ru.yandex.se.yasm4u.Routine;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,10 +18,28 @@ import java.util.concurrent.Future;
  */
 public class MainThreadJES extends JobExecutorServiceBase {
   private final boolean safe;
+  private ProgressListener errorsPrinter;
 
   public MainThreadJES(boolean safe, Domain... domains) {
     super(domains);
     this.safe = safe;
+    errorsPrinter = new ProgressListener() {
+      @Override
+      public void jobStart(Joba joba) {
+        System.out.println(joba.toString() + " started");
+      }
+
+      @Override
+      public void jobFinish(Joba joba) {
+        System.out.println(joba.toString() + " started");
+      }
+
+      @Override
+      public void jobException(Exception e, Joba joba) {
+        throw new RuntimeException(e);
+      }
+    };
+    addListener(errorsPrinter);
   }
 
   public MainThreadJES(Domain... domains) {

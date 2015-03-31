@@ -63,4 +63,9 @@ public class StateRef<T> implements Ref<T> {
   public int hashCode() {
     return name.hashCode();
   }
+
+  @Override
+  public String toString() {
+    return toURI().toString();
+  }
 }

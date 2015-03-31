@@ -53,12 +53,12 @@ public class RoutineJoba implements Joba {
   }
 
   @Override
-  public Ref<? extends MRPath>[] consumes() {
+  public MRPath[] consumes() {
     return input;
   }
 
   @Override
-  public Ref<? extends MRPath>[] produces() {
+  public MRPath[] produces() {
     return output;
   }
 
