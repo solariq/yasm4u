@@ -79,7 +79,7 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
       if (++count % 100000 == 0 && System.currentTimeMillis() - time > timeout) {
         //System.err.println("time out: " + key);
         unhandled = new TimeoutException();
-        /* Thread[] threads = new Thread[Thread.activeCount()];
+        Thread[] threads = new Thread[Thread.activeCount()];
         Thread.enumerate(threads);
         for (Thread th:threads) {
           StackTraceElement[] stackTrace = th.getStackTrace();
@@ -89,7 +89,7 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
           }
         }
         System.exit(2);
-        */
+
       }
     }
     if (unhandled != null) {
