@@ -1,8 +1,5 @@
 package ru.yandex.se.yasm4u.domains.mr.routines.ann;
 
-import com.spbsu.commons.util.MultiMap;
-import gnu.trove.map.TObjectIntMap;
-import gnu.trove.map.hash.TObjectIntHashMap;
 import ru.yandex.se.yasm4u.*;
 import ru.yandex.se.yasm4u.domains.mr.MREnv;
 import ru.yandex.se.yasm4u.domains.mr.MRPath;
@@ -41,7 +38,6 @@ public class AnnotatedMRProcess implements Routine {
   final static Class[] REDUCE_PARAMETERS = {String.class, Iterator.class, MROutput.class};
   private final Class<?> processDescription;
   private final Whiteboard wb;
-  private final MREnv env;
   private final Ref<?>[] goals;
   private final JobExecutorService jes;
 
@@ -58,7 +54,6 @@ public class AnnotatedMRProcess implements Routine {
     }
 
     this.wb = wb;
-    this.env = env;
   }
 
   public AnnotatedMRProcess(Class<?> processDescription, MREnv env) {
@@ -163,7 +158,7 @@ public class AnnotatedMRProcess implements Routine {
     if(matcher.find()) {
       final StringBuffer format = new StringBuffer();
       String name = matcher.group(1);
-      matcher.appendReplacement(format, "{" + 0 + (matcher.groupCount() > 1 && !matcher.group(2).isEmpty()? "," + matcher.group(2) : "") + "}");
+      matcher.appendReplacement(format, "{" + 0 + (matcher.groupCount() > 1 && !matcher.group(2).isEmpty() ? "," + matcher.group(2) : "") + "}");
 
       final List<String> candidates = new ArrayList<>();
 
@@ -248,7 +243,7 @@ public class AnnotatedMRProcess implements Routine {
     @Override
     public void run() {
       final Method[] methods = processDescription.getMethods();
-      final List<RoutineJoba> jobs = new ArrayList<>();
+      List<RoutineJoba> jobs = new ArrayList<>();
       for (final Method current : methods) {
         final MRMapMethod mapAnn = current.getAnnotation(MRMapMethod.class);
         if (mapAnn != null) {
@@ -272,7 +267,7 @@ public class AnnotatedMRProcess implements Routine {
           jes.addJoba(new ReadJoba(jes, resolveNames(new String[]{readAnn.input()}, jes), (StateRef<?>)convert, current));
         }
       }
-      unmergeJobs(jobs);
+      jobs = MergeRoutine.unmergeJobs(jobs);
       for (RoutineJoba job : jobs) {
         jes.addJoba(job);
       }
@@ -284,35 +279,9 @@ public class AnnotatedMRProcess implements Routine {
       }
     }
 
-    private List<RoutineJoba> unmergeJobs(final List<RoutineJoba> jobs) {
-      final TObjectIntMap<Ref> sharded = new TObjectIntHashMap<>();
-      for (final Joba joba : jobs) {
-        for (final Ref resource : joba.produces()) {
-          sharded.adjustOrPutValue(resource, 1, 1);
-        }
-      }
-
-      final List<RoutineJoba> result = new ArrayList<>();
-
-      final MultiMap<Ref, Ref> shardsMap = new MultiMap<>();
-      for (final RoutineJoba joba : jobs) {
-        final Ref[] outputs = new Ref[joba.produces().length];
-        for(int i = 0; i < outputs.length; i++) {
-          final Ref resourceName = joba.produces()[i];
-          final Collection<Ref> shards = shardsMap.get(resourceName);
-          if (sharded.get(resourceName) > 1) {
-            outputs[i] = Ref.PARSER.convert(resourceName + MergeRoutine.MERGE_DELIM + shards.size());
-            shards.add(outputs[i]);
-          }
-          else outputs[i] = resourceName;
-        }
-        if (!Arrays.equals(outputs, joba.produces())) {
-          //noinspection unchecked
-          result.add(new RoutineJoba(joba.controller, joba.input, outputs, joba.method, joba.type));
-        }
-        else result.add(joba);
-      }
-      return result;
+    @Override
+    public String toString() {
+      return "Composite joba based on: " + processDescription.getSimpleName();
     }
   }
 }
