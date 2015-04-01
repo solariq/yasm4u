@@ -3,6 +3,7 @@ package ru.yandex.se.yasm4u.impl;
 import com.spbsu.commons.func.Action;
 import com.spbsu.commons.util.CompleteFuture;
 import ru.yandex.se.yasm4u.Domain;
+import ru.yandex.se.yasm4u.JobExecutorService;
 import ru.yandex.se.yasm4u.Joba;
 import ru.yandex.se.yasm4u.Ref;
 
@@ -17,6 +18,7 @@ import java.util.concurrent.Future;
  */
 public class MainThreadJES extends JobExecutorServiceBase {
   private final boolean safe;
+  @SuppressWarnings("FieldCanBeLocal")
   private ProgressListener errorsPrinter;
 
   public MainThreadJES(boolean safe, Domain... domains) {
@@ -97,5 +99,4 @@ public class MainThreadJES extends JobExecutorServiceBase {
     }
     return new CompleteFuture<List<?>>(result);
   }
-
 }
