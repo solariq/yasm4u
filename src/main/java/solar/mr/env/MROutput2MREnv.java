@@ -2,7 +2,6 @@ package solar.mr.env;
 
 import com.spbsu.commons.io.QueueReader;
 import com.spbsu.commons.seq.CharSeq;
-import com.spbsu.commons.seq.CharSeqAdapter;
 import com.spbsu.commons.seq.CharSeqChar;
 import com.spbsu.commons.seq.CharSeqComposite;
 import solar.mr.MREnv;
