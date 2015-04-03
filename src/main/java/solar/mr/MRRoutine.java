@@ -9,7 +9,8 @@ import solar.mr.proc.impl.MRPath;
 import solar.mr.proc.impl.StateImpl;
 import solar.mr.routines.MRRecord;
 
-import java.util.concurrent.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -35,7 +36,7 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
     this.inputTables = inputTables;
     this.output = output;
     this.state = state;
-    this.timeout = (state != null && state.available(VAR_TIMELIMITPERRECORD)) ? state.<Long>get(VAR_TIMELIMITPERRECORD) : TimeUnit.MINUTES.toMillis(1);
+      this.timeout = (state != null && state.available(VAR_TIMELIMITPERRECORD)) ? state.<Long>get(VAR_TIMELIMITPERRECORD) : TimeUnit.SECONDS.toMillis(MAX_OPERATION_TIME);
 
     routineTh = new Thread(new Runnable() {
       @Override
