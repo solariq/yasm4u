@@ -24,18 +24,14 @@ public abstract class JobExecutorServiceBase implements JobExecutorService {
   private final List<Joba> steve = new ArrayList<>();
 
   public JobExecutorServiceBase(Domain... domains) {
-    domainsCache = initDomains(domains);
+    this.domainsCache = createDomainsCache(domains);
     this.domains = domains;
     for(int i = 0; i < domains.length; i++) {
-      final Domain domain = domains[i];
-      final Routine[] routines = domain.publicRoutines();
-      for(int j = 0; j < routines.length; j++) {
-        addRoutine(routines[j]);
-      }
+      domains[i].init(this);
     }
   }
 
-  private Map<Class<? extends Domain>, Domain> initDomains(Domain[] domains) {
+  private Map<Class<? extends Domain>, Domain> createDomainsCache(Domain[] domains) {
     final Map<Class<? extends Domain>, Domain> result = new HashMap<>();
     for(int i = 0; i < domains.length; i++) {
       final Domain domain = domains[i];

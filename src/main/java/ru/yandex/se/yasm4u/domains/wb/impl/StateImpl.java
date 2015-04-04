@@ -1,24 +1,20 @@
 package ru.yandex.se.yasm4u.domains.wb.impl;
 
-import com.spbsu.commons.filters.ClassFilter;
-import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.func.types.SerializationRepository;
 import com.spbsu.commons.func.types.TypeConverter;
-import com.spbsu.commons.random.FastRandom;
 import org.jetbrains.annotations.Nullable;
 import ru.yandex.se.yasm4u.JobExecutorService;
-import ru.yandex.se.yasm4u.Joba;
 import ru.yandex.se.yasm4u.Ref;
-import ru.yandex.se.yasm4u.Routine;
-import ru.yandex.se.yasm4u.domains.mr.MRPath;
 import ru.yandex.se.yasm4u.domains.mr.ops.impl.MRTableState;
 import ru.yandex.se.yasm4u.domains.wb.State;
 import ru.yandex.se.yasm4u.domains.wb.StateRef;
 import ru.yandex.se.yasm4u.domains.wb.TempRef;
-import ru.yandex.se.yasm4u.domains.wb.Whiteboard;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.ObjectStreamException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
@@ -135,13 +131,8 @@ public class StateImpl implements State {
   }
 
   @Override
-  public Routine[] publicRoutines() {
-    return new Routine[]{new Routine() {
-      @Override
-      public Joba[] buildVariants(Ref[] state, JobExecutorService executor) {
-        return new Joba[]{new PublisherJoba(StateImpl.this)};
-      }
-    }};
+  public void init(JobExecutorService jes) {
+    jes.addJoba(new PublisherJoba(StateImpl.this));
   }
 
   static {
