@@ -6,7 +6,7 @@ package ru.yandex.se.yasm4u;
  * Time: 15:41
  */
 public interface Domain {
-  Routine[] publicRoutines();
+  void init(JobExecutorService jes);
 //  Domain createNSDomain(String ns);
 
   public interface Controller {
