@@ -3,7 +3,6 @@ package ru.yandex.se.yasm4u.impl;
 import com.spbsu.commons.func.Action;
 import com.spbsu.commons.util.CompleteFuture;
 import ru.yandex.se.yasm4u.Domain;
-import ru.yandex.se.yasm4u.JobExecutorService;
 import ru.yandex.se.yasm4u.Joba;
 import ru.yandex.se.yasm4u.Ref;
 
@@ -26,12 +25,12 @@ public class MainThreadJES extends JobExecutorServiceBase {
     errorsPrinter = new ProgressListener() {
       @Override
       public void jobStart(Joba joba) {
-        System.out.println(joba.toString() + " started");
+        System.out.println("YASM4U: " + joba.toString() + " started");
       }
 
       @Override
       public void jobFinish(Joba joba) {
-        System.out.println(joba.toString() + " started");
+        System.out.println("YASM4U: " + joba.toString() + " finished");
       }
 
       @Override
