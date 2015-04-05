@@ -379,8 +379,8 @@ public class YtMREnv extends RemoteMREnv {
 
     options.add("/usr/local/java8/bin/java "
       + (Boolean.getBoolean("yasm4u.enableJMX")? "-Dcom.sun.management.jmxremote " : "")
-      + (Boolean.getBoolean("yasm4u.loggc")? "-Xloggc:/dev/stderr -XX:+PrintGCDetails":"")
-      + " -XX:-UsePerfData -Xmx2G -Xms2G -jar " + jar.getName());
+      + (Boolean.getBoolean("yasm4u.loggc")? "-Xloggc:/dev/stderr -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCApplicationStoppedTime -verbose:gc":"")
+      + " -XX:-UsePerfData -XX:+PerfDisableSharedMem -Xmx2G -Xms2G -jar " + jar.getName());
     int inputCount = 0;
     for(final MRPath sh : in) {
       if (!resolve(sh, false).isAvailable()) {
