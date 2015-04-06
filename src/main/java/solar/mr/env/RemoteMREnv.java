@@ -85,7 +85,24 @@ public abstract class RemoteMREnv implements MREnv {
       final Reader from = new InputStreamReader(process.getInputStream(), StreamTools.UTF);
       to.append(CharSeqTools.toBase64(builderSerialized.toByteArray())).append("\n");
       to.flush();
-
+      final MROutputBase output = new MROutput2MREnv(env, builder.output(), null);
+      final Thread asyncReaderTh = new Thread() {
+        @Override
+        public void run() {
+          try {
+            CharSeqTools.processLines(from, new Processor<CharSequence>() {
+              @Override
+              public void process(CharSequence arg) {
+                output.parse(arg);
+              }
+            });
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        }
+      };
+      asyncReaderTh.setDaemon(true);
+      asyncReaderTh.start();
       final MRPath[] input = builder.input();
       for (int i = 0; i < input.length; i++) {
         to.append(Integer.toString(i)).append("\n");
@@ -102,13 +119,6 @@ public abstract class RemoteMREnv implements MREnv {
         });
       }
       to.close();
-      final MROutputBase output = new MROutput2MREnv(env, builder.output(), null);
-      CharSeqTools.processLines(from, new Processor<CharSequence>() {
-        @Override
-        public void process(CharSequence arg) {
-          output.parse(arg);
-        }
-      });
 
       process.waitFor();
       output.interrupt();
