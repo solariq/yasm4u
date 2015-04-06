@@ -19,7 +19,7 @@ public class ReportHttpService {
     final HttpResponse httpResponse = new MyHttpResponse();
 
     final Whiteboard whiteboard = new WhiteboardImpl(new LocalMREnv(), "main");
-    final UserHttpCommunicationDomain userCommunicationDomain = new UserHttpCommunicationDomain(httpRequest, httpResponse);
+    final UserHttpCommunicationDomain userCommunicationDomain = new UserHttpCommunicationDomain(httpRequest, httpResponse, whiteboard);
     final SourceCommunicationDomain sourceCommunicationDomain = new SourceCommunicationDomain();
 
     final Configuration configuration;
@@ -37,7 +37,7 @@ public class ReportHttpService {
     final UserHttpCommunicationDomain.CommunicationStatus communicationStatus;
     try {
       final ReportBLDomain reportBLDomain = new ReportBLDomain();
-      final ConfigurationDomain configurationDomain = new ConfigurationDomain(configuration);
+      final ConfigurationDomain configurationDomain = new ConfigurationDomain(configuration, userCommunicationDomain, whiteboard);
       final JobExecutorService jes = new MainThreadJES(false,
               userCommunicationDomain, whiteboard, reportBLDomain, configurationDomain
       );

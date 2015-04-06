@@ -38,7 +38,7 @@ public class AnnotatedMRProcess implements Routine {
   final static Class[] REDUCE_PARAMETERS = {String.class, Iterator.class, MROutput.class};
   private final Class<?> processDescription;
   private final Whiteboard wb;
-  private final Ref<?>[] goals;
+  private final Ref[] goals;
   private final JobExecutorService jes;
 
   public AnnotatedMRProcess(final Class<?> processDescription, Whiteboard wb, MREnv env) {
@@ -70,7 +70,7 @@ public class AnnotatedMRProcess implements Routine {
     return new Joba[0];
   }
 
-  private boolean checkInput(final Ref<?>[] available, List<Ref> in, List<Ref> out) {
+  private boolean checkInput(final Ref[] available, List<Ref> in, List<Ref> out) {
     { // trying to get input from Input interface
       final Class<?>[] classes = processDescription.getClasses();
       for(int i = 0; i < classes.length; i++) {
@@ -129,11 +129,11 @@ public class AnnotatedMRProcess implements Routine {
     return true;
   }
 
-  private boolean checkVars(String resource, Ref<?>[] available, List<Ref> vars) {
+  private boolean checkVars(String resource, Ref[] available, List<Ref> vars) {
     final Matcher matcher = varPattern.matcher(resource);
     while (matcher.find()) {
       final String name = matcher.group(1);
-      final Ref<?> var = Ref.PARSER.convert(name);
+      final Ref var = jes.parse(name);
       vars.add(var);
       boolean found = false;
       for (int i = 0; !found && i < available.length; i++) {
@@ -162,8 +162,8 @@ public class AnnotatedMRProcess implements Routine {
 
       final List<String> candidates = new ArrayList<>();
 
-      final Ref<?> convert = Ref.PARSER.convert(name);
-      final Object resolution = convert.resolve(jes);
+      final Ref convert = jes.parse(name);
+      final Object resolution = jes.resolve(convert);
       if (resolution == null)
         throw new IllegalArgumentException("No data for " + name + " available at the whiteboard");
       if (resolution.getClass().isArray()) {
@@ -181,9 +181,9 @@ public class AnnotatedMRProcess implements Routine {
       }
       return results.toArray(new Ref[results.size()]);
     }
-    final Ref<?> ref = Ref.PARSER.convert(resource);
+    final Ref ref = jes.parse(resource);
     if (MRPath.class.isAssignableFrom(ref.type())) {
-      final MRPath resolve = (MRPath)ref.resolve(jes);
+      final MRPath resolve = (MRPath)jes.resolve(ref);
       if (resolve.path.endsWith("*")) {
         final MRPath dir = resolve.parent();
         if (dir.isDirectory())
@@ -261,9 +261,10 @@ public class AnnotatedMRProcess implements Routine {
         }
         final MRRead readAnn = current.getAnnotation(MRRead.class);
         if (readAnn != null) {
-          final Ref<?> convert = Ref.PARSER.convert(readAnn.output());
+          final Ref convert = jes.parse(readAnn.output());
           if (!(convert instanceof StateRef))
             throw new IllegalStateException("Reader result must be instance of StateRef");
+          //noinspection unchecked
           jes.addJoba(new ReadJoba(jes, resolveNames(new String[]{readAnn.input()}, jes), (StateRef<?>)convert, current));
         }
       }

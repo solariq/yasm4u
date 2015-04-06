@@ -14,8 +14,8 @@ public interface JobExecutorService extends Domain.Controller {
   void addRoutine(Routine routine);
   void addJoba(Joba joba);
 
-  <T> Future<T> calculate(Ref<T> goal);
-  Future<List<?>> calculate(Ref<?>... goals);
+  <T> Future<T> calculate(Ref<T, ?> goal);
+  Future<List<?>> calculate(Ref<?, ?>... goals);
 
   void addListener(ProgressListener listener);
 

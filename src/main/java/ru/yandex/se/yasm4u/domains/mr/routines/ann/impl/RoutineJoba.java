@@ -1,7 +1,6 @@
 package ru.yandex.se.yasm4u.domains.mr.routines.ann.impl;
 
 import ru.yandex.se.yasm4u.Domain;
-import ru.yandex.se.yasm4u.JobExecutorService;
 import ru.yandex.se.yasm4u.Joba;
 import ru.yandex.se.yasm4u.Ref;
 import ru.yandex.se.yasm4u.domains.mr.MREnv;
@@ -23,17 +22,17 @@ public class RoutineJoba implements Joba {
   public final Method method;
   public final MRRoutineBuilder.RoutineType type;
 
-  public RoutineJoba(Domain.Controller controller, final Ref<? extends MRPath>[] input, final Ref<? extends MRPath>[] output, final Method method, MRRoutineBuilder.RoutineType type) {
+  public RoutineJoba(Domain.Controller controller, final Ref<? extends MRPath, ?>[] input, final Ref<? extends MRPath, ?>[] output, final Method method, MRRoutineBuilder.RoutineType type) {
     this.controller = controller;
     //noinspection unchecked
     this.input = new MRPath[input.length];
     for(int i = 0; i < input.length; i++) {
-      final MRPath resolve = input[i].resolve(controller);
+      final MRPath resolve = controller.resolve(input[i]);
       this.input[i] = type == MRRoutineBuilder.RoutineType.REDUCE ? resolve.mksorted() : resolve;
     }
     this.output = new MRPath[output.length];
     for(int i = 0; i < output.length; i++) {
-      final MRPath resolve = output[i].resolve(controller);
+      final MRPath resolve = controller.resolve(output[i]);
       this.output[i] = resolve;
     }
     this.method = method;

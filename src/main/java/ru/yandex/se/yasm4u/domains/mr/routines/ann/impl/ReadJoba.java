@@ -12,7 +12,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import com.spbsu.commons.func.Computable;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.util.ArrayTools;
-import ru.yandex.se.yasm4u.JobExecutorService;
+import ru.yandex.se.yasm4u.Domain;
 import ru.yandex.se.yasm4u.Joba;
 import ru.yandex.se.yasm4u.Ref;
 import ru.yandex.se.yasm4u.domains.mr.MREnv;
@@ -30,19 +30,21 @@ import ru.yandex.se.yasm4u.domains.mr.ops.MRRecord;
 public class ReadJoba implements Joba {
   private final MRPath[] input;
   private final StateRef output;
-  private final JobExecutorService jes;
+  private final MREnv env;
   private final Method method;
+  private final Whiteboard wb;
 
-  public ReadJoba(final JobExecutorService jes, Ref<? extends MRPath>[] input, StateRef<?> output, Method method) {
+  public ReadJoba(final Domain.Controller controller, Ref<? extends MRPath, ?>[] input, StateRef<?> output, Method method) {
     //noinspection unchecked
-    this.input = ArrayTools.map(input, MRPath.class, new Computable<Ref<? extends MRPath>, MRPath>() {
+    this.input = ArrayTools.map(input, MRPath.class, new Computable<Ref<? extends MRPath, ?>, MRPath>() {
       @Override
-      public MRPath compute(Ref<? extends MRPath> argument) {
-        return argument.resolve(jes);
+      public MRPath compute(Ref<? extends MRPath, ?> argument) {
+        return controller.resolve(argument);
       }
     });
     this.output = output;
-    this.jes = jes;
+    this.env = controller.domain(MREnv.class);
+    this.wb = controller.domain(Whiteboard.class);
     this.method = method;
   }
 
@@ -58,17 +60,17 @@ public class ReadJoba implements Joba {
       @Override
       public void run() {
         try {
-          for (Ref<?> ref : input) {
+          for (Ref ref : input) {
             if (ref instanceof MRPath) {
-              jes.domain(MREnv.class).read((MRPath) ref, new Processor<MRRecord>() {
-                @Override
-                public void process(final MRRecord arg) {
-                  try {
-                    seqs.put(arg);
-                  } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+              env.read((MRPath) ref, new Processor<MRRecord>() {
+                  @Override
+                  public void process(final MRRecord arg) {
+                      try {
+                          seqs.put(arg);
+                      } catch (InterruptedException e) {
+                          throw new RuntimeException(e);
+                      }
                   }
-                }
               });
             }
           }
@@ -86,7 +88,6 @@ public class ReadJoba implements Joba {
     readTh.start();
     try {
       final Constructor<?> constructor = method.getDeclaringClass().getConstructor(State.class);
-      final Whiteboard wb = jes.domain(Whiteboard.class);
       wb.set(output.name, method.invoke(constructor.newInstance(wb.snapshot()), new Iterator<MRRecord>() {
         MRRecord next = null;
         boolean needs2wait = true;
@@ -133,12 +134,12 @@ public class ReadJoba implements Joba {
   }
 
   @Override
-  public Ref<? extends MRPath>[] consumes() {
+  public Ref[] consumes() {
     return input;
   }
 
   @Override
-  public Ref<? extends MRPath>[] produces() {
+  public Ref[] produces() {
     //noinspection unchecked
     return new Ref[] {output};
   }

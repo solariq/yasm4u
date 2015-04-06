@@ -3,7 +3,6 @@ package ru.yandex.se.yasm4u.domains.mr;
 import com.spbsu.commons.func.types.TypeConverter;
 import com.spbsu.commons.seq.CharSeqAdapter;
 import com.spbsu.commons.seq.CharSeqTools;
-import ru.yandex.se.yasm4u.Domain;
 import ru.yandex.se.yasm4u.Ref;
 
 import java.io.Serializable;
@@ -17,20 +16,11 @@ import java.util.EnumSet;
  * Time: 17:38
  */
 
-public class MRPath implements Serializable, Ref<MRPath> {
+public class MRPath implements Serializable, Ref<MRPath, MREnv> {
   public final Mount mount;
   public final String path;
   public final boolean sorted;
   private final static EnumSet<Mount> mounts = EnumSet.allOf(Mount.class);
-
-  static {
-    Ref.PARSER.registerProtocol("mr", new TypeConverter<String, Ref<?>>() {
-      @Override
-      public Ref<?> convert(String from) {
-        return createFromURI("mr:" + from);
-      }
-    });
-  }
 
   public MRPath(Mount mount, String path, boolean sorted) {
     this.mount = mount;
@@ -56,18 +46,18 @@ public class MRPath implements Serializable, Ref<MRPath> {
   }
 
   @Override
-  public Class<? extends Domain> domainType() {
+  public Class<MREnv> domainType() {
     return MREnv.class;
   }
 
   @Override
-  public MRPath resolve(Domain.Controller controller) {
+  public MRPath resolve(MREnv controller) {
     return this;
   }
 
   @Override
-  public boolean available(Domain.Controller controller) {
-    return controller.domain(MREnv.class).resolve(this).isAvailable();
+  public boolean available(MREnv controller) {
+    return controller.resolve(this).isAvailable();
   }
 
   @Override

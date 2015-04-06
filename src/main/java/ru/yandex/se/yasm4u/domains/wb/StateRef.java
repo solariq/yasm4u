@@ -11,7 +11,7 @@ import java.net.URISyntaxException;
 * Date: 26.03.15
 * Time: 18:06
 */
-public class StateRef<T> implements Ref<T> {
+public class StateRef<T> implements Ref<T, State> {
   public final String name;
   private final Class<T> clazz;
 
@@ -35,18 +35,18 @@ public class StateRef<T> implements Ref<T> {
   }
 
   @Override
-  public Class<? extends Domain> domainType() {
+  public Class<State> domainType() {
     return State.class;
   }
 
   @Override
-  public T resolve(Domain.Controller controller) {
-    return controller.domain(State.class).get(name);
+  public T resolve(State state) {
+    return state.get(this);
   }
 
   @Override
-  public boolean available(Domain.Controller controller) {
-    return controller.domain(State.class).available(name);
+  public boolean available(State controller) {
+    return controller.available(this);
   }
 
   @Override

@@ -1,6 +1,5 @@
 package ru.yandex.se.yasm4u.domains.mr.env;
 
-import com.spbsu.commons.func.Action;
 import com.spbsu.commons.func.Computable;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.io.QueueReader;
@@ -12,21 +11,16 @@ import com.spbsu.commons.util.MultiMap;
 import com.spbsu.commons.util.Pair;
 import gnu.trove.list.array.TIntArrayList;
 import ru.yandex.se.yasm4u.Ref;
-import ru.yandex.se.yasm4u.Routine;
 import ru.yandex.se.yasm4u.domains.mr.*;
+import ru.yandex.se.yasm4u.domains.mr.io.MRTableShardConverter;
 import ru.yandex.se.yasm4u.domains.mr.ops.impl.MRRoutineBuilder;
 import ru.yandex.se.yasm4u.domains.mr.ops.impl.MRTableState;
-import ru.yandex.se.yasm4u.domains.wb.Whiteboard;
 import ru.yandex.se.yasm4u.domains.mr.MRPath;
-import ru.yandex.se.yasm4u.domains.wb.impl.WhiteboardImpl;
 import ru.yandex.se.yasm4u.domains.mr.ops.MRRecord;
 
 import java.io.File;
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /**
@@ -35,19 +29,37 @@ import java.util.concurrent.ArrayBlockingQueue;
  * Time: 16:12
  */
 public class CompositeMREnv extends MREnvBase {
+  public static final MRPath SHARD = MRPath.create("/MREnvState");
   private final RemoteMREnv original;
   private final LocalMREnv localCopy;
-  private final Whiteboard copyState;
+  private final Map<MRPath, Pair<MRTableState, MRTableState>> tables = new HashMap<>();
+  private final Map<MRPath, Pair<Long, MRPath[]>> dirs = new HashMap<>();
 
   public CompositeMREnv(RemoteMREnv original, LocalMREnv localCopy) {
     this.original = original;
     this.localCopy = localCopy;
-    copyState = new WhiteboardImpl(localCopy, "MREnvState");
-    for (final String uri : copyState.snapshot().keys()) {
-      //noinspection ConstantConditions
-      final Pair state = copyState.get(uri);
-      if (state != null && state.first instanceof MRTableState)
-        original.updateState(MRPath.createFromURI(uri), (MRTableState)state.first);
+    localCopy.read(SHARD, new Processor<MRRecord>() {
+      @Override
+      public void process(MRRecord arg) {
+        final MRPath path = MRPath.createFromURI(arg.key);
+        if (path.isDirectory()) {
+          final CharSequence[] parts = CharSeqTools.split(arg.value, "\t");
+          final long ts = CharSeqTools.parseLong(parts[0]);
+          final List<MRPath> list = new ArrayList<>();
+          for(int i = 1; i < parts.length; i++) {
+            list.add(MRPath.createFromURI(parts[i].toString()));
+          }
+          dirs.put(path, Pair.create(ts, list.toArray(new MRPath[list.size()])));
+        }
+        else {
+          final CharSequence[] parts = CharSeqTools.split(arg.value, "\t");
+          final MRTableShardConverter.From converter = new MRTableShardConverter.From();
+          tables.put(path, Pair.create(converter.convert(parts[0]), converter.convert(parts[1])));
+        }
+      }
+    });
+    for (Map.Entry<MRPath, Pair<MRTableState, MRTableState>> entry : tables.entrySet()) {
+      original.updateState(entry.getKey(), entry.getValue().first);
     }
   }
 
@@ -146,7 +158,7 @@ public class CompositeMREnv extends MREnvBase {
       final MRPath path = paths[i];
       if (!originalStates[i].isAvailable()) {
         localCopy.delete(path);
-        copyState.remove(path.toURI().toString());
+        tables.remove(path);
         continue;
       }
       final MRTableState local = localShard(path, originalStates[i]);
@@ -197,8 +209,7 @@ public class CompositeMREnv extends MREnvBase {
 
   @Override
   public MRPath[] list(MRPath prefix) {
-    final String resourceString = prefix.toURI().toString();
-    final Pair<Long, Ref[]> cache = copyState.snapshot().get(resourceString);
+    final Pair<Long, MRPath[]> cache = dirs.get(prefix);
     final long now = System.currentTimeMillis();
     if (cache != null && now - cache.first < MRTools.FRESHNESS_TIMEOUT) {
       final MRPath[] repack = ArrayTools.map(cache.second, MRPath.class, new Computable<Ref, MRPath>() {
@@ -211,7 +222,8 @@ public class CompositeMREnv extends MREnvBase {
       return repack;
     }
     final MRPath[] result = original.list(prefix);
-    copyState.set(resourceString, Pair.create(now, result));
+    dirs.put(prefix, Pair.create(now, result));
+    write();
     return result;
   }
 
@@ -229,13 +241,13 @@ public class CompositeMREnv extends MREnvBase {
     for(int i = 0; i < path.length; i++) {
       final MRPath mrPath = path[i];
       if (mrPath.isDirectory())
-        throw new IllegalArgumentException("Resolved resource must not be directory: " + path);
-      final Pair<MRTableState, MRTableState> cache = copyState.snapshot().get(mrPath.toURI().toString());
+        throw new IllegalArgumentException("Resolved resource must not be directory: " + mrPath);
+      final Pair<MRTableState, MRTableState> cache = tables.get(mrPath);
       if (cache == null || now - cache.first.snapshotTime() >= MRTools.FRESHNESS_TIMEOUT) {
         toResolve.add(mrPath);
         toResolvePositions.add(i);
       } else {
-        result[i] = cache.second;
+        result[i] = cache.first;
       }
     }
     final MRTableState[] resolvedAtOriginal = original.resolveAll(toResolve.toArray(new MRPath[toResolve.size()]));
@@ -288,13 +300,12 @@ public class CompositeMREnv extends MREnvBase {
   public void delete(MRPath shard) {
     localCopy.delete(shard);
     original.delete(shard);
-    copyState.remove(shard.parent().toURI().toString());
+    tables.remove(shard);
     setCopy(shard, null, null);
   }
 
   private MRTableState localShard(MRPath shard, MRTableState state) {
-    final String key = shard.toURI().toString();
-    final Pair<MRTableState, MRTableState> localState = copyState.snapshot().get(key);
+    final Pair<MRTableState, MRTableState> localState = tables.get(shard);
     if (localState == null)
       return null;
     final MRTableState original = localState.getFirst();
@@ -311,13 +322,33 @@ public class CompositeMREnv extends MREnvBase {
   }
 
   private void setCopy(MRPath path, MRTableState original, MRTableState local) {
-    final String uri = path.toURI().toString();
     if (local != null) {
-      copyState.set(uri, Pair.create(original, local));
-      copyState.snapshot();
+      tables.put(path, Pair.create(original, local));
     }
-    else copyState.remove(uri);
-    copyState.snapshot();
+    else tables.remove(path);
+    write();
+  }
+
+  private void write() {
+    final CharSeqBuilder builder = new CharSeqBuilder();
+    final MRTableShardConverter.To converter = new MRTableShardConverter.To();
+
+    for (Map.Entry<MRPath, Pair<MRTableState, MRTableState>> entry : tables.entrySet()) {
+      builder.append(entry.getKey().toString()).append("\t");
+      builder.append("\t");
+      builder.append(converter.convert(entry.getValue().first)).append("\t");
+      builder.append(converter.convert(entry.getValue().second)).append("\n");
+    }
+
+    for (Map.Entry<MRPath, Pair<Long, MRPath[]>> entry : dirs.entrySet()) {
+      builder.append(entry.getKey().toString()).append("\t").append("\t");
+      builder.append(entry.getValue().first);
+      for (MRPath path : entry.getValue().second) {
+        builder.append("\t").append(path);
+      }
+      builder.append("\n");
+    }
+    localCopy.write(SHARD, new CharSeqReader(builder.build()));
   }
 
   @Override

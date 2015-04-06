@@ -1,8 +1,9 @@
 package ru.yandex.se.lyadzhin.report;
 
-import ru.yandex.se.yasm4u.Domain;
-import ru.yandex.se.yasm4u.JobExecutorService;
+import ru.yandex.se.yasm4u.*;
 import ru.yandex.se.yasm4u.domains.wb.StateRef;
+
+import java.util.List;
 
 /**
  * User: lyadzhin
@@ -14,7 +15,10 @@ public class ReportBLDomain implements Domain {
   }
 
   @Override
-  public void init(JobExecutorService jes) {
+  public void publishExecutables(List<Joba> jobs, List<Routine> routines) {
+  }
 
+  @Override
+  public void publishReferenceParsers(Ref.Parser parser, Controller controller) {
   }
 }

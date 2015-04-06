@@ -16,10 +16,12 @@ import java.net.URISyntaxException;
  */
 public class TempRef<T> extends StateRef<T> {
   private final Class<T> type;
+  private final Domain.Controller controller;
 
-  public TempRef(String name, Class<T> type) {
+  public TempRef(String name, Class<T> type, Domain.Controller controller) {
     super(name, type);
     this.type = type;
+    this.controller = controller;
   }
 
   @Override
@@ -37,29 +39,29 @@ public class TempRef<T> extends StateRef<T> {
   }
 
   @Override
-  public Class<? extends Domain> domainType() {
+  public Class<State> domainType() {
     return State.class;
   }
 
   @Override
-  public T resolve(Domain.Controller controller) {
-    return realRef(controller).resolve(controller);
+  public T resolve(State wb) {
+    return controller.resolve(realRef(wb));
   }
 
   @Override
-  public boolean available(Domain.Controller controller) {
-    return realRef(controller).available(controller);
+  public boolean available(State wb) {
+    return controller.available(realRef(wb));
   }
 
-  private Ref<T> realRef(Domain.Controller controller) {
-    final Whiteboard state = controller.domain(Whiteboard.class);
-    Ref<T> result = state.get(name);
+  private Ref<T, ?> realRef(State state) {
+    @SuppressWarnings("unchecked")
+    Ref<T, ?> result = (Ref<T, ?>)state.get(this);
     if (result == null) {
       if (name.startsWith("mr://")) {
         final MRPath path = MRPath.createFromURI(name);
         //noinspection unchecked
-        result = (Ref<T>)new MRPath(MRPath.Mount.TEMP, WhiteboardImpl.USER + "/" + path.path + "-" + Integer.toHexString(new FastRandom().nextInt()), path.sorted);
-        state.set(name, result);
+        result = (Ref<T, ?>)new MRPath(MRPath.Mount.TEMP, WhiteboardImpl.USER + "/" + path.path + "-" + Integer.toHexString(new FastRandom().nextInt()), path.sorted);
+        ((Whiteboard)state).set(this, result);
       }
       else throw new UnsupportedOperationException("Unknown schema for temp allocation: " + name);
     }

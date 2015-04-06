@@ -31,11 +31,11 @@ public class Planner {
   }
 
   @NotNull
-  public Joba[] build(JobExecutorService jes, Ref<?>... goals) {
-    final Set<Ref<?>> initialState;
+  public Joba[] build(JobExecutorService jes, Ref... goals) {
+    final Set<Ref> initialState;
     { // initialize universe and starting state
-      Set<Ref<?>> consumes = new HashSet<>();
-      final Set<Ref<?>> produces = new HashSet<>();
+      Set<Ref> consumes = new HashSet<>();
+      final Set<Ref> produces = new HashSet<>();
       for (Routine routine : routines) {
         for (final Joba job : routine.buildVariants(initial, jes)) {
           consumes.addAll(Arrays.asList(job.consumes()));
@@ -52,10 +52,10 @@ public class Planner {
       int consumesSize;
       do {
         consumesSize = consumes.size();
-        final Iterator<Ref<?>> it = consumes.iterator();
-        Set<Ref<?>> next = new HashSet<>(consumes);
+        final Iterator<Ref> it = consumes.iterator();
+        Set<Ref> next = new HashSet<>(consumes);
         while (it.hasNext()) {
-          final Ref<?> res = it.next();
+          final Ref res = it.next();
           next.remove(res);
           if (buildOptimalPath(jes, next, res) == null)
             next.add(res);
@@ -75,11 +75,11 @@ public class Planner {
   }
 
   @Nullable
-  protected PossibleState buildOptimalPath(JobExecutorService jes, Set<Ref<?>> initialState, Ref<?>... goals) {
-    final Map<Set<Ref<?>>, PossibleState> states = new HashMap<>();
-    final TreeSet<Set<Ref<?>>> order = new TreeSet<>(new Comparator<Set<Ref<?>>>() {
+  protected PossibleState buildOptimalPath(JobExecutorService jes, Set<Ref> initialState, Ref... goals) {
+    final Map<Set<Ref>, PossibleState> states = new HashMap<>();
+    final TreeSet<Set<Ref>> order = new TreeSet<>(new Comparator<Set<Ref>>() {
       @Override
-      public int compare(Set<Ref<?>> o1, Set<Ref<?>> o2) {
+      public int compare(Set<Ref> o1, Set<Ref> o2) {
         final int compare = Double.compare(states.get(o1).weight, states.get(o2).weight);
         if (compare == 0)
           return Integer.compare(o1.hashCode(), o2.hashCode());
@@ -90,7 +90,7 @@ public class Planner {
     states.put(initialState, new PossibleState(new ArrayList<Joba>(), 0.));
     order.add(initialState);
 
-    Set<Ref<?>> current;
+    Set<Ref> current;
     PossibleState best = null;
     double bestScore = Double.POSITIVE_INFINITY;
     while ((current = order.pollFirst()) != null) {
@@ -117,7 +117,7 @@ public class Planner {
       for (final Joba job : currentJobs) {
         if (!current.containsAll(Arrays.asList(job.consumes())))
           continue;
-        final Set<Ref<?>> next = new HashSet<>(current);
+        final Set<Ref> next = new HashSet<>(current);
         next.addAll(Arrays.asList(job.produces()));
         final PossibleState nextState = currentState.next(job);
         final PossibleState knownState = states.get(next);
