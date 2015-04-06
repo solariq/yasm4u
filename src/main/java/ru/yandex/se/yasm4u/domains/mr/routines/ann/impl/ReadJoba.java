@@ -88,7 +88,7 @@ public class ReadJoba implements Joba {
     readTh.start();
     try {
       final Constructor<?> constructor = method.getDeclaringClass().getConstructor(State.class);
-      wb.set(output.name, method.invoke(constructor.newInstance(wb.snapshot()), new Iterator<MRRecord>() {
+      wb.set(output, method.invoke(constructor.newInstance(wb.snapshot()), new Iterator<MRRecord>() {
         MRRecord next = null;
         boolean needs2wait = true;
 
