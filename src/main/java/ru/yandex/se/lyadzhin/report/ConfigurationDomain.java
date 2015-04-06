@@ -54,7 +54,7 @@ public class ConfigurationDomain implements Domain {
     @Override
     public void run() {
       final CharSeqBuilder charSeqBuilder = new CharSeqBuilder().append("Hello world!");
-      whiteboard.set(bodyPartRef.name, charSeqBuilder);
+      whiteboard.set(bodyPartRef, charSeqBuilder);
     }
   }
 }
