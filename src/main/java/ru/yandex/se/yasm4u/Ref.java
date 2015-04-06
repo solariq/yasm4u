@@ -18,6 +18,9 @@ public interface Ref<T, D extends Domain> {
   T resolve(D controller);
   boolean available(D controller);
 
+  int hashCode();
+  boolean equals(Object o);
+
   interface Parser extends TypeConverter<CharSequence, Ref> {
     void registerProtocol(String proto, TypeConverter<String, ? extends Ref> parser);
   }

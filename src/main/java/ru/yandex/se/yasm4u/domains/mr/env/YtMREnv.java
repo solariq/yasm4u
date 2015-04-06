@@ -590,6 +590,8 @@ public class YtMREnv extends RemoteMREnv {
 
     @Override
     public void invoke(CharSequence arg) {
+      if (arg.length() == 0)
+        return;
       /* table guid 5ad-2a7267-3f10191-8b0038b3 */
       if (arg.length() > 18
           && arg.charAt(3) == '-'
@@ -806,12 +808,9 @@ public class YtMREnv extends RemoteMREnv {
 
     @Override
     public void invoke(CharSequence arg) {
-      if (arg == CharSeq.EMPTY) {
-        processor.invoke(arg);
-      }
-      warn("DEBUG:" + arg);
       if (arg.length() == 0)
         return;
+      System.err.println("DEBUG:" + arg);
       switch (status) {
         case NONE:
         case INITIALIZING:
