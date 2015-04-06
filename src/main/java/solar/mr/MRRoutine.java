@@ -26,10 +26,10 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
   private final MRPath[] inputTables;
   private final long timeout;
   private int currentInputIndex = 0;
-  private boolean interrupted = false;
+  private volatile boolean interrupted = false;
   private AtomicReference<CharSequence> next = new AtomicReference<>();
   private volatile Throwable unhandled;
-  private MRRecord currentRecord;
+  private volatile MRRecord currentRecord;
   private Thread routineTh;
 
   public MRRoutine(MRPath[] inputTables, MRErrorsHandler output, State state) {
@@ -67,7 +67,7 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
     this(inputTables, new DefaultMRErrorsHandler(), new StateImpl());
   }
 
-  private boolean isStopped = false;
+  private volatile boolean isStopped = false;
   @Override
   public void invoke(final CharSequence record) {
     if (isStopped)
