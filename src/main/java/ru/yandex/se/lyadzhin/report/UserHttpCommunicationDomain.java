@@ -14,8 +14,6 @@ import java.util.List;
  * Date: 04.04.15 10:46
  */
 public class UserHttpCommunicationDomain implements Domain {
-
-
   public interface Output {
     StateRef<CommunicationStatus> COMMUNICATION_STATUS = new StateRef<>("communication_status", CommunicationStatus.class);
 
@@ -51,16 +49,21 @@ public class UserHttpCommunicationDomain implements Domain {
 
   private final HttpRequest httpRequest;
   private final HttpResponse httpResponse;
+  private Whiteboard wb;
 
-  public UserHttpCommunicationDomain(HttpRequest httpRequest, HttpResponse httpResponse) {
+  public UserHttpCommunicationDomain(HttpRequest httpRequest, HttpResponse httpResponse, Whiteboard wb) {
     this.httpRequest = httpRequest;
     this.httpResponse = httpResponse;
   }
 
   @Override
-  public void init(JobExecutorService jes) {
-    jes.addJoba(new ParseHttpRequestJoba(httpRequest, jes.domain(Whiteboard.class)));
-    jes.addRoutine(new SeqHttpBodyWriteRoutine(httpResponse));
+  public void publishExecutables(List<Joba> jobs, List<Routine> routines) {
+    jobs.add(new ParseHttpRequestJoba(httpRequest, wb));
+    routines.add(new SeqHttpBodyWriteRoutine(httpResponse));
+  }
+
+  @Override
+  public void publishReferenceParsers(Ref.Parser parser, Controller controller) {
   }
 
   public BodyPartRef[] allocateParts(int partsCount) {
@@ -71,7 +74,7 @@ public class UserHttpCommunicationDomain implements Domain {
     return result;
   }
 
-  public Ref<CommunicationStatus> goal() {
+  public Ref<CommunicationStatus, ?> goal() {
     return Output.COMMUNICATION_STATUS;
   }
 
@@ -85,13 +88,13 @@ public class UserHttpCommunicationDomain implements Domain {
     }
 
     @Override
-    public Ref<?>[] consumes() {
-      return new Ref<?>[0];
+    public Ref[] consumes() {
+      return new Ref[0];
     }
 
     @Override
-    public Ref<?>[] produces() {
-      return new Ref<?>[]{Output.YANDEX_UID, Output.TEXT};
+    public Ref[] produces() {
+      return new Ref[]{Output.YANDEX_UID, Output.TEXT};
     }
 
     @Override
@@ -157,20 +160,20 @@ public class UserHttpCommunicationDomain implements Domain {
       }
 
       @Override
-      public Ref<?>[] consumes() {
-        return new Ref<?>[]{bodyPartRef};
+      public Ref[] consumes() {
+        return new Ref[]{bodyPartRef};
       }
 
       @Override
-      public Ref<?>[] produces() {
-        return new Ref<?>[]{partDoneRef};
+      public Ref[] produces() {
+        return new Ref[]{partDoneRef};
       }
 
       @Override
       public void run() {
         // TODO: WTF??
         System.out.println("Writing HTTP body, part = " + bodyPartRef.partNum +
-                ", content = " + bodyPartRef.resolve(jes).toString());
+                ", content = " + jes.resolve(bodyPartRef).toString());
         jes.domain(Whiteboard.class).set(partDoneRef.name, true);
       }
     }
@@ -183,13 +186,13 @@ public class UserHttpCommunicationDomain implements Domain {
       }
 
       @Override
-      public Ref<?>[] consumes() {
-        return new Ref<?>[0];
+      public Ref[] consumes() {
+        return new Ref[0];
       }
 
       @Override
-      public Ref<?>[] produces() {
-        return new Ref<?>[] {Output.COMMUNICATION_STATUS};
+      public Ref[] produces() {
+        return new Ref[] {Output.COMMUNICATION_STATUS};
       }
 
       @Override

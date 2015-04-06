@@ -1,11 +1,10 @@
 package ru.yandex.se.lyadzhin.report;
 
 
-import ru.yandex.se.yasm4u.Domain;
-import ru.yandex.se.yasm4u.JobExecutorService;
-import ru.yandex.se.yasm4u.Joba;
-import ru.yandex.se.yasm4u.Ref;
+import ru.yandex.se.yasm4u.*;
 import ru.yandex.se.yasm4u.domains.wb.StateRef;
+
+import java.util.List;
 
 /**
  * User: lyadzhin
@@ -17,11 +16,15 @@ public class ConfigurationSetupDomain implements Domain {
   }
 
   @Override
-  public void init(final JobExecutorService jes) {
+  public void publishExecutables(List<Joba> jobs, List<Routine> routines) {
     final SourceCommunicationDomain.SourceRequest fooSourceRequest =
             new SourceCommunicationDomain.SourceRequest(SourceCommunicationDomain.SOURCE_FOO);
-    jes.addJoba(new FooSourceRequestPublisherJoba(fooSourceRequest));
-    jes.addJoba(new ConfigurationPublisherJoba(fooSourceRequest));
+    jobs.add(new FooSourceRequestPublisherJoba(fooSourceRequest));
+    jobs.add(new ConfigurationPublisherJoba(fooSourceRequest));
+  }
+
+  @Override
+  public void publishReferenceParsers(Ref.Parser parser, Controller controller) {
   }
 
   private static class ConfigurationPublisherJoba implements Joba {
@@ -32,13 +35,13 @@ public class ConfigurationSetupDomain implements Domain {
     }
 
     @Override
-    public Ref<?>[] consumes() {
-      return new Ref<?>[] {fooSourceRequest.response()};
+    public Ref[] consumes() {
+      return new Ref[] {fooSourceRequest.response()};
     }
 
     @Override
-    public Ref<?>[] produces() {
-      return new Ref<?>[] {Output.CONFIGURATION};
+    public Ref[] produces() {
+      return new Ref[] {Output.CONFIGURATION};
     }
 
     @Override
@@ -55,13 +58,13 @@ public class ConfigurationSetupDomain implements Domain {
     }
 
     @Override
-    public Ref<?>[] consumes() {
-      return new Ref<?>[] {UserHttpCommunicationDomain.Output.YANDEX_UID, UserHttpCommunicationDomain.Output.TEXT};
+    public Ref[] consumes() {
+      return new Ref[] {UserHttpCommunicationDomain.Output.YANDEX_UID, UserHttpCommunicationDomain.Output.TEXT};
     }
 
     @Override
-    public Ref<?>[] produces() {
-      return new Ref<?>[] {fooSourceRequest};
+    public Ref[] produces() {
+      return new Ref[] {fooSourceRequest};
     }
 
     @Override

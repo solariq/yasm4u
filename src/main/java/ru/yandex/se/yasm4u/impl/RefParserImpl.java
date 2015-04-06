@@ -13,20 +13,20 @@ import java.util.Map;
  * Time: 13:45
  */
 public class RefParserImpl implements Ref.Parser {
-  private final Map<String, TypeConverter<String, Ref<?>>> domainConverters = new HashMap<>();
+  private final Map<String, TypeConverter<String, ? extends Ref>> domainConverters = new HashMap<>();
 
   @Override
-  public void registerProtocol(String proto, TypeConverter<String, Ref<?>> parser) {
+  public void registerProtocol(String proto, TypeConverter<String, ? extends Ref> parser) {
     domainConverters.put(proto, parser);
   }
 
   @Override
-  public Ref<?> convert(String in) {
-    final URI uri = URI.create(in);
+  public Ref convert(CharSequence in) {
+    final URI uri = URI.create(in.toString());
     final String scheme = uri.getScheme();
     if (scheme == null)
       throw new RuntimeException("Schema is null");
-    final TypeConverter<String, Ref<?>> typeConverter = domainConverters.get(scheme);
+    final TypeConverter<String, ? extends Ref> typeConverter = domainConverters.get(scheme);
     if (typeConverter == null)
       throw new IllegalStateException("Unknown domain: " + scheme);
     return typeConverter.convert(uri.getSchemeSpecificPart());

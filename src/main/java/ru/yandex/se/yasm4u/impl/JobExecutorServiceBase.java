@@ -3,6 +3,7 @@ package ru.yandex.se.yasm4u.impl;
 import com.spbsu.commons.filters.Filter;
 import com.spbsu.commons.func.Action;
 import com.spbsu.commons.system.RuntimeUtils;
+import org.jetbrains.annotations.NotNull;
 import ru.yandex.se.yasm4u.*;
 
 import java.util.*;
@@ -22,12 +23,14 @@ public abstract class JobExecutorServiceBase implements JobExecutorService {
   private final List<ProgressListener> listeners = new ArrayList<>();
   private final List<Routine> routines = new ArrayList<>();
   private final List<Joba> steve = new ArrayList<>();
+  private RefParserImpl refParser = new RefParserImpl();
 
   public JobExecutorServiceBase(Domain... domains) {
     this.domainsCache = createDomainsCache(domains);
     this.domains = domains;
     for(int i = 0; i < domains.length; i++) {
-      domains[i].init(this);
+      domains[i].publishExecutables(steve, routines);
+      domains[i].publishReferenceParsers(refParser, this);
     }
   }
 
@@ -49,7 +52,7 @@ public abstract class JobExecutorServiceBase implements JobExecutorService {
   }
 
   @Override
-  public <T> Future<T> calculate(Ref<T> goal) {
+  public <T> Future<T> calculate(Ref<T, ?> goal) {
     final Future<List<?>> calculate = calculate(new Ref[]{goal});
     return new Future<T>() {
       @Override
@@ -69,20 +72,38 @@ public abstract class JobExecutorServiceBase implements JobExecutorService {
 
       @Override
       public T get() throws InterruptedException, ExecutionException {
+        //noinspection unchecked
         return (T)calculate.get().get(0);
       }
 
       @Override
-      public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+      public T get(long timeout, @NotNull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+        //noinspection unchecked
         return (T)calculate.get(timeout, unit).get(0);
       }
     };
   }
 
   @Override
+  public <T, D extends Domain, R extends Ref<? extends T, ? extends D>> R parse(CharSequence seq) {
+    //noinspection unchecked
+    return (R) refParser.convert(seq);
+  }
+
+  @Override
   public <T extends Domain> T domain(Class<T> domClass) {
     //noinspection unchecked
     return (T)domainsCache.get(domClass);
+  }
+
+  @Override
+  public <T, D extends Domain> T resolve(Ref<T, D> argument) {
+    return argument.resolve(domain(argument.domainType()));
+  }
+
+  @Override
+  public <T, D extends Domain> boolean available(Ref<T, D> argument) {
+    return argument.available(domain(argument.domainType()));
   }
 
   @Override

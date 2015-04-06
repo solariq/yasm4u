@@ -1,10 +1,7 @@
 package ru.yandex.se.yasm4u.domains.mr.routines;
 
 import com.spbsu.commons.util.MultiMap;
-import gnu.trove.map.TMap;
 import gnu.trove.map.TObjectIntMap;
-import gnu.trove.map.hash.TCustomHashMap;
-import gnu.trove.map.hash.THashMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import ru.yandex.se.yasm4u.JobExecutorService;
 import ru.yandex.se.yasm4u.Joba;
@@ -63,7 +60,7 @@ public class MergeRoutine implements Routine {
     final Map<MRPath, BitSet> exists = new HashMap<>();
     for(int i = 0; i < state.length; i++) {
       if (MRPath.class.isAssignableFrom(state[i].type())) {
-        final MRPath ref = (MRPath)state[i].resolve(executor);
+        final MRPath ref = (MRPath)executor.resolve(state[i]);
         if (ref.mount == MRPath.Mount.TEMP) {
           final Matcher matcher = MERGE_PATTERN.matcher(ref.path);
           if (matcher.find()) {

@@ -8,7 +8,6 @@ import ru.yandex.se.yasm4u.domains.mr.ops.impl.MRRoutineBuilder;
 import ru.yandex.se.yasm4u.domains.mr.ops.impl.MRTableState;
 import ru.yandex.se.yasm4u.domains.wb.Whiteboard;
 import ru.yandex.se.yasm4u.domains.mr.MRPath;
-import ru.yandex.se.yasm4u.domains.wb.impl.WhiteboardImpl;
 import ru.yandex.se.yasm4u.domains.mr.ops.MRRecord;
 
 import java.io.Reader;
@@ -40,11 +39,6 @@ public final class ProfilerMREnv extends MREnvBase {
       time.put(operation, 0l);
       counter.put(operation, 0);
     }
-  }
-
-  public ProfilerMREnv(MREnv env) {
-    this(env, new WhiteboardImpl(env, "profiling"));
-    wb.wipe();
   }
 
   @Override

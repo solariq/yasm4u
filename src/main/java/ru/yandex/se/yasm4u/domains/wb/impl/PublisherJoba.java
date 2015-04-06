@@ -2,7 +2,6 @@ package ru.yandex.se.yasm4u.domains.wb.impl;
 
 import ru.yandex.se.yasm4u.Joba;
 import ru.yandex.se.yasm4u.Ref;
-import ru.yandex.se.yasm4u.Routine;
 import ru.yandex.se.yasm4u.domains.wb.State;
 import ru.yandex.se.yasm4u.domains.wb.StateRef;
 
@@ -21,24 +20,22 @@ public class PublisherJoba implements Joba {
   }
 
   @Override
-  public Ref<?>[] consumes() {
-    return new Ref<?>[0];
+  public Ref[] consumes() {
+    return new Ref[0];
   }
 
   @Override
-  public Ref<?>[] produces() {
-    final Set<String> keys = state.keys();
-
-    final Ref<?>[] result = new Ref<?>[keys.size()];
-    int index = 0;
-    for (final String key : keys) {
-      //noinspection ConstantConditions
-      result[index++] = new StateRef<>(key, state.get(key).getClass());
-    }
-    return result;
+  public Ref[] produces() {
+    final Set<? extends StateRef> keys = state.keys();
+    return state.keys().toArray(new Ref[keys.size()]);
   }
 
   @Override
   public void run() {
+  }
+
+  @Override
+  public String toString() {
+    return "WB publisher";
   }
 }

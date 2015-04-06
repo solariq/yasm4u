@@ -48,15 +48,15 @@ public class MainThreadJES extends JobExecutorServiceBase {
   }
 
   @Override
-  public Future<List<?>> calculate(Ref<?>... goal) {
+  public Future<List<?>> calculate(Ref... goal) {
     final Planner planner = new Planner(new Ref[0], routines(), jobs());
     final Joba[] plan = planner.build(this, goal);
     for(int i = 0; i < plan.length; i++) {
       final Joba joba = plan[i];
       if (safe) {
         for(int j = 0; j < plan[i].consumes().length; j++) {
-          final Ref<?> ref = plan[i].consumes()[j];
-          if (!ref.available(this))
+          final Ref ref = plan[i].consumes()[j];
+          if (!available(ref))
             throw new RuntimeException("Resource " + ref + " needed for " + joba + " is missing at " + domain(ref.domainType()));
         }
       }
@@ -79,8 +79,8 @@ public class MainThreadJES extends JobExecutorServiceBase {
       }
       if (safe) {
         for(int j = 0; j < plan[i].produces().length; j++) {
-          final Ref<?> ref = plan[i].produces()[j];
-          if (!ref.available(this))
+          final Ref ref = plan[i].produces()[j];
+          if (!available(ref))
             throw new RuntimeException("Complete joba " + joba + " has not produced expected resource " + ref);
         }
       }
@@ -94,7 +94,7 @@ public class MainThreadJES extends JobExecutorServiceBase {
     final List result = new ArrayList<>();
     for(int i = 0; i < goal.length; i++) {
       //noinspection unchecked
-      result.add(goal[i].resolve(this));
+      result.add(resolve(goal[i]));
 
     }
     return new CompleteFuture<List<?>>(result);

@@ -8,14 +8,15 @@ import com.spbsu.commons.func.types.TypeConverter;
 import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqReader;
-import ru.yandex.se.yasm4u.*;
-import ru.yandex.se.yasm4u.domains.mr.MRPath;
+import com.spbsu.commons.util.ArrayTools;
 import ru.yandex.se.yasm4u.domains.mr.MREnv;
+import ru.yandex.se.yasm4u.domains.mr.MRPath;
+import ru.yandex.se.yasm4u.domains.mr.ops.MRRecord;
 import ru.yandex.se.yasm4u.domains.wb.State;
 import ru.yandex.se.yasm4u.domains.wb.StateRef;
 import ru.yandex.se.yasm4u.domains.wb.TempRef;
 import ru.yandex.se.yasm4u.domains.wb.Whiteboard;
-import ru.yandex.se.yasm4u.domains.mr.ops.MRRecord;
+import ru.yandex.se.yasm4u.impl.RefParserImpl;
 
 import java.util.*;
 
@@ -26,12 +27,15 @@ import java.util.*;
  */
 public class WhiteboardImpl extends StateImpl implements Whiteboard {
   public final static String USER = System.getProperty("mr.user", System.getProperty("user.name"));
-  private final Properties increment = new Properties();
+  private final Map<StateRef, Object> increment = new HashMap<>();
   private final MRPath myShard;
   private final MREnv env;
   private SerializationRepository<CharSequence> marshaling;
 
   public WhiteboardImpl(final MREnv env, final String id) {
+    super(env);
+    final RefParserImpl parser = new RefParserImpl();
+    publishReferenceParsers(parser, trash);
     marshaling = new SerializationRepository<>(State.SERIALIZATION).customize(
         new OrFilter<>(
             new AndFilter<TypeConverter>(new ClassFilter<TypeConverter>(Action.class, Whiteboard.class), new Filter<TypeConverter>() {
@@ -50,7 +54,7 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
       public void process(final MRRecord arg) {
         try {
           final Object read = marshaling.read(arg.value, marshaling.base.conversionType(Class.forName(arg.sub), CharSequence.class));
-          state.put(arg.key, read);
+          state.put((StateRef) parser.convert(arg.key), read);
         } catch (ClassNotFoundException e) {
           throw new RuntimeException(e);
         }
@@ -60,17 +64,17 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
   }
 
   @Override
-  public Set<String> keys() {
-    final Set<String> keys = new HashSet<>(state.keySet());
-    for (Object key : increment.keySet()) {
-      keys.add((String) key);
+  public Set<? extends StateRef> keys() {
+    final Set<StateRef> keys = new HashSet<>(state.keySet());
+    for (final StateRef key : increment.keySet()) {
+      keys.add(key);
     }
     return keys;
   }
 
   @SuppressWarnings("unchecked")
   @Override
-  public <T> T get(final String resource) {
+  public <T> T get(final StateRef<T> resource) {
     final Object value = increment.get(resource);
     if (value != null)
       return value != CharSeq.EMPTY ? (T) value : null;
@@ -80,12 +84,15 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
 
   @Override
   public <T> void set(String uri, final T data) {
-    if (uri.startsWith("var:"))
-      uri = uri.substring("var:".length());
+    set(parseRef(uri), data);
+  }
+
+  @Override
+  public <T> void set(StateRef uri, final T data) {
     if (data == CharSeq.EMPTY)
       throw new IllegalArgumentException("User remove instead");
     final Object current = state.get(uri);
-    if ((data.getClass().isArray() && Arrays.equals((Object[])data, (Object[])current)) ||data.equals(current))
+    if (data.equals(current) || (data.getClass().isArray() && Arrays.equals((Object[]) data, (Object[]) current)))
       increment.remove(uri);
     else
       increment.put(uri, data);
@@ -93,13 +100,28 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
 
   @Override
   public void remove(final String var) {
+    remove(parseRef(var));
+  }
+
+  @Override
+  public void remove(final StateRef var) {
     increment.put(var, CharSeq.EMPTY);
+  }
+
+  @Override
+  public boolean available(StateRef... consumes) {
+    return super.available(consumes) || ArrayTools.and(consumes, new Filter<StateRef>() {
+      @Override
+      public boolean accept(StateRef stateRef) {
+        return increment.containsKey(stateRef);
+      }
+    });
   }
 
   @Override
   public State snapshot() {
     sync();
-    return new StateImpl(this);
+    return new StateImpl(this, trash);
   }
 
   @SuppressWarnings("unchecked")
@@ -107,16 +129,16 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
     if (increment.isEmpty())
       return;
     // this will update all shards through notification mechanism
-    for (Map.Entry<Object, Object> entry : increment.entrySet()) {
+    for (Map.Entry<StateRef, Object> entry : increment.entrySet()) {
       if (CharSeq.EMPTY == entry.getValue())
         //noinspection SuspiciousMethodCalls
         state.remove(entry.getKey());
       else
-        state.put((String) entry.getKey(), entry.getValue());
+        state.put(entry.getKey(), entry.getValue());
     }
 
     final CharSeqBuilder builder = new CharSeqBuilder();
-    for (Map.Entry<String, Object> entry : state.entrySet()) {
+    for (Map.Entry<StateRef, Object> entry : state.entrySet()) {
       final Class<?> dataClass = entry.getValue().getClass();
       final TypeConverter<Object, CharSequence> converter = (TypeConverter<Object, CharSequence>)marshaling.base.converter(dataClass, CharSequence.class);
       final Class<?> conversionType = marshaling.base.conversionType(dataClass, CharSequence.class);
@@ -134,20 +156,10 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
   public void wipe() {
     sync();
     if (!state.isEmpty()) {
-      for (String resourceName : keys()) {
-        final Ref<?> ref = Ref.PARSER.convert("var:" + resourceName);
+      for (StateRef ref : keys()) {
         if (ref instanceof TempRef && MRPath.class.isAssignableFrom(ref.type())) {
           // TODO: remove this dirty hack
-          env.delete((MRPath)ref.resolve(new Controller() {
-            @Override
-            public <T extends Domain> T domain(Class<T> domClass) {
-              return (T)env;
-            }
-            @Override
-            public Domain[] domains() {
-              return new Domain[]{env};
-            }
-          }));
+          env.delete((MRPath) ref.resolve(this));
         }
       }
       state.clear();
