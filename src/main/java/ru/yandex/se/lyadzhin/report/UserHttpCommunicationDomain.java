@@ -54,6 +54,7 @@ public class UserHttpCommunicationDomain implements Domain {
   public UserHttpCommunicationDomain(HttpRequest httpRequest, HttpResponse httpResponse, Whiteboard wb) {
     this.httpRequest = httpRequest;
     this.httpResponse = httpResponse;
+    this.wb = wb;
   }
 
   @Override
@@ -100,8 +101,8 @@ public class UserHttpCommunicationDomain implements Domain {
     @Override
     public void run() {
       System.out.println("Parsing HTTP request");
-      whiteboard.set(Output.YANDEX_UID.name, "12345");
-      whiteboard.set(Output.TEXT.name, "kotiki");
+      whiteboard.set(Output.YANDEX_UID, "12345");
+      whiteboard.set(Output.TEXT, "kotiki");
     }
   }
 
@@ -174,7 +175,7 @@ public class UserHttpCommunicationDomain implements Domain {
         // TODO: WTF??
         System.out.println("Writing HTTP body, part = " + bodyPartRef.partNum +
                 ", content = " + jes.resolve(bodyPartRef).toString());
-        jes.domain(Whiteboard.class).set(partDoneRef.name, true);
+        jes.domain(Whiteboard.class).set(partDoneRef, true);
       }
     }
 
@@ -198,7 +199,7 @@ public class UserHttpCommunicationDomain implements Domain {
       @Override
       public void run() {
         System.out.println("Finishing communication");
-        jes.domain(Whiteboard.class).set(Output.COMMUNICATION_STATUS.name, CommunicationStatus.OK);
+        jes.domain(Whiteboard.class).set(Output.COMMUNICATION_STATUS, CommunicationStatus.OK);
       }
     }
   }
