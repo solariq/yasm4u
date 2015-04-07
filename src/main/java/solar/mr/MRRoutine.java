@@ -79,9 +79,20 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
     next.set(record);
     while (unhandled == null && !next.compareAndSet(null, null)) {
       if (++count % 100000 == 0 && System.currentTimeMillis() - time > timeout) {
-        unhandled = new TimeoutException();
-        LockSupport.parkNanos(100000);
+        // unhandled = new TimeoutException();
+        System.err.println("TIMEOUT OCCURS");
+        Thread[] threads = new Thread[Thread.activeCount()];
+        Thread.enumerate(threads);
+        for (Thread th:threads) {
+          StackTraceElement[] stackTrace = th.getStackTrace();
+          for(StackTraceElement e : stackTrace) {
+            System.err.println("at" + e.getClassName() + "."+ e.getMethodName()
+                + "(" + e.getFileName() + ":" + e.getLineNumber() + ")");
+          }
+        }
+        System.exit(2);
       }
+      LockSupport.parkNanos(100000);
     }
     if (unhandled != null) {
       output.error(unhandled, currentRecord);
