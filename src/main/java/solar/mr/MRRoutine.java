@@ -12,6 +12,7 @@ import solar.mr.routines.MRRecord;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
 
 /**
 * User: solar
@@ -77,8 +78,10 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
 
     next.set(record);
     while (unhandled == null && !next.compareAndSet(null, null)) {
-      if (++count % 100000 == 0 && System.currentTimeMillis() - time > timeout)
+      if (++count % 100000 == 0 && System.currentTimeMillis() - time > timeout) {
         unhandled = new TimeoutException();
+        LockSupport.parkNanos(100000);
+      }
     }
     if (unhandled != null) {
       output.error(unhandled, currentRecord);
