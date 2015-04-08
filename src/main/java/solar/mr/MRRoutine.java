@@ -10,7 +10,6 @@ import solar.mr.proc.impl.StateImpl;
 import solar.mr.routines.MRRecord;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
@@ -84,9 +83,10 @@ public abstract class MRRoutine implements Processor<MRRecord>, Action<CharSeque
         Thread[] threads = new Thread[Thread.activeCount()];
         Thread.enumerate(threads);
         for (Thread th:threads) {
+            System.err.println("\nthread: " + th.toString());
           StackTraceElement[] stackTrace = th.getStackTrace();
           for(StackTraceElement e : stackTrace) {
-            System.err.println("at" + e.getClassName() + "."+ e.getMethodName()
+              System.err.println("at " + e.getClassName() + "." + e.getMethodName()
                 + "(" + e.getFileName() + ":" + e.getLineNumber() + ")");
           }
         }
