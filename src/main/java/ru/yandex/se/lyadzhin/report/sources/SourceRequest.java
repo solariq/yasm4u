@@ -10,9 +10,11 @@ import java.net.URI;
 */
 public class SourceRequest implements Ref<SourceCommunicationDomain.RequestStatus, SourceCommunicationDomain> {
   private final SourceResponse sourceResponse;
+  private final String sourceKey;
 
   public SourceRequest(String sourceKey) {
-    sourceResponse = new SourceResponse(this);
+    this.sourceKey = sourceKey;
+    this.sourceResponse = new SourceResponse(this);
   }
 
   @Override
@@ -42,5 +44,19 @@ public class SourceRequest implements Ref<SourceCommunicationDomain.RequestStatu
 
   public SourceResponse response() {
     return sourceResponse;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    SourceRequest that = (SourceRequest) o;
+    return sourceKey.equals(that.sourceKey);
+  }
+
+  @Override
+  public int hashCode() {
+    return sourceKey.hashCode();
   }
 }

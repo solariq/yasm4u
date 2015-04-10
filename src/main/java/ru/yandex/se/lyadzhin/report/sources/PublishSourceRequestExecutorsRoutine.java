@@ -13,20 +13,28 @@ import java.util.List;
 * Date: 08.04.15 19:18
 */
 class PublishSourceRequestExecutorsRoutine implements Routine {
+  private final SourceCommunicationDomain domain;
+
+  PublishSourceRequestExecutorsRoutine(SourceCommunicationDomain domain) {
+    this.domain = domain;
+  }
+
   @Override
   public Joba[] buildVariants(Ref[] state, JobExecutorService executor) {
     final List<Joba> result = new ArrayList<>();
     for (final Ref ref : state) {
       if (ref instanceof SourceRequest)
-        result.add(new RequestExecutorJoba((SourceRequest) ref));
+        result.add(new RequestExecutorJoba(domain, (SourceRequest) ref));
     }
     return result.toArray(new Joba[result.size()]);
   }
 
   private static class RequestExecutorJoba implements Joba {
+    private final SourceCommunicationDomain domain;
     private final SourceRequest sourceRequest;
 
-    public RequestExecutorJoba(SourceRequest sourceRequest) {
+    public RequestExecutorJoba(SourceCommunicationDomain domain, SourceRequest sourceRequest) {
+      this.domain = domain;
       this.sourceRequest = sourceRequest;
     }
 
@@ -43,6 +51,7 @@ class PublishSourceRequestExecutorsRoutine implements Routine {
     @Override
     public void run() {
       System.out.println("Processing source request to " + sourceRequest);
+      domain.addResponse(sourceRequest.response());
     }
   }
 }
