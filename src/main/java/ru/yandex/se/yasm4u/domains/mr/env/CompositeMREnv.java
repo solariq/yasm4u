@@ -247,7 +247,7 @@ public class CompositeMREnv extends MREnvBase {
         toResolve.add(mrPath);
         toResolvePositions.add(i);
       } else {
-        result[i] = cache.first;
+        result[i] = cache.second;
       }
     }
     final MRTableState[] resolvedAtOriginal = original.resolveAll(toResolve.toArray(new MRPath[toResolve.size()]));

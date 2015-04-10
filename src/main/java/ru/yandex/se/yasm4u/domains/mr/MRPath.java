@@ -113,6 +113,10 @@ public class MRPath implements Serializable, Ref<MRPath, MREnv> {
     return new MRPath(mount, path, true);
   }
 
+  public MRPath mkunsorted() {
+    return new MRPath(mount, path, false);
+  }
+
   public enum Mount {
     ROOT("/"),
     TEMP("/tmp/"),

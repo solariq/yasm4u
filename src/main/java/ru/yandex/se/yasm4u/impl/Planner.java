@@ -1,9 +1,13 @@
 package ru.yandex.se.yasm4u.impl;
 
+import com.spbsu.commons.filters.Filter;
 import com.spbsu.commons.func.Evaluator;
+import com.spbsu.commons.util.ArrayTools;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import ru.yandex.se.yasm4u.*;
+import ru.yandex.se.yasm4u.JobExecutorService;
+import ru.yandex.se.yasm4u.Joba;
+import ru.yandex.se.yasm4u.Ref;
+import ru.yandex.se.yasm4u.Routine;
 
 import java.util.*;
 
@@ -50,6 +54,9 @@ public class Planner {
 
       consumes.removeAll(produces);
       int consumesSize;
+      final Set<Joba> possibleJobas = new HashSet<>();
+      final Set<Ref> possibleResources = new HashSet<>();
+
       do {
         consumesSize = consumes.size();
         final Iterator<Ref> it = consumes.iterator();
@@ -57,8 +64,10 @@ public class Planner {
         while (it.hasNext()) {
           final Ref res = it.next();
           next.remove(res);
-          if (buildOptimalPath(jes, next, res) == null)
+          if (!forwardPath(jes, next, possibleJobas, possibleResources, res)) {
+            forwardPath(jes, next, possibleJobas, possibleResources, res);
             next.add(res);
+          }
         }
         consumes = next;
       }
@@ -68,27 +77,31 @@ public class Planner {
     }
 
 
-    final PossibleState best = buildOptimalPath(jes, initialState, goals);
-    if (best == null)
-      throw new IllegalStateException("Unable to create plan to execute");
-    return best.plan.toArray(new Joba[best.plan.size()]);
+    final Set<Joba> possibleJobas = new HashSet<>();
+    final Set<Ref> possibleResources = new HashSet<>();
+
+    forwardPath(jes, initialState, possibleJobas, possibleResources, goals);
+    final List<Joba> best = backwardPath(goals, possibleJobas, initialState);
+    return best.toArray(new Joba[best.size()]);
   }
 
-  @Nullable
-  protected PossibleState buildOptimalPath(JobExecutorService jes, Set<Ref> initialState, Ref... goals) {
+  private List<Joba> backwardPath(Ref[] goals, Set<Joba> possibleJobas, Set<Ref> initialState) {
     final Map<Set<Ref>, PossibleState> states = new HashMap<>();
     final TreeSet<Set<Ref>> order = new TreeSet<>(new Comparator<Set<Ref>>() {
       @Override
       public int compare(Set<Ref> o1, Set<Ref> o2) {
-        final int compare = Double.compare(states.get(o1).weight, states.get(o2).weight);
-        if (compare == 0)
-          return Integer.compare(o1.hashCode(), o2.hashCode());
-        return compare;
+        final int cmp1 = Double.compare(states.get(o1).weight, states.get(o2).weight);
+        if (cmp1 == 0) {
+          final int cmp2 = Integer.compare(o1.hashCode(), o2.hashCode());
+          return cmp2 == 0 && !o1.equals(o2)? 1 : cmp2;
+        }
+        return cmp1;
       }
     });
 
-    states.put(initialState, new PossibleState(new ArrayList<Joba>(), 0.));
-    order.add(initialState);
+    final HashSet<Ref> goalsSet = new HashSet<>(Arrays.asList(goals));
+    states.put(goalsSet, new PossibleState(new ArrayList<Joba>(), 0.));
+    order.add(goalsSet);
 
     Set<Ref> current;
     PossibleState best = null;
@@ -97,37 +110,67 @@ public class Planner {
       final PossibleState currentState = states.get(current);
       if (bestScore <= currentState.weight)
         continue;
-      boolean isFinal = true;
-      for(int i = 0; isFinal && i < goals.length; i++) {
-        if (!current.contains(goals[i]))
-          isFinal = false;
-      }
-      if (isFinal) {
+      if (initialState.containsAll(current)) {
         bestScore = currentState.weight;
         best = currentState;
         continue;
       }
 
-      final List<Joba> currentJobs = new ArrayList<>(Arrays.asList(jobs));
-      final Ref[] state = current.toArray(new Ref[current.size()]);
-      for (final Routine routine : routines) {
-        currentJobs.addAll(Arrays.asList(routine.buildVariants(state, jes)));
-      }
-
-      for (final Joba job : currentJobs) {
-        if (!current.containsAll(Arrays.asList(job.consumes())))
+      for (final Joba job : possibleJobas) {
+        final Set<Ref> finalCurrent = current;
+        if (!ArrayTools.or(job.produces(), new Filter<Ref>() {
+          @Override
+          public boolean accept(Ref ref) {
+            return finalCurrent.contains(ref);
+          }
+        }))
           continue;
         final Set<Ref> next = new HashSet<>(current);
-        next.addAll(Arrays.asList(job.produces()));
+        next.addAll(Arrays.asList(job.consumes()));
+        next.removeAll(Arrays.asList(job.produces()));
         final PossibleState nextState = currentState.next(job);
         final PossibleState knownState = states.get(next);
         if (knownState == null || knownState.weight > nextState.weight) {
           states.put(next, nextState);
+          order.remove(next);
           order.add(next);
         }
       }
     }
-    return best;
+    if (best == null)
+      throw new RuntimeException("Unable to create feasible plan! This should not happen.");
+    Collections.reverse(best.plan);
+    return best.plan;
+  }
+
+  private boolean forwardPath(JobExecutorService jes, Set<Ref> initialState, Set<Joba> possibleJobas, Set<Ref> possibleResources, Ref... goals) {
+    possibleJobas.clear();
+    possibleResources.clear();
+    possibleJobas.addAll(Arrays.asList(jobs));
+    possibleResources.addAll(initialState);
+    final Set<Ref> goalsSet = new HashSet<>(Arrays.asList(goals));
+    final List<Joba> jobs = new ArrayList<>(Arrays.asList(this.jobs));
+    while(!possibleResources.containsAll(goalsSet)) {
+      final Ref[] state = possibleResources.toArray(new Ref[possibleResources.size()]);
+      for (final Routine routine : this.routines) {
+        final List<Joba> routineGenerated = Arrays.asList(routine.buildVariants(state, jes));
+        jobs.addAll(routineGenerated);
+      }
+      final Iterator<Joba> jobsIt = jobs.iterator();
+      while (jobsIt.hasNext()) {
+        final Joba joba = jobsIt.next();
+        if (possibleResources.containsAll(Arrays.asList(joba.consumes()))) {
+          possibleResources.addAll(Arrays.asList(joba.produces()));
+          possibleJobas.add(joba);
+          jobsIt.remove();
+        }
+      }
+      if (possibleResources.size() == state.length && !possibleResources.containsAll(goalsSet)) {
+        goalsSet.removeAll(possibleResources);
+        return false;
+      }
+    }
+    return true;
   }
 
   private class PossibleState {
