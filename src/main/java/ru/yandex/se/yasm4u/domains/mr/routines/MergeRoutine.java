@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
  * Time: 16:39
  */
 public class MergeRoutine implements Routine {
-  private static final Pattern MERGE_PATTERN = Pattern.compile("^(.*)/merge/([^\\/]+)/(\\d+)-(\\d+)$");
+  private static final Pattern MERGE_PATTERN = Pattern.compile("^(.*)merge/([^\\/]+)/(\\d+)-(\\d+)$");
 
   public static List<RoutineJoba> unmergeJobs(final List<RoutineJoba> jobs) {
     final TObjectIntMap<Ref> sharded = new TObjectIntHashMap<>();
@@ -40,7 +40,7 @@ public class MergeRoutine implements Routine {
       for(int i = 0; i < outputs.length; i++) {
         final MRPath resourceName = joba.produces()[i];
         if (sharded.get(resourceName) > 1) {
-          final MRPath shard = new MRPath(MRPath.Mount.TEMP, resourceName.path + "/merge/" + resourceName.mount + "/" + sharded.get(resourceName) + "-" + shardsCount.get(resourceName), false);
+          final MRPath shard = new MRPath(MRPath.Mount.TEMP, resourceName.path + "merge/" + resourceName.mount + "/" + sharded.get(resourceName) + "-" + shardsCount.get(resourceName), false);
           outputs[i] = shard;
           shardsCount.adjustOrPutValue(resourceName, 1, 1);
         }
