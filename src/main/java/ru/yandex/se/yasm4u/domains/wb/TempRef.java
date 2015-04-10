@@ -50,7 +50,7 @@ public class TempRef<T> extends StateRef<T> {
 
   @Override
   public boolean available(State wb) {
-    return controller.available(realRef(wb));
+    return wb.available(this);
   }
 
   private Ref<T, ?> realRef(State state) {

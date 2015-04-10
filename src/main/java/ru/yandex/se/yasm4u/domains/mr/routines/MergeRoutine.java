@@ -1,5 +1,6 @@
 package ru.yandex.se.yasm4u.domains.mr.routines;
 
+import com.spbsu.commons.util.ArrayTools;
 import com.spbsu.commons.util.MultiMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
@@ -56,8 +57,7 @@ public class MergeRoutine implements Routine {
 
   @Override
   public Joba[] buildVariants(Ref[] state, final JobExecutorService executor) {
-    final MultiMap<MRPath, MRPath> map = new MultiMap<>();
-    final Map<MRPath, BitSet> exists = new HashMap<>();
+    final Map<MRPath, MRPath[]> shardsMap = new HashMap<>();
     for(int i = 0; i < state.length; i++) {
       if (MRPath.class.isAssignableFrom(state[i].type())) {
         final MRPath ref = (MRPath)executor.resolve(state[i]);
@@ -65,30 +65,26 @@ public class MergeRoutine implements Routine {
           final Matcher matcher = MERGE_PATTERN.matcher(ref.path);
           if (matcher.find()) {
             final MRPath resource = new MRPath(MRPath.Mount.valueOf(matcher.group(2)), matcher.group(1), false);
-            map.put(resource, ref);
-            BitSet bitSet = exists.get(resource);
-            if (bitSet == null) {
-              final int nbits = Integer.parseInt(matcher.group(3));
-              exists.put(resource, bitSet = new BitSet(nbits));
-              bitSet.set(0, nbits);
+            MRPath[] shards = shardsMap.get(resource);
+            if (shards == null) {
+              shardsMap.put(resource, shards = new MRPath[Integer.parseInt(matcher.group(3))]);
             }
-            bitSet.clear(Integer.parseInt(matcher.group(4)));
+            shards[Integer.parseInt(matcher.group(4))] = ref.mkunsorted();
           }
         }
       }
     }
-    final Set<MRPath> keys = map.getKeys();
     final List<Joba> variants = new ArrayList<>();
-    for (final MRPath resource : keys) {
-      final Collection<MRPath> paths = map.get(resource);
-      if (!exists.get(resource).isEmpty())
+    for (final Map.Entry<MRPath, MRPath[]> entry : shardsMap.entrySet()) {
+      final MRPath[] shards = entry.getValue();
+      if (ArrayTools.indexOf(null, shards) >= 0)
         continue;
-      variants.add(new Joba.Stub(paths.toArray(new MRPath[paths.size()]), new MRPath[]{resource}) {
+      final MRPath resource = entry.getKey();
+      variants.add(new Joba.Stub(shards, new MRPath[]{resource}) {
         @Override
         public void run() {
           executor.domain(MREnv.class).copy((MRPath[]) consumes(), resource, false);
         }
-
         public String toString() {
           return "Merge " + Arrays.toString(consumes()) + " -> " + resource;
         }
