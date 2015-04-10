@@ -53,12 +53,12 @@ public class ConfigurationDomain implements Domain {
 
     @Override
     public Class<Configuration> type() {
-      return null;
+      return Configuration.class;
     }
 
     @Override
     public Class<ConfigurationDomain> domainType() {
-      return null;
+      return ConfigurationDomain.class;
     }
 
     @Override
