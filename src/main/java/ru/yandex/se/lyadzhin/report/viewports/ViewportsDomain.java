@@ -94,7 +94,7 @@ public class ViewportsDomain implements Domain {
 
     @Override
     public String id() {
-      return null;
+      return viewportId;
     }
 
     @Override
@@ -109,14 +109,28 @@ public class ViewportsDomain implements Domain {
         public String id() {
           return viewportId;
         }
+
+        @Override
+        public String toString() {
+          return "Viewport{" +
+                  "viewportId='" + viewportId + '\'' +
+                  '}';
+        }
       };
+    }
+
+    @Override
+    public String toString() {
+      return "MyViewportBuilder{" +
+              "viewportId='" + viewportId + '\'' +
+              '}';
     }
   }
 
   private static class MyViewportRanker implements ViewportRanker {
     @Override
     public List<Viewport> rank(Collection<Viewport> viewports) {
-      return null;
+      return new ArrayList<>(viewports);
     }
   }
 }

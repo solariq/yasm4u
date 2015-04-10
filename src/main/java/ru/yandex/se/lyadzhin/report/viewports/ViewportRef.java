@@ -47,11 +47,12 @@ public class ViewportRef implements Ref<Viewport, ViewportsDomain> {
 
     ViewportRef that = (ViewportRef) o;
 
-    return !(viewportId != null ? !viewportId.equals(that.viewportId) : that.viewportId != null);
+    return viewportId.equals(that.viewportId);
+
   }
 
   @Override
   public int hashCode() {
-    return viewportId != null ? viewportId.hashCode() : 0;
+    return viewportId.hashCode();
   }
 }

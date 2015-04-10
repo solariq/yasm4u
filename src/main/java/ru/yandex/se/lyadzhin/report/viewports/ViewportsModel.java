@@ -20,4 +20,11 @@ public class ViewportsModel {
   public Viewport at(int i) {
     return viewports.get(i);
   }
+
+  @Override
+  public String toString() {
+    return "ViewportsModel{" +
+            "viewports=" + viewports +
+            '}';
+  }
 }
