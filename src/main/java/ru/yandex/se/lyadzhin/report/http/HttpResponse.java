@@ -1,4 +1,4 @@
-package ru.yandex.se.lyadzhin.report;
+package ru.yandex.se.lyadzhin.report.http;
 
 /**
  * User: lyadzhin
