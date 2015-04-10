@@ -50,7 +50,7 @@ class PublishSourceRequestExecutorsRoutine implements Routine {
 
     @Override
     public void run() {
-      System.out.println("Processing source request to " + sourceRequest);
+      System.out.println("Processing source request to " + sourceRequest.sourceKey());
       domain.addResponse(sourceRequest.response());
     }
   }

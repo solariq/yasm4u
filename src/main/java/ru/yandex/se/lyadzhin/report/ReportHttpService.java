@@ -34,7 +34,10 @@ public class ReportHttpService {
     try {
       final ConfigurationDomain configurationDomain = new ConfigurationDomain();
       final JobExecutorService jes = new MainThreadJES(false,
-              userCommunicationDomain, whiteboard, sourceCommunicationDomain, configurationDomain
+              userCommunicationDomain,
+              whiteboard,
+              sourceCommunicationDomain,
+              configurationDomain
       );
       final Future<Configuration> configurationFuture = jes.calculate(ConfigurationDomain.REF_CONFIGURATION);
       configuration = configurationFuture.get();
@@ -47,7 +50,11 @@ public class ReportHttpService {
       final ViewportsDomain viewportsDomain = new ViewportsDomain(configuration);
       final CommunicationBridgeDomain communicationBridgeDomain = new CommunicationBridgeDomain(configuration, userCommunicationDomain, viewportsDomain, whiteboard);
       final JobExecutorService jes = new MainThreadJES(true,
-              userCommunicationDomain, whiteboard, viewportsDomain, communicationBridgeDomain
+              sourceCommunicationDomain,
+              userCommunicationDomain,
+              whiteboard,
+              viewportsDomain,
+              communicationBridgeDomain
       );
       final Future<UserHttpCommunicationDomain.CommunicationStatus> statusFuture = jes.calculate(userCommunicationDomain.goal());
       communicationStatus = statusFuture.get();

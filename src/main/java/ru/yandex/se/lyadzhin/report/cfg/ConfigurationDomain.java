@@ -1,8 +1,6 @@
 package ru.yandex.se.lyadzhin.report.cfg;
 
 
-import ru.yandex.se.lyadzhin.report.sources.SourceCommunicationDomain;
-import ru.yandex.se.lyadzhin.report.sources.SourceRequest;
 import ru.yandex.se.yasm4u.Domain;
 import ru.yandex.se.yasm4u.Joba;
 import ru.yandex.se.yasm4u.Ref;
@@ -31,10 +29,8 @@ public class ConfigurationDomain implements Domain {
 
   @Override
   public void publishExecutables(List<Joba> jobs, List<Routine> routines) {
-    final SourceRequest fooSourceRequest =
-            new SourceRequest(SourceCommunicationDomain.SOURCE_FOO);
-    jobs.add(new FooSourceRequestPublisherJoba(fooSourceRequest));
-    jobs.add(new ConfigurationPublisherJoba(this, fooSourceRequest));
+    jobs.add(new InitialRequestsPublisherJoba());
+    jobs.add(new ConfigurationPublisherJoba(this));
   }
 
   @Override
