@@ -9,7 +9,10 @@ import java.net.URI;
 * Date: 08.04.15 19:17
 */
 public class SourceResponse implements Ref<String, SourceCommunicationDomain> {
+  private final SourceRequest request;
+
   public SourceResponse(SourceRequest request) {
+    this.request = request;
   }
 
   @Override
@@ -29,11 +32,25 @@ public class SourceResponse implements Ref<String, SourceCommunicationDomain> {
 
   @Override
   public String resolve(SourceCommunicationDomain dom) {
-    return "PREVED";
+    return dom.hasResponse(this) ? "PREVED" : null;
   }
 
   @Override
   public boolean available(SourceCommunicationDomain dom) {
-    return true;
+    return dom.hasResponse(this);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    SourceResponse that = (SourceResponse) o;
+    return request.equals(that.request);
+  }
+
+  @Override
+  public int hashCode() {
+    return request.hashCode();
   }
 }
