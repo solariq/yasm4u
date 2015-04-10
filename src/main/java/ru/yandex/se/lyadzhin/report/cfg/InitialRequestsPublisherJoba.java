@@ -8,11 +8,8 @@ import ru.yandex.se.yasm4u.Ref;
 * User: lyadzhin
 * Date: 08.04.15 20:40
 */
-class FooSourceRequestPublisherJoba implements Joba {
-  private final SourceRequest fooSourceRequest;
-
-  public FooSourceRequestPublisherJoba(SourceRequest fooSourceRequest) {
-    this.fooSourceRequest = fooSourceRequest;
+class InitialRequestsPublisherJoba implements Joba {
+  public InitialRequestsPublisherJoba() {
   }
 
   @Override
@@ -22,11 +19,11 @@ class FooSourceRequestPublisherJoba implements Joba {
 
   @Override
   public Ref[] produces() {
-    return new Ref[] {fooSourceRequest};
+    return new Ref[] {new SourceRequest(SourceRequest.SOURCE_FOO)};
   }
 
   @Override
   public void run() {
-    System.out.println("Generation FOO source request");
+    System.out.println("Generating FOO source request");
   }
 }

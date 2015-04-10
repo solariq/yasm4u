@@ -14,8 +14,6 @@ import java.util.Set;
  * Date: 04.04.15 12:46
  */
 public class SourceCommunicationDomain implements Domain {
-  public static final String SOURCE_FOO = "FOO";
-
   private final Set<SourceResponse> responses = new HashSet<>();
 
   @Override

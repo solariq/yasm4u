@@ -12,12 +12,12 @@ import java.util.List;
  * User: lyadzhin
  * Date: 10.04.15 16:14
  */
-public class ViewportRankerJoba implements Joba {
+public class ViewportRankingJoba implements Joba {
   private final ViewportsDomain viewportsDomain;
   private final ViewportRanker ranker;
   private final List<String> viewportIds;
 
-  public ViewportRankerJoba(ViewportsDomain viewportsDomain, ViewportRanker ranker, List<String> viewportIds) {
+  public ViewportRankingJoba(ViewportsDomain viewportsDomain, ViewportRanker ranker, List<String> viewportIds) {
     this.viewportsDomain = viewportsDomain;
     this.ranker = ranker;
     this.viewportIds = viewportIds;

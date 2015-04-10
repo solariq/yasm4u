@@ -1,7 +1,6 @@
 package ru.yandex.se.lyadzhin.report.viewports;
 
 import ru.yandex.se.lyadzhin.report.cfg.Configuration;
-import ru.yandex.se.lyadzhin.report.sources.SourceRequest;
 import ru.yandex.se.yasm4u.Domain;
 import ru.yandex.se.yasm4u.Joba;
 import ru.yandex.se.yasm4u.Ref;
@@ -18,8 +17,8 @@ public class ViewportsDomain implements Domain {
   public static final Ref<ViewportsModel,ViewportsDomain> REF_VIEWPORTS_MODEL = new ViewportsModelRef();
 
   private final Configuration configuration;
-  private final Map<String,Viewport> viewports = new HashMap<>();
 
+  private final Map<String,Viewport> viewports = new HashMap<>();
   private ViewportsModel viewportsModel;
 
   public ViewportsDomain(Configuration configuration) {
@@ -29,9 +28,11 @@ public class ViewportsDomain implements Domain {
   @Override
   public void publishExecutables(List<Joba> jobs, List<Routine> routines) {
     for (String viewportId : configuration.viewportIdList()) {
-      jobs.add(new ViewportBuilderJoba(this, new MyViewportBuilder(viewportId)));
+      final MockViewportBuilder viewportBuilder = new MockViewportBuilder(viewportId);
+      jobs.add(new ViewportRequestingJoba(viewportBuilder));
+      jobs.add(new ViewportBuildingJoba(this, viewportBuilder));
     }
-    jobs.add(new ViewportRankerJoba(this, new MyViewportRanker(), configuration.viewportIdList()));
+    jobs.add(new ViewportRankingJoba(this, new MockViewportRanker(), configuration.viewportIdList()));
   }
 
   @Override
@@ -85,52 +86,4 @@ public class ViewportsDomain implements Domain {
     }
   }
 
-  private static class MyViewportBuilder implements ViewportBuilder {
-    private final String viewportId;
-
-    public MyViewportBuilder(String viewportId) {
-      this.viewportId = viewportId;
-    }
-
-    @Override
-    public String id() {
-      return viewportId;
-    }
-
-    @Override
-    public SourceRequest[] requests() {
-      return new SourceRequest[] {new SourceRequest("IMAGES_SEARCH")};
-    }
-
-    @Override
-    public Viewport build() {
-      return new Viewport() {
-        @Override
-        public String id() {
-          return viewportId;
-        }
-
-        @Override
-        public String toString() {
-          return "Viewport{" +
-                  "viewportId='" + viewportId + '\'' +
-                  '}';
-        }
-      };
-    }
-
-    @Override
-    public String toString() {
-      return "MyViewportBuilder{" +
-              "viewportId='" + viewportId + '\'' +
-              '}';
-    }
-  }
-
-  private static class MyViewportRanker implements ViewportRanker {
-    @Override
-    public List<Viewport> rank(Collection<Viewport> viewports) {
-      return new ArrayList<>(viewports);
-    }
-  }
 }
