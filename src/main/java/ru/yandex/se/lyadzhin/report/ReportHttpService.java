@@ -48,7 +48,7 @@ public class ReportHttpService {
     final UserHttpCommunicationDomain.CommunicationStatus communicationStatus;
     try {
       final ViewportsDomain viewportsDomain = new ViewportsDomain(configuration);
-      final CommunicationBridgeDomain communicationBridgeDomain = new CommunicationBridgeDomain(configuration, userCommunicationDomain, viewportsDomain, whiteboard);
+      final CommunicationBridgeDomain communicationBridgeDomain = new CommunicationBridgeDomain(userCommunicationDomain, viewportsDomain);
       final JobExecutorService jes = new MainThreadJES(true,
               sourceCommunicationDomain,
               userCommunicationDomain,

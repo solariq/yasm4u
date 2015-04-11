@@ -1,14 +1,8 @@
 package ru.yandex.se.lyadzhin.report.bridge;
 
-import ru.yandex.se.lyadzhin.report.http.BodyPartRef;
 import ru.yandex.se.lyadzhin.report.http.UserHttpCommunicationDomain;
-import ru.yandex.se.lyadzhin.report.cfg.Configuration;
 import ru.yandex.se.lyadzhin.report.viewports.ViewportsDomain;
-import ru.yandex.se.yasm4u.Domain;
-import ru.yandex.se.yasm4u.Joba;
-import ru.yandex.se.yasm4u.Ref;
-import ru.yandex.se.yasm4u.Routine;
-import ru.yandex.se.yasm4u.domains.wb.Whiteboard;
+import ru.yandex.se.yasm4u.*;
 
 import java.util.List;
 
@@ -17,31 +11,22 @@ import java.util.List;
  * Date: 04.04.15 11:34
  */
 public class CommunicationBridgeDomain implements Domain {
-  private final Configuration configuration;
-  private final UserHttpCommunicationDomain communication;
+  private final UserHttpCommunicationDomain communicationDomain;
   private final ViewportsDomain viewportsDomain;
-  private final Whiteboard wb;
 
-  public CommunicationBridgeDomain(Configuration configuration,
-                                   UserHttpCommunicationDomain communication,
-                                   ViewportsDomain viewportsDomain,
-                                   Whiteboard wb)
+  public CommunicationBridgeDomain(UserHttpCommunicationDomain communicationDomain,
+                                   ViewportsDomain viewportsDomain)
   {
-    this.configuration = configuration;
-    this.communication = communication;
+    this.communicationDomain = communicationDomain;
     this.viewportsDomain = viewportsDomain;
-    this.wb = wb;
   }
 
   @Override
   public void publishExecutables(List<Joba> jobs, List<Routine> routines) {
-    final BodyPartRef[] bodyPartRefs = communication.allocateBodyParts(1);
-    jobs.add(new ViewportModel2BodyPartConverterJoba(bodyPartRefs[0], viewportsDomain, wb));
+    jobs.add(new GenerateHttpBodyPartFromViewportJoba(viewportsDomain, communicationDomain));
   }
 
   @Override
   public void publishReferenceParsers(Ref.Parser parser, Controller controller) {
   }
-
-
 }

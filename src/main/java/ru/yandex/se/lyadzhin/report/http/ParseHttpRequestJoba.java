@@ -25,13 +25,13 @@ class ParseHttpRequestJoba implements Joba {
 
   @Override
   public Ref[] produces() {
-    return new Ref[]{ConfigurationDomain.Input.YANDEX_UID, ConfigurationDomain.Input.TEXT};
+    return new Ref[]{ConfigurationDomain.USER_YANDEX_UID, ConfigurationDomain.USER_QUERY_TEXT};
   }
 
   @Override
   public void run() {
     System.out.println("Parsing HTTP request");
-    whiteboard.set(ConfigurationDomain.Input.YANDEX_UID, "12345");
-    whiteboard.set(ConfigurationDomain.Input.TEXT, "kotiki");
+    whiteboard.set(ConfigurationDomain.USER_YANDEX_UID, "12345");
+    whiteboard.set(ConfigurationDomain.USER_QUERY_TEXT, "kotiki");
   }
 }

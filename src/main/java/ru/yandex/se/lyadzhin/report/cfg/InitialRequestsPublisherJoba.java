@@ -14,7 +14,7 @@ class InitialRequestsPublisherJoba implements Joba {
 
   @Override
   public Ref[] consumes() {
-    return new Ref[] {ConfigurationDomain.Input.YANDEX_UID, ConfigurationDomain.Input.TEXT};
+    return new Ref[] {ConfigurationDomain.USER_YANDEX_UID, ConfigurationDomain.USER_QUERY_TEXT};
   }
 
   @Override

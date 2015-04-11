@@ -17,10 +17,8 @@ import java.util.List;
 public class ConfigurationDomain implements Domain {
   public static final Ref<Configuration, ConfigurationDomain> REF_CONFIGURATION = new ConfigurationRef();
 
-  public interface Input {
-    StateRef<String> YANDEX_UID = new StateRef<>("yandex_uid", String.class);
-    StateRef<String> TEXT = new StateRef<>("text", String.class);
-  }
+  public static final StateRef<String> USER_YANDEX_UID = new StateRef<>("yandex_uid", String.class);
+  public static final StateRef<String> USER_QUERY_TEXT = new StateRef<>("text", String.class);
 
   private Configuration configuration;
 
