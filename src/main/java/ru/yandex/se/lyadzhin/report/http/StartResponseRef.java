@@ -43,4 +43,18 @@ public class StartResponseRef implements Ref<Void,UserHttpCommunicationDomain> {
   public boolean available(UserHttpCommunicationDomain controller) {
     return true;
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    StartResponseRef that = (StartResponseRef) o;
+    return partsCount == that.partsCount;
+  }
+
+  @Override
+  public int hashCode() {
+    return partsCount;
+  }
 }
