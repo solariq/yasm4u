@@ -43,7 +43,7 @@ public class AnnotatedMRProcess implements Routine {
 
   public AnnotatedMRProcess(final Class<?> processDescription, Whiteboard wb, MREnv env) {
     this.processDescription = processDescription;
-    this.jes = new MainThreadJES(env, wb);
+    this.jes = new MainThreadJES(false, env, wb);
     this.jes.addRoutine(this);
     goals = resolveNames(processDescription.getAnnotation(MRProcessClass.class).goal(), jes);
     try {
@@ -65,7 +65,7 @@ public class AnnotatedMRProcess implements Routine {
     final List<Ref> input = new ArrayList<>();
     final List<Ref> output = new ArrayList<>();
     if (checkInput(state, input, output)) {
-      return new Joba[]{new MyJoba(input.toArray(new Ref[input.size()]), goals, new MainThreadJES(true, jes.domains()))};
+      return new Joba[]{new MyJoba(input.toArray(new Ref[input.size()]), goals, new MainThreadJES(false, jes.domains()))};
     }
     return new Joba[0];
   }
