@@ -139,6 +139,9 @@ public class MRPath implements Serializable, Ref<MRPath, MREnv> {
    * @param source this parameter contains path+query+fragment parts of URI.
    */
   public static MRPath create(String source) {
+    if (source.startsWith("mr://"))
+      return createFromURI(source);
+
     if (source.contains("//"))
       throw new RuntimeException("//");
 
