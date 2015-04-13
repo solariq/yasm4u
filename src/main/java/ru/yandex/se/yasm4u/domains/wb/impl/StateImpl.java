@@ -15,10 +15,7 @@ import ru.yandex.se.yasm4u.domains.wb.StateRef;
 import ru.yandex.se.yasm4u.domains.wb.TempRef;
 import ru.yandex.se.yasm4u.impl.JobExecutorServiceBase;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.ObjectStreamException;
+import java.io.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -126,15 +123,18 @@ public class StateImpl implements State {
       }
     };
 
-    while(in.readBoolean()) {
-      final StateRef current = (StateRef)trash.parse(in.readUTF());
-      final String itemClass = in.readUTF();
-      final byte[] byteObj = new byte[in.readInt()];
-      in.readFully(byteObj);
-      final Object read = State.SERIALIZATION.read(new String(byteObj, 0, byteObj.length, "utf-8"),
-          State.SERIALIZATION.base.conversionType(Class.forName(itemClass), CharSequence.class));
-      state.put(current, read);
+    try {
+      while(in.readBoolean()) {
+        final StateRef current = (StateRef)trash.parse(in.readUTF());
+        final String itemClass = in.readUTF();
+        final byte[] byteObj = new byte[in.readInt()];
+        in.readFully(byteObj);
+        final Object read = State.SERIALIZATION.read(new String(byteObj, 0, byteObj.length, "utf-8"),
+            State.SERIALIZATION.base.conversionType(Class.forName(itemClass), CharSequence.class));
+        state.put(current, read);
+      }
     }
+    catch (EOFException ignored) {}
   }
 
   private void readObjectNoData() throws ObjectStreamException {
