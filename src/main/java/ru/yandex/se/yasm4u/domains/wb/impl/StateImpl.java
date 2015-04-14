@@ -123,18 +123,12 @@ public class StateImpl implements State {
       }
     };
 
-    try {
-      while(in.readBoolean()) {
-        final StateRef current = (StateRef)trash.parse(in.readUTF());
-        final String itemClass = in.readUTF();
-        final byte[] byteObj = new byte[in.readInt()];
-        in.readFully(byteObj);
-        final Object read = State.SERIALIZATION.read(new String(byteObj, 0, byteObj.length, "utf-8"),
-            State.SERIALIZATION.base.conversionType(Class.forName(itemClass), CharSequence.class));
-        state.put(current, read);
-      }
+    while(in.readBoolean()) {
+      final StateRef current = (StateRef)trash.parse(in.readUTF());
+      final String itemClass = in.readUTF();
+      final Object read = State.SERIALIZATION.read(in.readUTF(), Class.forName(itemClass));
+      state.put(current, read);
     }
-    catch (EOFException ignored) {}
   }
 
   private void readObjectNoData() throws ObjectStreamException {
