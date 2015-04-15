@@ -1,8 +1,6 @@
 package ru.yandex.se.yasm4u.impl;
 
-import com.spbsu.commons.filters.Filter;
 import com.spbsu.commons.func.Evaluator;
-import com.spbsu.commons.util.ArrayTools;
 import org.jetbrains.annotations.NotNull;
 import ru.yandex.se.yasm4u.JobExecutorService;
 import ru.yandex.se.yasm4u.Joba;
@@ -80,9 +78,16 @@ public class Planner {
     final Set<Joba> possibleJobas = new HashSet<>();
     final Set<Ref> possibleResources = new HashSet<>();
 
-    forwardPath(jes, initialState, possibleJobas, possibleResources, goals);
+    final Set<Ref> goalsSet = new HashSet<>(Arrays.asList(goals));
+    if (!forwardPath(jes, initialState, possibleJobas, possibleResources, goalsSet))
+      throw new IllegalArgumentException("Unable to create plan : " + Arrays.toString(goalsSet.toArray()) + " unreachable");
+
     final List<Joba> best = backwardPath(goals, possibleJobas, initialState);
     return best.toArray(new Joba[best.size()]);
+  }
+
+  private boolean forwardPath(JobExecutorService jes, Set<Ref> next, Set<Joba> possibleJobas, Set<Ref> possibleResources, Ref... res) {
+    return forwardPath(jes, next, possibleJobas, possibleResources, new HashSet<>(Arrays.asList(res)));
   }
 
   private List<Joba> backwardPath(Ref[] goals, Set<Joba> possibleJobas, Set<Ref> initialState) {
@@ -92,8 +97,8 @@ public class Planner {
       public int compare(Set<Ref> o1, Set<Ref> o2) {
         final int cmp1 = Double.compare(states.get(o1).weight, states.get(o2).weight);
         if (cmp1 == 0) {
-          final int cmp2 = Integer.compare(o1.hashCode(), o2.hashCode());
-          return cmp2 == 0 && !o1.equals(o2)? 1 : cmp2;
+          final int cmp3 = Integer.compare(o1.hashCode(), o2.hashCode());
+          return cmp3 == 0 && !o1.equals(o2) ? 1 : cmp3;
         }
         return cmp1;
       }
@@ -115,46 +120,71 @@ public class Planner {
         best = currentState;
         continue;
       }
-
-      for (final Joba job : possibleJobas) {
-        final Set<Ref> finalCurrent = current;
-        if (!ArrayTools.or(job.produces(), new Filter<Ref>() {
-          @Override
-          public boolean accept(Ref ref) {
-            return finalCurrent.contains(ref);
+      final Set<Joba> jobs = new HashSet<>(possibleJobas);
+      jobs.removeAll(currentState.plan);
+      {
+        final Set<Ref> parallelConsuming = new HashSet<>();
+        final Set<Ref> parallelProducing = new HashSet<>();
+        final Set<Joba> randomOrderTasks = new HashSet<>();
+        while (!jobs.isEmpty()) {
+          final Iterator<Joba> jobIt = jobs.iterator();
+          while (jobIt.hasNext()) {
+            final Joba next = jobIt.next();
+            boolean fits = true;
+            boolean possible = false;
+            for (final Ref ref : next.produces()) {
+              if (current.contains(ref)) {
+                possible = true;
+              }
+              if (parallelConsuming.contains(ref) || parallelProducing.contains(ref)) {
+                fits = false;
+              }
+            }
+            if (!possible)
+              jobIt.remove();
+            else if (fits) {
+              randomOrderTasks.add(next);
+              parallelConsuming.addAll(Arrays.asList(next.consumes()));
+              parallelProducing.addAll(Arrays.asList(next.produces()));
+            }
           }
-        }))
-          continue;
-        final Set<Ref> next = new HashSet<>(current);
-        next.addAll(Arrays.asList(job.consumes()));
-        next.removeAll(Arrays.asList(job.produces()));
-        final PossibleState nextState = currentState.next(job);
-        final PossibleState knownState = states.get(next);
-        if (knownState == null || knownState.weight > nextState.weight) {
-          states.put(next, nextState);
-          order.remove(next);
-          order.add(next);
+          final Set<Ref> next = new HashSet<>(current);
+          PossibleState nextState = currentState;
+          for (Joba job : randomOrderTasks) {
+            next.addAll(Arrays.asList(job.consumes()));
+            next.removeAll(Arrays.asList(job.produces()));
+            nextState = nextState.next(job);
+            jobs.remove(job);
+          }
+          final PossibleState knownState = states.get(next);
+          if (knownState == null || knownState.weight > nextState.weight) {
+            states.put(next, nextState);
+            order.remove(next);
+            order.add(next);
+          }
+
+          parallelConsuming.clear();
+          parallelProducing.clear();
+          randomOrderTasks.clear();
         }
       }
     }
     if (best == null)
-      throw new RuntimeException("Unable to create feasible plan! This should not happen.");
+      throw new RuntimeException("Unable to create feasible plan! This must not happen.");
     Collections.reverse(best.plan);
     return best.plan;
   }
 
-  private boolean forwardPath(JobExecutorService jes, Set<Ref> initialState, Set<Joba> possibleJobas, Set<Ref> possibleResources, Ref... goals) {
+  private boolean forwardPath(JobExecutorService jes, Set<Ref> initialState, Set<Joba> possibleJobas, Set<Ref> possibleResources, Set<Ref> goals) {
     possibleJobas.clear();
     possibleResources.clear();
     possibleJobas.addAll(Arrays.asList(jobs));
     possibleResources.addAll(initialState);
-    final Set<Ref> goalsSet = new HashSet<>(Arrays.asList(goals));
     final List<Joba> jobs = new ArrayList<>(Arrays.asList(this.jobs));
-    while(!possibleResources.containsAll(goalsSet)) {
+    while(!possibleResources.containsAll(goals)) {
       final Ref[] state = possibleResources.toArray(new Ref[possibleResources.size()]);
       for (final Routine routine : this.routines) {
-        final List<Joba> routineGenerated = Arrays.asList(routine.buildVariants(state, jes));
-        jobs.addAll(routineGenerated);
+        jobs.addAll(Arrays.asList(routine.buildVariants(state, jes)));
       }
       final Iterator<Joba> jobsIt = jobs.iterator();
       while (jobsIt.hasNext()) {
@@ -165,8 +195,8 @@ public class Planner {
           jobsIt.remove();
         }
       }
-      if (possibleResources.size() == state.length && !possibleResources.containsAll(goalsSet)) {
-        goalsSet.removeAll(possibleResources);
+      if (possibleResources.size() == state.length && !possibleResources.containsAll(goals)) {
+        goals.removeAll(possibleResources);
         return false;
       }
     }
