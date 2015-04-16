@@ -11,9 +11,9 @@ import ru.yandex.se.yasm4u.domains.wb.impl.WhiteboardImpl;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * User: solar
@@ -35,14 +35,14 @@ public class SSHProcessRunner implements ProcessRunner {
     initProxyLink();
   }
 
-  private void initProxyLink() {
+  private synchronized boolean initProxyLink() {
     if (process != null) {
       try {
         if (process.exitValue() != 0)
           LOG.warn("SSH connection dropped, exit code " + process.exitValue());
       }
       catch (IllegalThreadStateException is) { // the process is alive
-        return;
+        return false;
       }
     }
     while (true) {
@@ -81,6 +81,7 @@ public class SSHProcessRunner implements ProcessRunner {
     };
     thread.setDaemon(true);
     thread.start();
+    return true;
   }
 
   @Override
@@ -216,7 +217,7 @@ public class SSHProcessRunner implements ProcessRunner {
   }
 
   @Override
-  public void close() {
+  public synchronized void close() {
     try {
       process.destroy();
       toProxy.close();
@@ -231,9 +232,9 @@ public class SSHProcessRunner implements ProcessRunner {
     //System.out.println("remoteTmpRunner = " + remoteTmpRunner);
 
     final String absolutePath = remoteTmpRunner;
-    final String outputResult = communicate("rm -f " + absolutePath + "; echo Ok;");
+    final String outputResult = communicate("rm -f " + absolutePath + " 2> /dev/null 1>&2; echo Ok;");
     if (!"Ok".equals(outputResult))
-      throw new RuntimeException("Ssh Ok-test wasn't passed!");
+      throw new RuntimeException("Ssh Ok-test wasn't passed, found [" + outputResult + "]!");
     //System.out.println("outputResult = " + outputResult);
     if (isText) {
       final StringBuilder builder = new StringBuilder();
@@ -279,7 +280,7 @@ public class SSHProcessRunner implements ProcessRunner {
     return absolutePath;
   }
 
-  private String communicate(String command) throws IOException {
+  private synchronized String communicate(String command) throws IOException {
     String result;
     do {
       initProxyLink();
