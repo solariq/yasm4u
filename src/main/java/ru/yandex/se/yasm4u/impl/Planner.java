@@ -1,6 +1,8 @@
 package ru.yandex.se.yasm4u.impl;
 
+import com.spbsu.commons.filters.Filter;
 import com.spbsu.commons.func.Evaluator;
+import com.spbsu.commons.util.ArrayTools;
 import org.jetbrains.annotations.NotNull;
 import ru.yandex.se.yasm4u.JobExecutorService;
 import ru.yandex.se.yasm4u.Joba;
@@ -81,8 +83,25 @@ public class Planner {
     final Set<Ref> goalsSet = new HashSet<>(Arrays.asList(goals));
     if (!forwardPath(jes, initialState, possibleJobas, possibleResources, goalsSet))
       throw new IllegalArgumentException("Unable to create plan : " + Arrays.toString(goalsSet.toArray()) + " unreachable");
-
-    final List<Joba> best = backwardPath(goals, possibleJobas, initialState);
+    possibleResources.clear();
+    possibleResources.addAll(goalsSet);
+    final Set<Joba> neededJobas = new HashSet<>();
+    int currentPower;
+    do {
+      currentPower = possibleResources.size();
+      for (Joba joba : possibleJobas) {
+        boolean needed = false;
+        for (Ref ref : joba.produces()) {
+          needed |= possibleResources.contains(ref);
+        }
+        if (needed) {
+          possibleResources.addAll(Arrays.asList(joba.consumes()));
+          neededJobas.add(joba);
+        }
+      }
+    }
+    while (currentPower < possibleResources.size());
+    final List<Joba> best = backwardPath(goals, neededJobas, initialState);
     return best.toArray(new Joba[best.size()]);
   }
 
@@ -105,13 +124,13 @@ public class Planner {
     });
 
     final HashSet<Ref> goalsSet = new HashSet<>(Arrays.asList(goals));
-    states.put(goalsSet, new PossibleState(new ArrayList<Joba>(), 0.));
+    states.put(goalsSet, new PossibleState(new ArrayList<Joba>(), possibleJobas, goalsSet, 0.));
     order.add(goalsSet);
 
-    Set<Ref> current;
     PossibleState best = null;
     double bestScore = Double.POSITIVE_INFINITY;
-    while ((current = order.pollFirst()) != null) {
+    while (!order.isEmpty()) {
+      final Set<Ref> current = order.pollFirst();
       final PossibleState currentState = states.get(current);
       if (bestScore <= currentState.weight)
         continue;
@@ -120,37 +139,51 @@ public class Planner {
         best = currentState;
         continue;
       }
-      final Set<Joba> jobs = new HashSet<>(possibleJobas);
-      jobs.removeAll(currentState.plan);
+      final Set<Joba> jobs = new HashSet<>(currentState.possibleJobas);
       {
-        final Set<Ref> parallelConsuming = new HashSet<>();
-        final Set<Ref> parallelProducing = new HashSet<>();
         final Set<Joba> randomOrderTasks = new HashSet<>();
-        while (!jobs.isEmpty()) {
+        { // Filter impossible, we don't need produced resources yet or producing something that is needed by other tasks
+          final Set<Ref> consumedResources = new HashSet<>();
+          for (final Joba job : jobs) {
+            consumedResources.addAll(Arrays.asList(job.consumes()));
+          }
           final Iterator<Joba> jobIt = jobs.iterator();
           while (jobIt.hasNext()) {
-            final Joba next = jobIt.next();
-            boolean fits = true;
-            boolean possible = false;
-            for (final Ref ref : next.produces()) {
-              if (current.contains(ref)) {
-                possible = true;
+            final Ref[] produces = jobIt.next().produces();
+            boolean needed = false;
+            for(int i = 0; i < produces.length; i++) {
+              if (consumedResources.contains(produces[i])) {
+                jobIt.remove();
+                needed = true; // to preserve double remove
+                break;
               }
-              if (parallelConsuming.contains(ref) || parallelProducing.contains(ref)) {
-                fits = false;
-              }
+              needed |= current.contains(produces[i]);
             }
-            if (!possible)
+            if (!needed)
               jobIt.remove();
-            else if (fits) {
+          }
+        }
+
+        final Set<Ref> produced = new HashSet<>();
+        do {
+          produced.clear();
+          randomOrderTasks.clear();
+          for (final Joba next : jobs) {
+            final Filter<Ref> blockedFilter = new Filter<Ref>() {
+              @Override
+              public boolean accept(Ref ref) {
+                return produced.contains(ref);
+              }
+            };
+
+            if (!ArrayTools.or(next.produces(), blockedFilter)) {
               randomOrderTasks.add(next);
-              parallelConsuming.addAll(Arrays.asList(next.consumes()));
-              parallelProducing.addAll(Arrays.asList(next.produces()));
+              produced.addAll(Arrays.asList(next.produces()));
             }
           }
           final Set<Ref> next = new HashSet<>(current);
           PossibleState nextState = currentState;
-          for (Joba job : randomOrderTasks) {
+          for (final Joba job : randomOrderTasks) {
             next.addAll(Arrays.asList(job.consumes()));
             next.removeAll(Arrays.asList(job.produces()));
             nextState = nextState.next(job);
@@ -162,11 +195,8 @@ public class Planner {
             order.remove(next);
             order.add(next);
           }
-
-          parallelConsuming.clear();
-          parallelProducing.clear();
-          randomOrderTasks.clear();
         }
+        while(!randomOrderTasks.isEmpty());
       }
     }
     if (best == null)
@@ -205,17 +235,29 @@ public class Planner {
 
   private class PossibleState {
     public final List<Joba> plan;
+    public final Set<Joba> possibleJobas;
+    public final Set<Ref> produced;
     public double weight = 0;
 
-    private PossibleState(List<Joba> plan, double weight) {
+    private PossibleState(List<Joba> plan, Set<Joba> possibleJobas, Set<Ref> produced, double weight) {
       this.plan = plan;
+      this.possibleJobas = possibleJobas;
+      this.produced = produced;
       this.weight = weight;
     }
 
     public PossibleState next(Joba job) {
       final List<Joba> nextPlan = new ArrayList<>(plan);
+      final Set<Joba> nextPossible = new HashSet<>(possibleJobas);
+      final Set<Ref> nextProduced = new HashSet<>(produced);
       nextPlan.add(job);
-      return new PossibleState(nextPlan, weight + estimator.value(job));
+      nextProduced.addAll(Arrays.asList(job.produces()));
+      final Iterator<Joba> possibleIter = nextPossible.iterator();
+      while (possibleIter.hasNext()) {
+        if (nextProduced.containsAll(Arrays.asList(possibleIter.next().produces())))
+          possibleIter.remove();
+      }
+      return new PossibleState(nextPlan, nextPossible, nextProduced, weight + estimator.value(job));
     }
   }
 }

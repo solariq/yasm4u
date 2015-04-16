@@ -86,8 +86,8 @@ public class PlannerTest {
   @Test
   public void testBetterWay() {
     final FakeRef a = new FakeRef(1);
-    final FakeRef b = new FakeRef(1);
-    final FakeRef c = new FakeRef(1);
+    final FakeRef b = new FakeRef(2);
+    final FakeRef c = new FakeRef(3);
     final Planner p = new Planner(new Ref[0], new Routine[0], new Joba[]{
             new EmptyJoba(new Ref[]{}, new Ref[]{a}),
             new EmptyJoba(new Ref[]{a}, new Ref[]{b}),
@@ -104,21 +104,7 @@ public class PlannerTest {
     final Planner p = new Planner(new Ref[]{
             new FakeRef(0)
     }, new Routine[]{
-            new Routine() {
-              @Override
-              public Joba[] buildVariants(Ref[] state, JobExecutorService executor) {
-                return ArrayTools.map(state, Joba.class, new Computable<Ref, Joba>() {
-                  @Override
-                  public Joba compute(Ref argument) {
-                    final int index = ((FakeRef)argument).index;
-                    if (index >= 0)
-                      return new EmptyJoba(new Ref[]{argument}, new Ref[]{
-                              new FakeRef(index + 1)});
-                    return new EmptyJoba(new Ref[]{argument}, new Ref[]{});
-                  }
-                });
-              }
-            },
+            new SequentialRoutine(0, 100),
             new Routine() {
               @Override
               public Joba[] buildVariants(Ref[] state, JobExecutorService executor) {
@@ -167,6 +153,20 @@ public class PlannerTest {
       final Joba[] plan = p.build(new MainThreadJES(), new FakeRef(200));
       Assert.assertEquals(201, plan.length);
     }
+  }
+
+  /**
+   * Two parallel tasks one consumes results of another
+   */
+  @Test
+  public void testParallelConsuming() {
+    final Planner p = new Planner(new Ref[0], new Routine[]{
+            new MergeRangeRoutine(3),
+            new CreateFromAirRoutine(1),
+            new SequentialRoutine(0, 2),
+            new SequentialRoutine(3, 4),
+    }, new Joba[]{});
+    final Joba[] plan = p.build(new MainThreadJES(), new FakeRef(4));
   }
 
   private static class MergeRangeRoutine implements Routine {
@@ -224,8 +224,31 @@ public class PlannerTest {
       return result.toArray(new Joba[result.size()]);
     }
   }
-  
+
+  private static class SequentialRoutine implements Routine {
+    private final int to;
+    private final int from;
+
+    public SequentialRoutine(int from, int to) {
+      this.to = to;
+      this.from = from;
+    }
+
+    @Override
+    public Joba[] buildVariants(Ref[] state, JobExecutorService executor) {
+      final List<Joba> result = new ArrayList<>();
+      for (int i = 0; i < state.length; i++) {
+        final Ref ref = state[i];
+        final int index = ((FakeRef) ref).index;
+        if (index >= 0 && index < to && index >= from)
+          result.add(new EmptyJoba(new Ref[]{ref}, new Ref[]{new FakeRef(index + 1)}));
+      }
+      return result.toArray(new Joba[result.size()]);
+    }
+  }
+
   private static class FakeRef implements Ref {
+
     private final int index;
 
     private FakeRef(int index) {
@@ -273,10 +296,10 @@ public class PlannerTest {
 
       return true;
     }
-
     @Override
     public int hashCode() {
       return index;
     }
+
   }
 }
