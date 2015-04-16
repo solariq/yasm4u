@@ -1,7 +1,6 @@
 package ru.yandex.se.yasm4u.domains.mr.routines;
 
 import com.spbsu.commons.util.ArrayTools;
-import com.spbsu.commons.util.MultiMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import ru.yandex.se.yasm4u.JobExecutorService;
@@ -80,7 +79,17 @@ public class MergeRoutine implements Routine {
       if (ArrayTools.indexOf(null, shards) >= 0)
         continue;
       final MRPath resource = entry.getKey();
-      variants.add(new Joba.Stub(shards, new MRPath[]{resource}) {
+      variants.add(new Joba.Stub() {
+        @Override
+        public Ref[] consumes() {
+          return shards;
+        }
+
+        @Override
+        public Ref[] produces() {
+          return new MRPath[]{resource};
+        }
+
         @Override
         public void run() {
           executor.domain(MREnv.class).copy((MRPath[]) consumes(), resource, false);

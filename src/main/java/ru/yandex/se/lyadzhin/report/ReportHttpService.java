@@ -6,6 +6,7 @@ import ru.yandex.se.lyadzhin.report.http.HttpRequest;
 import ru.yandex.se.lyadzhin.report.http.HttpResponse;
 import ru.yandex.se.lyadzhin.report.http.UserHttpCommunicationDomain;
 import ru.yandex.se.lyadzhin.report.cfg.Configuration;
+import ru.yandex.se.lyadzhin.report.logs.LoggingDomain;
 import ru.yandex.se.lyadzhin.report.sources.SourceCommunicationDomain;
 import ru.yandex.se.lyadzhin.report.viewports.ViewportsDomain;
 import ru.yandex.se.yasm4u.JobExecutorService;
@@ -29,6 +30,7 @@ public class ReportHttpService {
     final Whiteboard whiteboard = new WhiteboardImpl(new LocalMREnv(), "main");
     final UserHttpCommunicationDomain userCommunicationDomain = new UserHttpCommunicationDomain(httpRequest, httpResponse, whiteboard);
     final SourceCommunicationDomain sourceCommunicationDomain = new SourceCommunicationDomain();
+    final LoggingDomain loggingDomain = new LoggingDomain();
 
     final Configuration configuration;
     try {
@@ -37,9 +39,10 @@ public class ReportHttpService {
               userCommunicationDomain,
               whiteboard,
               sourceCommunicationDomain,
-              configurationDomain
+              configurationDomain,
+              loggingDomain
       );
-      final Future<Configuration> configurationFuture = jes.calculate(ConfigurationDomain.REF_CONFIGURATION);
+      final Future<Configuration> configurationFuture = jes.calculate(configurationDomain.goal());
       configuration = configurationFuture.get();
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
@@ -48,13 +51,15 @@ public class ReportHttpService {
     final UserHttpCommunicationDomain.CommunicationStatus communicationStatus;
     try {
       final ViewportsDomain viewportsDomain = new ViewportsDomain(configuration);
-      final CommunicationBridgeDomain communicationBridgeDomain = new CommunicationBridgeDomain(userCommunicationDomain, viewportsDomain);
+      final CommunicationBridgeDomain communicationBridgeDomain =
+              new CommunicationBridgeDomain(configuration, userCommunicationDomain, viewportsDomain);
       final JobExecutorService jes = new MainThreadJES(true,
               sourceCommunicationDomain,
               userCommunicationDomain,
               whiteboard,
               viewportsDomain,
-              communicationBridgeDomain
+              communicationBridgeDomain,
+              loggingDomain
       );
       final Future<UserHttpCommunicationDomain.CommunicationStatus> statusFuture = jes.calculate(userCommunicationDomain.goal());
       communicationStatus = statusFuture.get();

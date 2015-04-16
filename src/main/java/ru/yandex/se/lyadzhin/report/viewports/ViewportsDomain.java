@@ -43,20 +43,34 @@ public class ViewportsDomain implements Domain {
     return viewportsModel;
   }
 
+  public Viewport findViewportById(String viewportId) {
+    return viewports.get(viewportId);
+  }
+
   void setViewportsModel(ViewportsModel viewportsModel) {
     this.viewportsModel = viewportsModel;
   }
 
-  void addViewport(Viewport viewport) {
-    viewports.put(viewport.id(), viewport);
+  void onBuilderSuccess(String viewportId, Viewport viewport) {
+    viewports.put(viewportId, viewport);
+  }
+
+  void onBuilderFailed(String viewportId) {
+    viewports.put(viewportId, null);
   }
 
   Collection<Viewport> getViewports() {
-    return viewports.values();
+    final ArrayList<Viewport> result = new ArrayList<>(viewports.values());
+    for (Viewport viewport : viewports.values()) {
+      if (viewport != null) {
+        result.add(viewport);
+      }
+    }
+    return result;
   }
 
-  Viewport findViewportById(String viewportId) {
-    return viewports.get(viewportId);
+  boolean isBuildingCompleted(String viewportId) {
+    return viewports.containsKey(viewportId);
   }
 
   private static class ViewportsModelRef implements Ref<ViewportsModel,ViewportsDomain> {

@@ -5,7 +5,6 @@ import ru.yandex.se.yasm4u.Domain;
 import ru.yandex.se.yasm4u.Joba;
 import ru.yandex.se.yasm4u.Ref;
 import ru.yandex.se.yasm4u.Routine;
-import ru.yandex.se.yasm4u.domains.wb.StateRef;
 
 import java.net.URI;
 import java.util.List;
@@ -15,10 +14,7 @@ import java.util.List;
  * Date: 04.04.15 12:42
  */
 public class ConfigurationDomain implements Domain {
-  public static final Ref<Configuration, ConfigurationDomain> REF_CONFIGURATION = new ConfigurationRef();
-
-  public static final StateRef<String> USER_YANDEX_UID = new StateRef<>("yandex_uid", String.class);
-  public static final StateRef<String> USER_QUERY_TEXT = new StateRef<>("text", String.class);
+  static final Ref<Configuration, ConfigurationDomain> REF_CONFIGURATION = new ConfigurationRef();
 
   private Configuration configuration;
 
@@ -37,6 +33,10 @@ public class ConfigurationDomain implements Domain {
 
   public void setup(Configuration configuration) {
     this.configuration = configuration;
+  }
+
+  public Ref<Configuration, ConfigurationDomain> goal() {
+    return REF_CONFIGURATION;
   }
 
   private static class ConfigurationRef implements Ref<Configuration, ConfigurationDomain> {

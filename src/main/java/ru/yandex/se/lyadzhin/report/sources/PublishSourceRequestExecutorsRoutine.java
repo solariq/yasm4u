@@ -24,34 +24,9 @@ class PublishSourceRequestExecutorsRoutine implements Routine {
     final List<Joba> result = new ArrayList<>();
     for (final Ref ref : state) {
       if (ref instanceof SourceRequest)
-        result.add(new RequestExecutorJoba(domain, (SourceRequest) ref));
+        result.add(new SourceRequestExecutorJoba(domain, (SourceRequest) ref));
     }
     return result.toArray(new Joba[result.size()]);
   }
 
-  private static class RequestExecutorJoba implements Joba {
-    private final SourceCommunicationDomain domain;
-    private final SourceRequest sourceRequest;
-
-    public RequestExecutorJoba(SourceCommunicationDomain domain, SourceRequest sourceRequest) {
-      this.domain = domain;
-      this.sourceRequest = sourceRequest;
-    }
-
-    @Override
-    public Ref[] consumes() {
-      return new Ref[] {sourceRequest};
-    }
-
-    @Override
-    public Ref[] produces() {
-      return new Ref[] {sourceRequest.response()};
-    }
-
-    @Override
-    public void run() {
-      System.out.println("Processing source request to " + sourceRequest.sourceKey());
-      domain.addResponse(sourceRequest.response());
-    }
-  }
 }

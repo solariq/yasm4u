@@ -7,14 +7,18 @@ import ru.yandex.se.lyadzhin.report.sources.SourceRequest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 /**
 * User: lyadzhin
 * Date: 11.04.15 0:08
 */
 class MockViewportBuilder implements ViewportBuilder {
+  private static final Random RND = new Random();
+
   private final String viewportId;
   private final List<String> sourceKeys;
+  private final boolean lucky;
 
   public MockViewportBuilder(String viewportId) {
     this.viewportId = viewportId;
@@ -22,6 +26,7 @@ class MockViewportBuilder implements ViewportBuilder {
     final ArrayList<String> sourceKeys = new ArrayList<>(SourceRequest.ALL_SOURCES);
     Collections.shuffle(sourceKeys);
     this.sourceKeys = sourceKeys.subList(0, sourceKeys.size() / 2);
+    this.lucky = RND.nextBoolean();
   }
 
   @Override
@@ -42,6 +47,9 @@ class MockViewportBuilder implements ViewportBuilder {
 
   @Override
   public Viewport build() {
+    if (!lucky)
+      return null;
+
     return new Viewport() {
       @Override
       public String id() {

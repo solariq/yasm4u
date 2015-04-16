@@ -7,7 +7,7 @@ import ru.yandex.se.yasm4u.Ref;
 * User: lyadzhin
 * Date: 08.04.15 19:14
 */
-class WriteHttpBodyPartJoba implements Joba {
+class WriteHttpBodyPartJoba extends Joba.Stub {
   private final int partNum;
   private final UserHttpCommunicationDomain communicationDomain;
 
@@ -21,7 +21,8 @@ class WriteHttpBodyPartJoba implements Joba {
 
   @Override
   public Ref[] consumes() {
-    return partNum > 0 ? new Ref[]{new BodyPartDoneRef(partNum - 1)} : new Ref[0];
+    return partNum > 0 ? new Ref[]{new HttpBodyPartRef(partNum), new BodyPartDoneRef(partNum - 1)} :
+            new Ref[]{new HttpBodyPartRef(partNum)};
   }
 
   @Override
@@ -31,7 +32,7 @@ class WriteHttpBodyPartJoba implements Joba {
 
   @Override
   public void run() {
-    System.out.println("Writing HTTP body, part = " + partNum +
-            ", content = " + communicationDomain.getPartContent(partNum));
+    final CharSequence partContent = communicationDomain.getPartContent(partNum);
+    System.out.println(((partContent != null) ? "Writing" : "Skipping") + " HTTP body part = " + partNum + ", content = " + partContent);
   }
 }

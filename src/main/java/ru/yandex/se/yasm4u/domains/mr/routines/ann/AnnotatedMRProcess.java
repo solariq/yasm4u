@@ -233,11 +233,24 @@ public class AnnotatedMRProcess implements Routine {
   }
 
   private class MyJoba extends Joba.Stub {
+    private final Ref[] in;
+    private final Ref[] out;
     private final JobExecutorService jes;
 
     public MyJoba(Ref[] in, Ref[] out, JobExecutorService jes) {
-      super(in, out);
+      this.in = in;
+      this.out = out;
       this.jes = jes;
+    }
+
+    @Override
+    public Ref[] consumes() {
+      return in;
+    }
+
+    @Override
+    public Ref[] produces() {
+      return out;
     }
 
     @Override

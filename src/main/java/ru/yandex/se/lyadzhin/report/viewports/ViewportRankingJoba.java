@@ -12,7 +12,7 @@ import java.util.List;
  * User: lyadzhin
  * Date: 10.04.15 16:14
  */
-public class ViewportRankingJoba implements Joba {
+public class ViewportRankingJoba extends Joba.Stub {
   private final ViewportsDomain viewportsDomain;
   private final ViewportRanker ranker;
   private final List<String> viewportIds;

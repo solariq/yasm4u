@@ -11,7 +11,7 @@ import ru.yandex.se.yasm4u.Ref;
  * User: lyadzhin
  * Date: 10.04.15 15:36
  */
-public class ViewportBuildingJoba implements Joba {
+public class ViewportBuildingJoba extends Joba.Stub {
   private final ViewportsDomain viewportsDomain;
   private final ViewportBuilder builder;
 
@@ -24,8 +24,8 @@ public class ViewportBuildingJoba implements Joba {
   public Ref[] consumes() {
     return ArrayTools.map(builder.requests(), SourceResponse.class, new Computable<SourceRequest, SourceResponse>() {
       @Override
-      public SourceResponse compute(SourceRequest argument) {
-        return argument.response();
+      public SourceResponse compute(SourceRequest request) {
+        return request.response();
       }
     });
   }
@@ -37,10 +37,14 @@ public class ViewportBuildingJoba implements Joba {
 
   @Override
   public void run() {
-    System.out.println("Building viewport " + builder.id());
     final Viewport viewport = builder.build();
-    if (viewport != null)
-      viewportsDomain.addViewport(viewport);
+    if (viewport != null) {
+      System.out.println("Built viewport " + builder.id());
+      viewportsDomain.onBuilderSuccess(builder.id(), viewport);
+    } else {
+      System.out.println("Failed to build viewport " + builder.id());
+      viewportsDomain.onBuilderFailed(builder.id());
+    }
 
   }
 }

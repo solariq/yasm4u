@@ -1,5 +1,6 @@
 package ru.yandex.se.lyadzhin.report.sources;
 
+import ru.yandex.se.lyadzhin.report.SearchWhiteboard;
 import ru.yandex.se.yasm4u.Ref;
 
 import java.net.URI;
@@ -11,7 +12,7 @@ import java.util.Set;
 * User: lyadzhin
 * Date: 08.04.15 19:17
 */
-public class SourceRequest implements Ref<SourceCommunicationDomain.RequestStatus, SourceCommunicationDomain> {
+public class SourceRequest implements Ref<Void, SourceCommunicationDomain> {
   public static final Set<String> ALL_SOURCES = new HashSet<>(Arrays.asList(
           "IMAGES_SEARCH",
           "MOBILE_APPS_SEARCH",
@@ -35,14 +36,22 @@ public class SourceRequest implements Ref<SourceCommunicationDomain.RequestStatu
     return sourceKey;
   }
 
+  public Ref[] dependencies() {
+    return new Ref[] {SearchWhiteboard.USER_QUERY_TEXT};
+  }
+
+  public SourceResponse response() {
+    return sourceResponse;
+  }
+
   @Override
   public URI toURI() {
     return null;
   }
 
   @Override
-  public Class<SourceCommunicationDomain.RequestStatus> type() {
-    return SourceCommunicationDomain.RequestStatus.class;
+  public Class<Void> type() {
+    return Void.class;
   }
 
   @Override
@@ -51,17 +60,13 @@ public class SourceRequest implements Ref<SourceCommunicationDomain.RequestStatu
   }
 
   @Override
-  public SourceCommunicationDomain.RequestStatus resolve(SourceCommunicationDomain dom) {
-    return SourceCommunicationDomain.RequestStatus.OK;
+  public Void resolve(SourceCommunicationDomain dom) {
+    return null;
   }
 
   @Override
   public boolean available(SourceCommunicationDomain dom) {
     return true;
-  }
-
-  public SourceResponse response() {
-    return sourceResponse;
   }
 
   @Override

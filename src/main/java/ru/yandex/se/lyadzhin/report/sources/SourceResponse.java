@@ -8,7 +8,7 @@ import java.net.URI;
 * User: lyadzhin
 * Date: 08.04.15 19:17
 */
-public class SourceResponse implements Ref<String, SourceCommunicationDomain> {
+public class SourceResponse implements Ref<CharSequence, SourceCommunicationDomain> {
   private final SourceRequest request;
 
   public SourceResponse(SourceRequest request) {
@@ -21,8 +21,8 @@ public class SourceResponse implements Ref<String, SourceCommunicationDomain> {
   }
 
   @Override
-  public Class<String> type() {
-    return String.class;
+  public Class<CharSequence> type() {
+    return CharSequence.class;
   }
 
   @Override

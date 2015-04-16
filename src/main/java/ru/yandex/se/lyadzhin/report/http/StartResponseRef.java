@@ -49,7 +49,7 @@ public class StartResponseRef implements Ref<Void,UserHttpCommunicationDomain> {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
 
-    StartResponseRef that = (StartResponseRef) o;
+    final StartResponseRef that = (StartResponseRef) o;
     return partsCount == that.partsCount;
   }
 

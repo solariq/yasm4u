@@ -20,12 +20,26 @@ import java.util.List;
  */
 public class PlannerTest {
   private static class EmptyJoba extends Joba.Stub {
+    private final Ref<?, ?>[] consumes;
+    private final Ref<?, ?>[] produces;
+
     protected EmptyJoba(Ref<?, ?>[] consumes, Ref<?, ?>[] produces) {
-      super(consumes, produces);
+      this.consumes = consumes;
+      this.produces = produces;
     }
 
     @Override
     public void run() {
+    }
+
+    @Override
+    public Ref[] consumes() {
+      return consumes;
+    }
+
+    @Override
+    public Ref[] produces() {
+      return produces;
     }
   }
 

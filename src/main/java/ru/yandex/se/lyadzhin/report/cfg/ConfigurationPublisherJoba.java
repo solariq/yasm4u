@@ -8,7 +8,7 @@ import ru.yandex.se.yasm4u.Ref;
 * User: lyadzhin
 * Date: 08.04.15 20:40
 */
-class ConfigurationPublisherJoba implements Joba {
+class ConfigurationPublisherJoba extends Joba.Stub {
   private final ConfigurationDomain configurationDomain;
 
   public ConfigurationPublisherJoba(ConfigurationDomain configurationDomain) {

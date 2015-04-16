@@ -37,7 +37,7 @@ public class HttpBodyPartRef implements Ref<CharSequence,UserHttpCommunicationDo
 
   @Override
   public boolean available(UserHttpCommunicationDomain controller) {
-    return controller.getPartContent(partNum) != null;
+    return controller.hasPart(partNum);
   }
 
   @Override

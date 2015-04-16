@@ -37,7 +37,7 @@ public class ViewportRef implements Ref<Viewport, ViewportsDomain> {
 
   @Override
   public boolean available(ViewportsDomain controller) {
-    return controller.findViewportById(viewportId) != null;
+    return controller.isBuildingCompleted(viewportId);
   }
 
   @Override

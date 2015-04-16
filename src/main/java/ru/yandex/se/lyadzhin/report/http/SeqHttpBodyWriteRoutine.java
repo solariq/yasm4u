@@ -34,12 +34,8 @@ class SeqHttpBodyWriteRoutine implements Routine {
     if (partsCount == 0)
       return new Joba[0];
 
-    for (Ref ref : state) {
-      if (ref instanceof HttpBodyPartRef) {
-        final HttpBodyPartRef bodyPartRef = (HttpBodyPartRef) ref;
-        result.add(new WriteHttpBodyPartJoba(httpResponse, bodyPartRef.partNum, jes.domain(UserHttpCommunicationDomain.class)));
-      }
-    }
+    for (int i = 0; i < partsCount; i++)
+      result.add(new WriteHttpBodyPartJoba(httpResponse, i, jes.domain(UserHttpCommunicationDomain.class)));
     result.add(new FinishCommunicationJoba(httpResponse, partsCount, jes.domain(UserHttpCommunicationDomain.class)));
     return result.toArray(new Joba[result.size()]);
   }

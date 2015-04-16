@@ -10,7 +10,7 @@ import java.util.List;
 * User: lyadzhin
 * Date: 08.04.15 19:13
 */
-class FinishCommunicationJoba implements Joba {
+class FinishCommunicationJoba extends Joba.Stub {
   private final HttpResponse httpResponse;
   private final int partsCount;
   private final UserHttpCommunicationDomain communicationDomain;

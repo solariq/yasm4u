@@ -25,10 +25,6 @@ public class SourceCommunicationDomain implements Domain {
   public void publishReferenceParsers(Ref.Parser parser, Controller controller) {
   }
 
-  public void request(String sourceKey) {
-
-  }
-
   void addResponse(SourceResponse response) {
     responses.add(response);
   }

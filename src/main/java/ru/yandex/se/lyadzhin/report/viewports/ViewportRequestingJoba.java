@@ -10,7 +10,7 @@ import java.util.Arrays;
  * User: lyadzhin
  * Date: 10.04.15 23:46
  */
-public class ViewportRequestingJoba implements Joba {
+public class ViewportRequestingJoba extends Joba.Stub {
   private final ViewportBuilder viewportBuilder;
 
   public ViewportRequestingJoba(ViewportBuilder viewportBuilder) {

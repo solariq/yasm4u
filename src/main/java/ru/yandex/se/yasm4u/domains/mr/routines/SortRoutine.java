@@ -23,7 +23,17 @@ public class SortRoutine implements Routine {
       if (MRPath.class.isAssignableFrom(state[i].type())) {
         final MRPath ref = (MRPath)executor.resolve(state[i]);
         if (!ref.sorted)
-          variants.add(new Joba.Stub(new Ref[]{ref}, new Ref[]{ref.mksorted()}) {
+          variants.add(new Joba.Stub() {
+            @Override
+            public Ref[] consumes() {
+              return new Ref[]{ref};
+            }
+
+            @Override
+            public Ref[] produces() {
+              return new Ref[]{ref.mksorted()};
+            }
+
             @Override
             public void run() {
               final MREnv env = executor.domain(MREnv.class);

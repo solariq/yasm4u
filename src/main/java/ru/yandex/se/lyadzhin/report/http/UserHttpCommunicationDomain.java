@@ -47,11 +47,19 @@ public class UserHttpCommunicationDomain implements Domain {
   }
 
   void setCommunicationStatus(CommunicationStatus communicationStatus) {
+    if (this.communicationStatus != null)
+      throw new IllegalStateException("communicationStatus is already defined");
     this.communicationStatus = communicationStatus;
   }
 
   public void addBodyPartContent(int partNum, CharSequence content) {
+    if (responseBodyParts.containsKey(partNum))
+      throw new IllegalStateException("Part already has content: " + partNum);
     responseBodyParts.put(partNum, content);
+  }
+
+  boolean hasPart(int partNum) {
+    return responseBodyParts.containsKey(partNum);
   }
 
   CharSequence getPartContent(int partNum) {

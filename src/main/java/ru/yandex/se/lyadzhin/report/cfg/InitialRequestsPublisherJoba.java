@@ -1,5 +1,6 @@
 package ru.yandex.se.lyadzhin.report.cfg;
 
+import ru.yandex.se.lyadzhin.report.SearchWhiteboard;
 import ru.yandex.se.lyadzhin.report.sources.SourceRequest;
 import ru.yandex.se.yasm4u.Joba;
 import ru.yandex.se.yasm4u.Ref;
@@ -8,13 +9,13 @@ import ru.yandex.se.yasm4u.Ref;
 * User: lyadzhin
 * Date: 08.04.15 20:40
 */
-class InitialRequestsPublisherJoba implements Joba {
+class InitialRequestsPublisherJoba extends Joba.Stub {
   public InitialRequestsPublisherJoba() {
   }
 
   @Override
   public Ref[] consumes() {
-    return new Ref[] {ConfigurationDomain.USER_YANDEX_UID, ConfigurationDomain.USER_QUERY_TEXT};
+    return new Ref[] {SearchWhiteboard.USER_YANDEX_UID, SearchWhiteboard.USER_QUERY_TEXT};
   }
 
   @Override
