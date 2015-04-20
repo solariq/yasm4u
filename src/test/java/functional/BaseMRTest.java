@@ -1,9 +1,8 @@
 package functional;
 
 import org.junit.runners.Parameterized;
-import solar.mr.MREnv;
-import solar.mr.env.*;
-import solar.mr.proc.impl.MRPath;
+import ru.yandex.se.yasm4u.domains.mr.MREnv;
+import ru.yandex.se.yasm4u.domains.mr.env.*;
 
 import java.util.Arrays;
 import java.util.Collection;

@@ -5,19 +5,19 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import solar.mr.MROutput;
-import solar.mr.proc.AnnotatedMRProcess;
-import solar.mr.proc.State;
-import solar.mr.proc.impl.MRPath;
-import solar.mr.proc.tags.MRProcessClass;
-import solar.mr.proc.tags.MRReduceMethod;
-import solar.mr.routines.MRRecord;
+import ru.yandex.se.yasm4u.domains.mr.MROutput;
+import ru.yandex.se.yasm4u.domains.mr.routines.ann.AnnotatedMRProcess;
+import ru.yandex.se.yasm4u.domains.wb.State;
+import ru.yandex.se.yasm4u.domains.mr.MRPath;
+import ru.yandex.se.yasm4u.domains.mr.routines.ann.tags.MRProcessClass;
+import ru.yandex.se.yasm4u.domains.mr.routines.ann.tags.MRReduceMethod;
+import ru.yandex.se.yasm4u.domains.mr.ops.MRRecord;
 
 import java.util.Iterator;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static solar.mr.MRTestUtils.*;
+import static ru.yandex.se.yasm4u.domains.mr.MRTestUtils.*;
 
 /**
  * Created by inikifor on 04.12.14.

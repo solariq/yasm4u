@@ -2,10 +2,10 @@ package yamr;
 
 
 import com.spbsu.commons.seq.CharSeqTools;
-import solar.mr.proc.State;
-import solar.mr.proc.impl.MRPath;
-import solar.mr.routines.MRMap;
-import solar.mr.MROutput;
+import ru.yandex.se.yasm4u.domains.wb.State;
+import ru.yandex.se.yasm4u.domains.mr.MRPath;
+import ru.yandex.se.yasm4u.domains.mr.ops.MRMap;
+import ru.yandex.se.yasm4u.domains.mr.MROutput;
 
 /**
 * User: solar

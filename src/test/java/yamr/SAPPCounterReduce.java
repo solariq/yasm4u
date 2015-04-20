@@ -3,11 +3,11 @@ package yamr;
 import java.util.Iterator;
 
 
-import solar.mr.MROutput;
-import solar.mr.proc.State;
-import solar.mr.proc.impl.MRPath;
-import solar.mr.routines.MRRecord;
-import solar.mr.routines.MRReduce;
+import ru.yandex.se.yasm4u.domains.mr.MROutput;
+import ru.yandex.se.yasm4u.domains.wb.State;
+import ru.yandex.se.yasm4u.domains.mr.MRPath;
+import ru.yandex.se.yasm4u.domains.mr.ops.MRRecord;
+import ru.yandex.se.yasm4u.domains.mr.ops.MRReduce;
 
 /**
 * User: solar

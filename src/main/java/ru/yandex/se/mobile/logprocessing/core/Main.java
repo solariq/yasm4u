@@ -2,18 +2,18 @@ package ru.yandex.se.mobile.logprocessing.core;
 
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.Pair;
-import solar.mr.MREnv;
-import solar.mr.MROutput;
-import solar.mr.env.ProcessRunner;
-import solar.mr.env.SSHProcessRunner;
-import solar.mr.env.YaMREnv;
-import solar.mr.proc.State;
-import solar.mr.proc.AnnotatedMRProcess;
-import solar.mr.proc.Whiteboard;
-import solar.mr.proc.impl.WhiteboardImpl;
-import solar.mr.proc.tags.MRMapMethod;
-import solar.mr.proc.tags.MRProcessClass;
-import solar.mr.proc.tags.MRReduceMethod;
+import ru.yandex.se.yasm4u.domains.mr.MREnv;
+import ru.yandex.se.yasm4u.domains.mr.MROutput;
+import ru.yandex.se.yasm4u.domains.mr.env.ProcessRunner;
+import ru.yandex.se.yasm4u.domains.mr.env.SSHProcessRunner;
+import ru.yandex.se.yasm4u.domains.mr.env.YaMREnv;
+import ru.yandex.se.yasm4u.domains.wb.State;
+import ru.yandex.se.yasm4u.domains.mr.routines.ann.AnnotatedMRProcess;
+import ru.yandex.se.yasm4u.domains.wb.Whiteboard;
+import ru.yandex.se.yasm4u.domains.wb.impl.WhiteboardImpl;
+import ru.yandex.se.yasm4u.domains.mr.routines.ann.tags.MRMapMethod;
+import ru.yandex.se.yasm4u.domains.mr.routines.ann.tags.MRProcessClass;
+import ru.yandex.se.yasm4u.domains.mr.routines.ann.tags.MRReduceMethod;
 
 import java.util.Iterator;
 
@@ -68,7 +68,7 @@ public final class Main {
     final ProcessRunner runner = new SSHProcessRunner("batista", "/Berkanavt/mapreduce/bin/mapreduce-dev");
     final MREnv env = new YaMREnv(runner, "mobilesearch", "cedar:8013");
     final Whiteboard wb = new WhiteboardImpl(env, SampleCounter.class.getName());
-    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SampleCounter.class, wb);
+    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(SampleCounter.class, wb, env);
     mrProcess.execute();
     mrProcess.wb().wipe();
   }
