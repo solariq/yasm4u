@@ -120,7 +120,7 @@ public class Planner {
     });
 
     final HashSet<Ref> goalsSet = new HashSet<>(Arrays.asList(goals));
-    states.put(goalsSet, new PossibleState(new ArrayList<Joba>(), possibleJobas, goalsSet, 0.));
+    states.put(goalsSet, new PossibleState(new ArrayList<Joba>(), possibleJobas, initialState, 0.));
     order.add(goalsSet);
 
     PossibleState best = null;
@@ -252,7 +252,8 @@ public class Planner {
       nextProduced.addAll(Arrays.asList(job.produces()));
       final Iterator<Joba> possibleIter = nextPossible.iterator();
       while (possibleIter.hasNext()) {
-        if (nextProduced.containsAll(Arrays.asList(possibleIter.next().produces())))
+        final Joba candidate = possibleIter.next();
+        if (nextProduced.containsAll(Arrays.asList(candidate.produces())))
           possibleIter.remove();
       }
       return new PossibleState(nextPlan, nextPossible, nextProduced, weight + estimator.value(job));
