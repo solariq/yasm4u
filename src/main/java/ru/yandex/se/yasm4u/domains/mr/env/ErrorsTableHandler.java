@@ -17,6 +17,7 @@ import java.io.ObjectInputStream;
 */
 public class ErrorsTableHandler extends MROperation {
   private final MRErrorsHandler errorsHandler;
+  private int count;
 
   public ErrorsTableHandler(MRPath errorsShardName, MRErrorsHandler errorsHandler) {
     super(new MRPath[]{errorsShardName}, null, null);
@@ -25,6 +26,7 @@ public class ErrorsTableHandler extends MROperation {
 
   @Override
   public void process(final MRRecord record) {
+    count++;
     CharSequence[] parts = CharSeqTools.split(record.value, '\t', new CharSequence[4]);
     final MRRecord realRecord = new MRRecord(MRPath.create(parts[0].toString()), parts[1].toString(), parts[2].toString(), parts[3]);
     try {
@@ -41,5 +43,9 @@ public class ErrorsTableHandler extends MROperation {
       throw new RuntimeException(e);
     }
     errorsHandler.error(record.key, record.sub, realRecord);
+  }
+
+  public int errorsCount() {
+    return count;
   }
 }

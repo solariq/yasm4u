@@ -185,7 +185,7 @@ public class YaMREnv extends RemoteMREnv {
   @Override
   public void copy(MRPath[] from, MRPath to, boolean append) {
     final List<String> options = defaultOptions();
-    final MRTableState[] fromShards = resolveAll(from, false);
+    final MRTableState[] fromShards = resolveAll(from, false, MRTools.DIR_FRESHNESS_TIMEOUT);
     options.add(append ? "-dstappend" : "-dst");
     options.add(localPath(to));
     options.add("-copy");

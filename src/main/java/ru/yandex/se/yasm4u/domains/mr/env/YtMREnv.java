@@ -385,13 +385,14 @@ public class YtMREnv extends RemoteMREnv {
       + (Boolean.getBoolean("yasm4u.loggc")? "-Xloggc:/dev/stderr -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCApplicationStoppedTime -verbose:gc":"")
       + " -XX:-UsePerfData -XX:+PerfDisableSharedMem -Xmx2G -Xms2G -jar " + jar.getName());
     int inputCount = 0;
-    for(final MRPath sh : in) {
-      if (!resolve(sh, false).isAvailable()) {
-        defaultErrorsProcessor.invoke("WARNING! " + sh + " isn't available. ");
+    final MRTableState[] all = resolveAll(in, false, MRTools.DIR_FRESHNESS_TIMEOUT);
+    for(int i = 0; i < all.length; i++) {
+      if (!all[i].isAvailable()) {
+        defaultErrorsProcessor.invoke("WARNING! " + in[i] + " isn't available. ");
         continue;
       }
       options.add("--src");
-      options.add(localPath(sh));
+      options.add(localPath(in[i]));
       inputCount++;
     }
 
@@ -413,13 +414,13 @@ public class YtMREnv extends RemoteMREnv {
     options.add(localPath(errorsPath));
 
     executeMapOrReduceCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
-    final MROperation errorProcessor = new ErrorsTableHandler(errorsPath, errorsHandler);
-    final int errorsCount = read(errorsPath, errorProcessor);
+    final ErrorsTableHandler errorProcessor = new ErrorsTableHandler(errorsPath, errorsHandler);
+    sample(errorsPath, errorProcessor);
     errorProcessor.invoke(CharSeq.EMPTY);
-    if (errorsCount == 0)
+    if (errorProcessor.errorsCount() == 0)
       delete(errorsPath);
 
-    return errorsCount == 0;
+    return errorProcessor.errorsCount() == 0;
   }
 
   @Override

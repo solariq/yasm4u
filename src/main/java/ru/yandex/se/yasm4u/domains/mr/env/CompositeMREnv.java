@@ -10,6 +10,7 @@ import com.spbsu.commons.util.Holder;
 import com.spbsu.commons.util.MultiMap;
 import com.spbsu.commons.util.Pair;
 import gnu.trove.list.array.TIntArrayList;
+import org.jetbrains.annotations.Nullable;
 import ru.yandex.se.yasm4u.Ref;
 import ru.yandex.se.yasm4u.domains.mr.*;
 import ru.yandex.se.yasm4u.domains.mr.io.MRTableShardConverter;
@@ -22,6 +23,7 @@ import java.io.File;
 import java.io.Reader;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * User: solar
@@ -54,12 +56,12 @@ public class CompositeMREnv extends MREnvBase {
         else {
           final CharSequence[] parts = CharSeqTools.split(arg.value, "\t");
           final MRTableShardConverter.From converter = new MRTableShardConverter.From();
-          tables.put(path, Pair.create(converter.convert(parts[0]), converter.convert(parts[1])));
+          setCache(path, converter.convert(parts[0]), converter.convert(parts[1]));
         }
       }
     });
-    for (Map.Entry<MRPath, Pair<MRTableState, MRTableState>> entry : tables.entrySet()) {
-      original.updateState(entry.getKey(), entry.getValue().first);
+    for (MRPath entry : cached()) {
+      original.updateState(entry, originalShard(entry));
     }
   }
 
@@ -75,54 +77,61 @@ public class CompositeMREnv extends MREnvBase {
     final MRTableState[] localInAfter = sync(in);
     final MRTableState[] localOutBefore = localCopy.resolveAll(out);
 
+
     final File jar = original.executeLocallyAndBuildJar(builder, localCopy);
 
     final MRTableState[] localOutAfter = localCopy.resolveAll(out);
 
-    if (Arrays.equals(localInAfter, localInBefore) && Arrays.equals(localOutAfter, localOutBefore)) {
+    final boolean ffTurnedOff = Boolean.getBoolean("yasm4u.disableFF");
+    if (!ffTurnedOff && Arrays.equals(localInAfter, localInBefore) && Arrays.equals(localOutAfter, localOutBefore)) {
+      final MRTableState[] outBefore = original.resolveAll(out, false, TimeUnit.MINUTES.toMillis(1));
       boolean outputExistence = true;
-      for(int i = 0; i < out.length; i++) {
-        outputExistence &= localOutAfter[i].isAvailable();
+      for (int i = 0; i < out.length; i++) {
+        outputExistence &= localOutAfter[i].isAvailable() && outBefore[i].isAvailable();
       }
       if (Boolean.getBoolean("yasm4u.dumpStatesFF")) {
-        for(final MRTableState s:localInBefore)
+        for (final MRTableState s : localInBefore)
           System.out.println("FF: local IN BEFORE: " + s);
-        for(final MRTableState s:localOutBefore)
+        for (final MRTableState s : localOutBefore)
           System.out.println("FF: local OUT BEFORE: " + s);
-        for(final MRTableState s:localInAfter)
+        for (final MRTableState s : localInAfter)
           System.out.println("FF: local IN AFTER: " + s);
-        for(final MRTableState s:localOutAfter)
+        for (final MRTableState s : localOutAfter)
           System.out.println("FF: local OUT AFTER: " + s);
       }
       if (outputExistence) {
-        boolean ffDisabled = Boolean.getBoolean("yasm4u.disableFF");
-        System.out.println("Fast forwarding execution " + (ffDisabled? "(ignored)" : "") + builder.toString());
-        if (!ffDisabled) {
-          final MRTableState[] outAfter = original.resolveAll(out, false);
-          for(int i = 0; i < out.length; i++) {
-            setCopy(out[i], outAfter[i], localOutAfter[i]);
-          }
-
-          return true;
+        System.out.println("Fast forwarding execution " + builder.toString());
+        for (int i = 0; i < out.length; i++) {
+          setCopy(out[i], outBefore[i], localOutAfter[i]);
         }
+
+        return true;
       }
     }
     final MultiMap<MRPath, CharSequence> needToAddToSample = new MultiMap<>();
+    final List<Throwable> exceptions = new ArrayList<>();
+    final List<Pair<String,String>> errors = new ArrayList<>();
+    final List<MRRecord> records = new ArrayList<>();
+    final TIntArrayList recordProblems = new TIntArrayList();
     try {
       final boolean rc = original.execute(builder, new MRErrorsHandler() {
         int counter = 0;
 
         @Override
         public void error(String type, String cause, MRRecord record) {
-          needToAddToSample.put(record.source, record.toString());
-          errorsHandler.error(type, cause, record);
+          needToAddToSample.put(record.source, record.toCharSequence());
+          records.add(record);
+          recordProblems.add(1);
+          errors.add(Pair.create(type, cause));
           counter++;
         }
 
         @Override
         public void error(Throwable th, MRRecord record) {
-          needToAddToSample.put(record.source, record.toString());
-          errorsHandler.error(th, record);
+          needToAddToSample.put(record.source, record.toCharSequence());
+          records.add(record);
+          recordProblems.add(0);
+          exceptions.add(th);
           counter++;
         }
 
@@ -132,19 +141,35 @@ public class CompositeMREnv extends MREnvBase {
         }
       }, jar);
       if (!rc) {
-        for(int i = 0; i < out.length; i++) {
-          setCopy(out[i], null, null);
+        for (final MRPath anOut : out) {
+          setCopy(anOut, null, null);
+          original.delete(anOut);
         }
         return false;
       }
-      final MRTableState[] outAfter = original.resolveAll(out, false);
+
+      final MRTableState[] outAfter = original.resolveAll(out, false, 0);
       for(int i = 0; i < out.length; i++) {
-        setCopy(out[i], outAfter[i], localOutAfter[i]);
+        if (ffTurnedOff)
+          setCopy(out[i], null, null);
+        else
+          setCopy(out[i], outAfter[i], localOutAfter[i]);
       }
     }
     finally {
       for (final MRPath path : needToAddToSample.getKeys()) {
         localCopy.append(path, new CharSeqReader(CharSeqTools.concatWithDelimeter("\n", new ArrayList<>(needToAddToSample.get(path)))));
+      }
+      int exIndex = 0;
+      int errIndex = 0;
+      for (int i = 0; i < records.size(); i++) {
+        final MRRecord record = records.get(i);
+        if (recordProblems.get(i) != 0) {
+          final Pair<String, String> error = errors.get(errIndex++);
+          errorsHandler.error(error.first, error.second, record);
+        }
+        else
+          errorsHandler.error(exceptions.get(exIndex++), record);
       }
     }
 
@@ -157,8 +182,7 @@ public class CompositeMREnv extends MREnvBase {
     for(int i = 0; i < paths.length; i++) {
       final MRPath path = paths[i];
       if (!originalStates[i].isAvailable()) {
-        localCopy.delete(path);
-        tables.remove(path);
+        setCopy(path, null, null);
         continue;
       }
       final MRTableState local = localShard(path, originalStates[i]);
@@ -211,7 +235,7 @@ public class CompositeMREnv extends MREnvBase {
   public MRPath[] list(MRPath prefix) {
     final Pair<Long, MRPath[]> cache = dirs.get(prefix);
     final long now = System.currentTimeMillis();
-    if (cache != null && now - cache.first < MRTools.FRESHNESS_TIMEOUT) {
+    if (cache != null && now - cache.first < MRTools.DIR_FRESHNESS_TIMEOUT) {
       final MRPath[] repack = ArrayTools.map(cache.second, MRPath.class, new Computable<Ref, MRPath>() {
         @Override
         public MRPath compute(Ref argument) {
@@ -234,7 +258,6 @@ public class CompositeMREnv extends MREnvBase {
 
   @Override
   public MRTableState[] resolveAll(MRPath... path) {
-    final long now = System.currentTimeMillis();
     final MRTableState[] result = new MRTableState[path.length];
     final List<MRPath> toResolve = new ArrayList<>();
     final TIntArrayList toResolvePositions = new TIntArrayList();
@@ -242,12 +265,12 @@ public class CompositeMREnv extends MREnvBase {
       final MRPath mrPath = path[i];
       if (mrPath.isDirectory())
         throw new IllegalArgumentException("Resolved resource must not be directory: " + mrPath);
-      final Pair<MRTableState, MRTableState> cache = tables.get(mrPath);
-      if (cache == null || now - cache.first.snapshotTime() >= MRTools.FRESHNESS_TIMEOUT) {
+      final MRTableState originalShard = originalShard(mrPath);
+      if (originalShard == null) {
         toResolve.add(mrPath);
         toResolvePositions.add(i);
       } else {
-        result[i] = cache.second;
+        result[i] = originalShard;
       }
     }
     final MRTableState[] resolvedAtOriginal = original.resolveAll(toResolve.toArray(new MRPath[toResolve.size()]));
@@ -300,44 +323,75 @@ public class CompositeMREnv extends MREnvBase {
   public void delete(MRPath shard) {
     localCopy.delete(shard);
     original.delete(shard);
-    tables.remove(shard);
     setCopy(shard, null, null);
   }
 
-  private MRTableState localShard(MRPath shard, MRTableState state) {
+  @Nullable
+  private synchronized MRTableState localShard(MRPath shard, MRTableState state) {
     final Pair<MRTableState, MRTableState> localState = tables.get(shard);
     if (localState == null)
       return null;
     final MRTableState original = localState.getFirst();
     final MRTableState newCopy = localCopy.resolve(shard);
-    if ((state != null && !original.equals(state)) || !newCopy.isAvailable()) {
-      setCopy(shard, original, null);
-      return null;
-    }
-    else if (state != null && state.snapshotTime() > original.snapshotTime()) {
-      setCopy(shard, state, newCopy); // update metaTS
+
+    if (state != null) {
+      if (!original.equals(state)) {
+        setCopy(shard, null, null);
+        return null;
+      } else if (state.snapshotTime() > original.snapshotTime()) {
+        setCopy(shard, state, newCopy); // update metaTS
+      }
     }
 
-    return newCopy;
+    return newCopy.isAvailable() ? newCopy : null;
+  }
+
+  @Nullable
+  private synchronized MRTableState originalShard(MRPath entry) {
+    final Pair<MRTableState, MRTableState> localState = tables.get(entry);
+    if (localState == null)
+      return null;
+    final MRTableState originalShard = localState.getFirst();
+    if (System.currentTimeMillis() - originalShard.snapshotTime() >= MRTools.TABLE_FRESHNESS_TIMEOUT) {
+      setCopy(entry, null, null);
+      return null;
+    }
+    return originalShard;
+  }
+
+  private synchronized Collection<MRPath> cached() {
+    return new ArrayList<>(tables.keySet());
+  }
+
+  private synchronized void setCache(MRPath path, MRTableState original, MRTableState local) {
+    if (local != null)
+      tables.put(path, Pair.create(original, local));
+    else tables.remove(path);
   }
 
   private void setCopy(MRPath path, MRTableState original, MRTableState local) {
-    if (local != null) {
-      tables.put(path, Pair.create(original, local));
-    }
-    else tables.remove(path);
+    setCache(path, original, local);
+    if (local == null)
+      localCopy.delete(path);
     write();
   }
 
-  private void write() {
+  private synchronized void write() {
     final CharSeqBuilder builder = new CharSeqBuilder();
     final MRTableShardConverter.To converter = new MRTableShardConverter.To();
 
-    for (Map.Entry<MRPath, Pair<MRTableState, MRTableState>> entry : tables.entrySet()) {
-      builder.append(entry.getKey().toString()).append("\t");
+    for (MRPath entry : cached()) {
+      final MRTableState local = localShard(entry, null);
+      final MRTableState original = originalShard(entry);
+      if (original == null || local == null) {
+        originalShard(entry);
+        localShard(entry, null);
+        continue;
+      }
+      builder.append(entry.toString()).append("\t");
       builder.append("\t");
-      builder.append(converter.convert(entry.getValue().first)).append("\t");
-      builder.append(converter.convert(entry.getValue().second)).append("\n");
+      builder.append(converter.convert(original)).append("\t");
+      builder.append(converter.convert(local)).append("\n");
     }
 
     for (Map.Entry<MRPath, Pair<Long, MRPath[]>> entry : dirs.entrySet()) {

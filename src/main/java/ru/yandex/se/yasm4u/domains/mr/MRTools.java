@@ -29,7 +29,8 @@ import sun.net.www.protocol.file.FileURLConnection;
  * Time: 9:34
  */
 public class MRTools {
-  public static final long FRESHNESS_TIMEOUT = TimeUnit.HOURS.toMillis(1);
+  public static final long TABLE_FRESHNESS_TIMEOUT = TimeUnit.DAYS.toMillis(30);
+  public static final long DIR_FRESHNESS_TIMEOUT = TimeUnit.HOURS.toMillis(1);
   private static Logger LOG = Logger.getLogger(MRTools.class);
 //  public static final String FORBIDEN = MREnv.class.getName().replace('.', '/');
   static {

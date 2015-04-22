@@ -19,10 +19,8 @@ import ru.yandex.se.yasm4u.domains.mr.ops.impl.MRRoutineBuilder;
 import ru.yandex.se.yasm4u.domains.mr.ops.impl.MRTableState;
 
 import java.io.*;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by minamoto on 10/12/14.
@@ -188,14 +186,22 @@ public abstract class RemoteMREnv extends MREnvBase {
   @SuppressWarnings("UnusedDeclaration")
   protected abstract String localPath(MRPath shard);
 
-  protected final FixedSizeCache<MRPath, MRTableState> shardsCache = new FixedSizeCache<>(10000, CacheStrategy.Type.LRU);
+  protected final Map<MRPath, MRTableState> shardsCache = new HashMap<>();
+//  protected final FixedSizeCache<MRPath, MRTableState> shardsCache = new FixedSizeCache<>(10000, CacheStrategy.Type.LRU);
 
   protected synchronized void updateState(MRPath path, MRTableState newState) {
     shardsCache.put(path, newState);
+    if (path.sorted) {
+      shardsCache.put(path.mkunsorted(), newState);
+    }
+    else {
+      shardsCache.remove(path.mksorted());
+    }
   }
 
   protected synchronized void wipeState(MRPath path) {
-    shardsCache.clear(path);
+    shardsCache.remove(path);
+    shardsCache.remove(path.sorted ? path.mkunsorted() : path.mksorted());
   }
 
   protected synchronized MRTableState cachedState(MRPath path) {
@@ -213,14 +219,14 @@ public abstract class RemoteMREnv extends MREnvBase {
 
   @Override
   public final MRTableState[] resolveAll(MRPath[] paths) {
-    return resolveAll(paths, false);
+    return resolveAll(paths, false, MRTools.DIR_FRESHNESS_TIMEOUT);
   }
 
   protected MRTableState resolve(MRPath path, boolean cachedOnly) {
-    return resolveAll(new MRPath[]{path}, cachedOnly)[0];
+    return resolveAll(new MRPath[]{path}, cachedOnly, MRTools.DIR_FRESHNESS_TIMEOUT)[0];
   }
 
-  protected final MRTableState[] resolveAll(MRPath[] paths, boolean cachedOnly) {
+  protected final MRTableState[] resolveAll(MRPath[] paths, boolean cachedOnly, long freshnesstimeout) {
     final MRTableState[] result = new MRTableState[paths.length];
     final long time = System.currentTimeMillis();
     final Set<MRPath> unknown = new HashSet<>();
@@ -231,11 +237,10 @@ public abstract class RemoteMREnv extends MREnvBase {
 
       final MRTableState shard = cachedState(path);
       if (shard != null) {
-        if (time - shard.snapshotTime() < MRTools.FRESHNESS_TIMEOUT) {
+        if (time - shard.snapshotTime() < freshnesstimeout) {
           result[i] = shard;
           continue;
         }
-        wipeState(path);
       }
       unknown.add(path);
     }
@@ -268,11 +273,12 @@ public abstract class RemoteMREnv extends MREnvBase {
           continue;
       }
     }
-    final MRTableState[] states = resolveAll(paths, true);
+    final MRTableState[] states = resolveAll(paths, true, freshnesstimeout + TimeUnit.SECONDS.toMillis(30));
     for(int i = 0; i < states.length; i++) {
       if (states[i] != null)
         continue;
       states[i] = new MRTableState(localPath(paths[i]), paths[i].sorted);
+      updateState(paths[i], states[i]);
     }
     return states;
   }
