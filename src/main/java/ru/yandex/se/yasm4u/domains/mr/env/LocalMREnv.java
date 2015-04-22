@@ -6,7 +6,7 @@ import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.Pair;
 import org.apache.commons.io.FileUtils;
-import ru.yandex.se.yasm4u.domains.mr.*;
+import ru.yandex.se.yasm4u.domains.mr.MRErrorsHandler;
 import ru.yandex.se.yasm4u.domains.mr.MRPath;
 import ru.yandex.se.yasm4u.domains.mr.ops.MRRecord;
 import ru.yandex.se.yasm4u.domains.mr.ops.impl.MROperation;
@@ -152,9 +152,9 @@ public class LocalMREnv extends MREnvBase {
       file.delete();
       tempFile.renameTo(file);
       tempFile = null;
-      if (!shard.isDirectory())
+      if (!shard.isDirectory() && !shard.sorted)
         //noinspection ResultOfMethodCallIgnored
-        file(new MRPath(shard.mount, shard.path, true)).delete();
+        file(shard.mksorted()).delete();
     }
     catch (IOException ioe) {
       throw new RuntimeException(ioe);
