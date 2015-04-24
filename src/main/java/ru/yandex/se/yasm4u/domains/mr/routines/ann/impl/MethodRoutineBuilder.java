@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Iterator;
@@ -35,8 +36,19 @@ public class MethodRoutineBuilder extends MRRoutineBuilder {
   @Override
   public MROperation build(final MROutput output) {
     complete();
+    Constructor<?> constructor;
     try {
-      final Object instance = routineClass.getConstructor(State.class).newInstance(state);
+      constructor = routineClass.getConstructor(State.class);
+    } catch (NoSuchMethodException e) {
+      try {
+        constructor = routineClass.getConstructor();
+      } catch (NoSuchMethodException e1) {
+        throw new RuntimeException("Unable to find proper constructor in " + routineClass.getName());
+      }
+    }
+    try {
+
+      final Object instance = constructor.newInstance(state);
       switch (type) {
         case MAP: {
           try {
