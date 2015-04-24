@@ -81,8 +81,10 @@ public class Planner {
     final Set<Ref> possibleResources = new HashSet<>();
 
     final Set<Ref> goalsSet = new HashSet<>(Arrays.asList(goals));
-    if (!forwardPath(jes, initialState, possibleJobas, possibleResources, goalsSet.toArray(new Ref[goalsSet.size()])))
+    if (!forwardPath(jes, initialState, possibleJobas, possibleResources, goalsSet.toArray(new Ref[goalsSet.size()]))) {
+      goalsSet.removeAll(possibleResources);
       throw new IllegalArgumentException("Unable to create plan : " + Arrays.toString(goalsSet.toArray()) + " unreachable");
+    }
     possibleResources.clear();
     possibleResources.addAll(goalsSet);
     final Set<Joba> neededJobas = new HashSet<>();

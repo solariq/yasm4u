@@ -33,13 +33,14 @@ import java.util.regex.Pattern;
 * Time: 13:20
 */
 public class AnnotatedMRProcess implements Routine {
-  final static Class[] MAP_PARAMETERS_1 = {String.class, String.class, CharSequence.class, MROutput.class};
-  final static Class[] MAP_PARAMETERS_2 = {MRPath.class, String.class, String.class, CharSequence.class, MROutput.class};
-  final static Class[] REDUCE_PARAMETERS = {String.class, Iterator.class, MROutput.class};
+  public final static Class[] MAP_PARAMETERS_1 = {String.class, String.class, CharSequence.class, MROutput.class};
+  public final static Class[] MAP_PARAMETERS_2 = {MRPath.class, String.class, String.class, CharSequence.class, MROutput.class};
+  public final static Class[] REDUCE_PARAMETERS = {String.class, Iterator.class, MROutput.class};
   private final Class<?> processDescription;
   private final Whiteboard wb;
   private final Ref[] goals;
   private final JobExecutorService jes;
+  private List<Routine> routines = new ArrayList<>();
 
   public AnnotatedMRProcess(final Class<?> processDescription, Whiteboard wb, MREnv env) {
     this.processDescription = processDescription;
@@ -232,6 +233,10 @@ public class AnnotatedMRProcess implements Routine {
     return result;
   }
 
+  public void addRoutine(Routine routine) {
+    routines.add(routine);
+  }
+
   private class MyJoba extends Joba.Stub {
     private final JobExecutorService jes;
 
@@ -271,6 +276,9 @@ public class AnnotatedMRProcess implements Routine {
       jobs = MergeRoutine.unmergeJobs(jobs);
       for (RoutineJoba job : jobs) {
         jes.addJoba(job);
+      }
+      for (Routine routine : routines) {
+        jes.addRoutine(routine);
       }
       final Future<List<?>> future = jes.calculate(produces());
       try {
