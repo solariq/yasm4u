@@ -36,19 +36,26 @@ public class MethodRoutineBuilder extends MRRoutineBuilder {
   @Override
   public MROperation build(final MROutput output) {
     complete();
-    Constructor<?> constructor;
+    Object instance = null;
     try {
-      constructor = routineClass.getConstructor(State.class);
-    } catch (NoSuchMethodException e) {
       try {
-        constructor = routineClass.getConstructor();
-      } catch (NoSuchMethodException e1) {
-        throw new RuntimeException("Unable to find proper constructor in " + routineClass.getName());
+        final Constructor<?> constructor = routineClass.getConstructor(State.class);
+        instance = constructor.newInstance(state);
+      } catch (NoSuchMethodException e) {
+        try {
+          final Constructor<?> constructor = routineClass.getConstructor();
+          instance = constructor.newInstance();
+        } catch (NoSuchMethodException e1) {
+          throw new RuntimeException("Unable to find proper constructor in " + routineClass.getName());
+        }
       }
+    }
+    catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
+      throw new RuntimeException(e);
     }
     try {
 
-      final Object instance = constructor.newInstance(state);
+      final Object finalInstance = instance;
       switch (type) {
         case MAP: {
           try {
@@ -57,7 +64,7 @@ public class MethodRoutineBuilder extends MRRoutineBuilder {
               @Override
               public void map(MRPath table, String sub, CharSequence value, String key) {
                 try {
-                  method.invoke(instance, table, key, sub, value, output);
+                  method.invoke(finalInstance, table, key, sub, value, output);
                 } catch (IllegalAccessException | InvocationTargetException e) {
                   throw new RuntimeException(e);
                 }
@@ -70,7 +77,7 @@ public class MethodRoutineBuilder extends MRRoutineBuilder {
               @Override
               public void map(MRPath table, String sub, CharSequence value, String key) {
                 try {
-                  shortMethod.invoke(instance, key, sub, value, output);
+                  shortMethod.invoke(finalInstance, key, sub, value, output);
                 } catch (IllegalAccessException | InvocationTargetException e) {
                   throw new RuntimeException(e);
                 }
@@ -84,7 +91,7 @@ public class MethodRoutineBuilder extends MRRoutineBuilder {
             @Override
             public void reduce(String key, Iterator<MRRecord> reduce) {
               try {
-                method.invoke(instance, key, reduce, output);
+                method.invoke(finalInstance, key, reduce, output);
               } catch (IllegalAccessException | InvocationTargetException e) {
                 throw new RuntimeException(e);
               }
@@ -92,7 +99,7 @@ public class MethodRoutineBuilder extends MRRoutineBuilder {
           };
         }
       }
-    } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
+    } catch (NoSuchMethodException e) {
       throw new RuntimeException(e);
     }
     throw new UnsupportedOperationException("Should never happen");
