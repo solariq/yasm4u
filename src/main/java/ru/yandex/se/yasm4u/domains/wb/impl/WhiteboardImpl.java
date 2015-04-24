@@ -92,7 +92,7 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
     if (data == CharSeq.EMPTY)
       throw new IllegalArgumentException("User remove instead");
     final Object current = state.get(uri);
-    if (data.equals(current) || (data.getClass().isArray() && Arrays.equals((Object[]) data, (Object[]) current)))
+    if (current != null && current.getClass().equals(data.getClass()) && (data.equals(current) || (data.getClass().isArray() && Arrays.equals((Object[]) data, (Object[]) current))))
       increment.remove(uri);
     else
       increment.put(uri, data);

@@ -220,7 +220,7 @@ public class AnnotatedMRProcess implements Routine {
     }
   }
 
-  private Ref[] goals() {
+  public Ref[] goals() {
     return this.goals;
   }
 

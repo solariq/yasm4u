@@ -39,7 +39,7 @@ public abstract class MROperation implements Processor<MRRecord>, Action<CharSeq
     this.output = output;
     this.state = state;
     final Long timeLimit = state != null ? state.<Long>get(VAR_TIMELIMITPERRECORD) : null;
-    this.timeout = timeLimit != null ? timeLimit : TimeUnit.MINUTES.toMillis(1);
+    this.timeout = timeLimit != null ? timeLimit : TimeUnit.MINUTES.toMillis(5);
 
     routineTh = new Thread(new Runnable() {
       @Override
