@@ -186,12 +186,12 @@ public class CompositeMREnv extends MREnvBase {
         continue;
       }
       final MRTableState local = localShard(path, originalStates[i]);
-      if (local != null && local.isAvailable()) {
+      if (local != null && local.isAvailable() && (local.recordsCount() > 0 || originalStates[i].recordsCount() == 0)) {
         result[i] = local;
         continue;
       }
 
-      localShard(path, originalStates[i]);
+//      localShard(path, originalStates[i]);
       final ArrayBlockingQueue<CharSeq> readqueue = new ArrayBlockingQueue<>(1000);
       final Holder<MRTableState> localShardHolder = new Holder<>();
       final Thread readThread = new Thread() {
@@ -328,6 +328,13 @@ public class CompositeMREnv extends MREnvBase {
 
   @Nullable
   private synchronized MRTableState localShard(MRPath shard, MRTableState state) {
+    if (shard.mount == MRPath.Mount.LOG) { // logs must not change their structure over time. No additional checks necessarily
+      final MRTableState resolve = localCopy.resolve(shard);
+      if (state != null)
+        tables.put(shard, Pair.create(state, resolve));
+      return resolve;
+    }
+
     final Pair<MRTableState, MRTableState> localState = tables.get(shard);
     if (localState == null)
       return null;

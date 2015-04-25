@@ -106,7 +106,11 @@ public abstract class RemoteMREnv extends MREnvBase {
       asyncReaderTh.setDaemon(true);
       asyncReaderTh.start();
       final MRPath[] input = builder.input();
+      final Set<String> visited = new HashSet<>();
       for (int i = 0; i < input.length; i++) {
+        final String realPath = env instanceof LocalMREnv ? ((LocalMREnv) env).file(input[i]).getAbsolutePath() : input[i].toString();
+        if (visited.contains(realPath))
+          continue;
         to.append(Integer.toString(i)).append("\n");
         to.flush();
         env.sample(input[i], new Processor<MRRecord>() {
@@ -119,6 +123,7 @@ public abstract class RemoteMREnv extends MREnvBase {
             }
           }
         });
+        visited.add(realPath);
       }
       to.close();
 

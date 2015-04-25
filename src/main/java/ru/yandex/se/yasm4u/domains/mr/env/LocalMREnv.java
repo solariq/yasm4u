@@ -1,10 +1,13 @@
 package ru.yandex.se.yasm4u.domains.mr.env;
 
+import com.spbsu.commons.func.Computable;
 import com.spbsu.commons.func.Processor;
 import com.spbsu.commons.io.StreamTools;
 import com.spbsu.commons.seq.CharSeq;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.Pair;
+import com.spbsu.commons.util.cache.CacheStrategy;
+import com.spbsu.commons.util.cache.impl.FixedSizeCache;
 import org.apache.commons.io.FileUtils;
 import ru.yandex.se.yasm4u.domains.mr.MRErrorsHandler;
 import ru.yandex.se.yasm4u.domains.mr.MRPath;
@@ -17,6 +20,8 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * User: solar
@@ -68,8 +73,13 @@ public class LocalMREnv extends MREnvBase {
     final MROutputBase output = new MROutput2MREnv(this, builder.output(), errorsHandler);
     final MROperation routine = builder.build(output);
     try {
+      Set<String> visitedFiles = new HashSet<>();
       for (final MRPath path : routine.input()) {
+        final String absolutePath = file(path).getAbsolutePath();
+        if (visitedFiles.contains(absolutePath))
+          continue;
         read(path, routine);
+        visitedFiles.add(absolutePath);
       }
       routine.invoke(CharSeq.EMPTY);
     }
@@ -336,20 +346,31 @@ public class LocalMREnv extends MREnvBase {
     return new MRPath(mnt, path, sorted);
   }
 
+  private Pattern pattern = Pattern.compile("/\\d{8}/\\d{8}(?:_\\d+)+$");
   public File file(final MRPath path) {
     final StringBuilder fullPath = new StringBuilder();
     fullPath.append(home.getAbsolutePath()).append("/");
     switch (path.mount) {
+      case LOG:
+        fullPath.append("logs/");
+        final Matcher matcher = pattern.matcher(path.path);
+        if (matcher.find()) // make single file for all dates
+          fullPath.append(matcher.replaceAll(""));
+        else
+          fullPath.append(path.path);
+        break;
       case TEMP:
         fullPath.append("temp/");
+        fullPath.append(path.path);
         break;
       case HOME:
         fullPath.append("home/");
+        fullPath.append(path.path);
         break;
       case ROOT:
+        fullPath.append(path.path);
         break;
     }
-    fullPath.append(path.path);
     if (path.isDirectory())
       return new File(fullPath.toString());
     else if (path.sorted)
@@ -366,27 +387,34 @@ public class LocalMREnv extends MREnvBase {
     return file.length();
   }
 
-  private long[] countRecordsAndKeys(File file) {
-    final long[] recordsAnsKeys = {0, 0};
-    if (!file.exists()) {
-      return recordsAnsKeys;
-    }
-    final Set<String> keys = new HashSet<>();
-    try {
-      StreamTools.readFile(file, new Processor<CharSequence>() {
-        CharSequence[] parts = new CharSequence[2];
-        @Override
-        public void process(CharSequence arg) {
-          parts = CharSeqTools.split(arg, '\t', parts);
-          keys.add(parts[0].toString());
-          recordsAnsKeys[0]++;
+  FixedSizeCache<File, long[]> cache = new FixedSizeCache<>(1000, CacheStrategy.Type.LRU);
+  private long[] countRecordsAndKeys(final File file) {
+    return cache.get(file, new Computable<File, long[]>() {
+      @Override
+      public long[] compute(File argument) {
+        final long[] recordsAnsKeys = {0, 0};
+        if (!file.exists()) {
+          return recordsAnsKeys;
         }
-      });
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    recordsAnsKeys[1] = keys.size();
-    return recordsAnsKeys;
+        final Set<String> keys = new HashSet<>();
+        try {
+          StreamTools.readFile(file, new Processor<CharSequence>() {
+            CharSequence[] parts = new CharSequence[2];
+
+            @Override
+            public void process(CharSequence arg) {
+              parts = CharSeqTools.split(arg, '\t', parts);
+              keys.add(parts[0].toString());
+              recordsAnsKeys[0]++;
+            }
+          });
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+        recordsAnsKeys[1] = keys.size();
+        return recordsAnsKeys;
+      }
+    });
   }
 
   public File home() {
