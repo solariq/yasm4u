@@ -2,21 +2,21 @@ package ru.yandex.se.yasm4u.domains.mr.routines.ann;
 
 import ru.yandex.se.yasm4u.*;
 import ru.yandex.se.yasm4u.domains.mr.MREnv;
-import ru.yandex.se.yasm4u.domains.mr.MRPath;
-import ru.yandex.se.yasm4u.domains.mr.routines.MergeRoutine;
-import ru.yandex.se.yasm4u.domains.wb.State;
-import ru.yandex.se.yasm4u.domains.wb.StateRef;
-import ru.yandex.se.yasm4u.domains.wb.Whiteboard;
-import ru.yandex.se.yasm4u.domains.wb.impl.WhiteboardImpl;
-import ru.yandex.se.yasm4u.impl.MainThreadJES;
 import ru.yandex.se.yasm4u.domains.mr.MROutput;
+import ru.yandex.se.yasm4u.domains.mr.MRPath;
 import ru.yandex.se.yasm4u.domains.mr.ops.impl.MRRoutineBuilder;
+import ru.yandex.se.yasm4u.domains.mr.routines.MergeRoutine;
 import ru.yandex.se.yasm4u.domains.mr.routines.ann.impl.ReadJoba;
 import ru.yandex.se.yasm4u.domains.mr.routines.ann.impl.RoutineJoba;
 import ru.yandex.se.yasm4u.domains.mr.routines.ann.tags.MRMapMethod;
 import ru.yandex.se.yasm4u.domains.mr.routines.ann.tags.MRProcessClass;
 import ru.yandex.se.yasm4u.domains.mr.routines.ann.tags.MRRead;
 import ru.yandex.se.yasm4u.domains.mr.routines.ann.tags.MRReduceMethod;
+import ru.yandex.se.yasm4u.domains.wb.State;
+import ru.yandex.se.yasm4u.domains.wb.StateRef;
+import ru.yandex.se.yasm4u.domains.wb.Whiteboard;
+import ru.yandex.se.yasm4u.domains.wb.impl.WhiteboardImpl;
+import ru.yandex.se.yasm4u.impl.MainThreadJES;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -28,10 +28,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
-* User: solar
-* Date: 12.10.14
-* Time: 13:20
-*/
+ * User: solar
+ * Date: 12.10.14
+ * Time: 13:20
+ */
 public class AnnotatedMRProcess implements Routine {
   public final static Class[] MAP_PARAMETERS_1 = {String.class, String.class, CharSequence.class, MROutput.class};
   public final static Class[] MAP_PARAMETERS_2 = {MRPath.class, String.class, String.class, CharSequence.class, MROutput.class};
@@ -49,8 +49,7 @@ public class AnnotatedMRProcess implements Routine {
     goals = resolveNames(processDescription.getAnnotation(MRProcessClass.class).goal(), jes);
     try {
       processDescription.getConstructor(State.class);
-    }
-    catch (NoSuchMethodException nsme){
+    } catch (NoSuchMethodException nsme) {
       throw new IllegalArgumentException("Missed " + processDescription.getName() + "(State)");
     }
 
@@ -74,16 +73,16 @@ public class AnnotatedMRProcess implements Routine {
   private boolean checkInput(final Ref[] available, List<Ref> in, List<Ref> out) {
     { // trying to get input from Input interface
       final Class<?>[] classes = processDescription.getClasses();
-      for(int i = 0; i < classes.length; i++) {
+      for (int i = 0; i < classes.length; i++) {
         final Class<?> next = classes[i];
         if ("Input".equals(next.getSimpleName()) && next.isInterface()) {
           final Field[] fields = next.getFields();
-          for(int j = 0; j < fields.length; j++) {
+          for (int j = 0; j < fields.length; j++) {
             final Field f = fields[j];
             boolean found = false;
             try {
               final Object inputRef = f.get(null);
-              for(int k = 0; !found && k < available.length; k++) {
+              for (int k = 0; !found && k < available.length; k++) {
                 found = inputRef.equals(available[k]);
               }
             } catch (IllegalAccessException e) {
@@ -156,10 +155,11 @@ public class AnnotatedMRProcess implements Routine {
 
   private static Ref[] resolveVars(String resource, Domain.Controller jes) {
     final Matcher matcher = varPattern.matcher(resource);
-    if(matcher.find()) {
+    if (matcher.find()) {
       final StringBuffer format = new StringBuffer();
       String name = matcher.group(1);
       matcher.appendReplacement(format, "{" + 0 + (matcher.groupCount() > 1 && !matcher.group(2).isEmpty() ? "," + matcher.group(2) : "") + "}");
+      final MessageFormat fmt = new MessageFormat(format.toString(), Locale.ENGLISH);
 
       final List<String> candidates = new ArrayList<>();
 
@@ -169,10 +169,9 @@ public class AnnotatedMRProcess implements Routine {
         throw new IllegalArgumentException("No data for " + name + " available at the whiteboard");
       if (resolution.getClass().isArray()) {
         for (final Object next : (Object[]) resolution) {
-          candidates.add(MessageFormat.format(format.toString(), convertToString(next)));
+          candidates.add(fmt.format(new Object[]{convertToString(next)}));
         }
-      }
-      else candidates.add(MessageFormat.format(format.toString(), resolution));
+      } else candidates.add(fmt.format(new Object[]{resolution}));
 
       final List<Ref> results = new ArrayList<>();
       for (final String candidate : candidates) {
@@ -184,7 +183,7 @@ public class AnnotatedMRProcess implements Routine {
     }
     final Ref ref = jes.parse(resource);
     if (MRPath.class.isAssignableFrom(ref.type())) {
-      final MRPath resolve = (MRPath)jes.resolve(ref);
+      final MRPath resolve = (MRPath) jes.resolve(ref);
       if (resolve.path.endsWith("*")) {
         final MRPath dir = resolve.parent();
         if (dir.isDirectory())
@@ -196,7 +195,7 @@ public class AnnotatedMRProcess implements Routine {
 
   private static Ref[] resolveNames(String[] input, Domain.Controller jes) {
     final List<Ref> result = new ArrayList<>();
-    for(int i = 0; i < input.length; i++) {
+    for (int i = 0; i < input.length; i++) {
       result.addAll(Arrays.asList(resolveVars(input[i], jes)));
     }
     return result.toArray(new Ref[result.size()]);
@@ -227,7 +226,7 @@ public class AnnotatedMRProcess implements Routine {
 
   public String[] produces() {
     final String[] result = new String[goals.length];
-    for(int i = 0; i < result.length; i++) {
+    for (int i = 0; i < result.length; i++) {
       result[i] = goals[i].toURI().toString();
     }
     return result;
@@ -270,7 +269,7 @@ public class AnnotatedMRProcess implements Routine {
           if (!(convert instanceof StateRef))
             throw new IllegalStateException("Reader result must be instance of StateRef");
           //noinspection unchecked
-          jes.addJoba(new ReadJoba(jes, resolveNames(new String[]{readAnn.input()}, jes), (StateRef<?>)convert, current));
+          jes.addJoba(new ReadJoba(jes, resolveNames(new String[]{readAnn.input()}, jes), (StateRef<?>) convert, current));
         }
       }
       jobs = MergeRoutine.unmergeJobs(jobs);
