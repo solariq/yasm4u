@@ -353,11 +353,16 @@ public class LocalMREnv extends MREnvBase {
     switch (path.mount) {
       case LOG:
         fullPath.append("logs/");
-        final Matcher matcher = pattern.matcher(path.path);
-        if (matcher.find()) // make single file for all dates
-          fullPath.append(matcher.replaceAll(""));
-        else
+        if (!Boolean.getBoolean("yasm4u.test")) {
+          final Matcher matcher = pattern.matcher(path.path);
+          if(matcher.find()) // make single file for all dates
+            fullPath.append(matcher.replaceAll(""));
+          else
+            fullPath.append(path.path);
+        }
+        else {
           fullPath.append(path.path);
+        }
         break;
       case TEMP:
         fullPath.append("temp/");
