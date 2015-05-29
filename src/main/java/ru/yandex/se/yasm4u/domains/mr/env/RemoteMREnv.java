@@ -107,12 +107,21 @@ public abstract class RemoteMREnv extends MREnvBase {
       asyncReaderTh.start();
       final MRPath[] input = builder.input();
       final Set<String> visited = new HashSet<>();
+      MRPath parent = null;
       for (int i = 0; i < input.length; i++) {
         final String realPath = env instanceof LocalMREnv ? ((LocalMREnv) env).file(input[i]).getAbsolutePath() : input[i].toString();
         if (visited.contains(realPath))
           continue;
         to.append(Integer.toString(i)).append("\n");
         to.flush();
+        if (input[i].mount == MRPath.Mount.LOG_BROKER ) {
+          if (parent != null && parent == input[i].parent()) {
+            visited.add(realPath);
+            continue;
+          } else {
+            parent = input[i].parent();
+          }
+        }
         env.sample(input[i], new Processor<MRRecord>() {
           @Override
           public void process(MRRecord arg) {
@@ -254,14 +263,23 @@ public abstract class RemoteMREnv extends MREnvBase {
       return result;
 
     if (Boolean.getBoolean("yasm4u.getInsteadOfList")) {
+      MRPath parent = null;
       for (final MRPath u : unknown) {
         if (u.isDirectory()) {
           if (u.isMountRoot())
             continue;
           list(u);
         }
-        else
-          get(u);
+        else {
+          if (u.mount == MRPath.Mount.LOG_BROKER) {
+            if (parent == null || !parent.equals(u.parent())) {
+              parent = u.parent();
+              list(parent);
+            }
+          }
+          else
+            get(u);
+        }
       }
     }
     else {
@@ -269,13 +287,7 @@ public abstract class RemoteMREnv extends MREnvBase {
       Set<MRPath> pathSet = findBestPrefixes(unknown);
       for (final MRPath prefix : pathSet) {
         final MRPath toList = prefix.isDirectory() ? prefix : prefix.parent();
-        /* TODO: It definitely duty of findBestPrefixes to not fall into mount root scanning,
-        * for now let's do so */
-        if (toList.isMountRoot())
-          continue;
         list(toList);
-        if (prefix.isMountRoot())
-          continue;
       }
     }
     final MRTableState[] states = resolveAll(paths, true, freshnesstimeout + TimeUnit.SECONDS.toMillis(30));

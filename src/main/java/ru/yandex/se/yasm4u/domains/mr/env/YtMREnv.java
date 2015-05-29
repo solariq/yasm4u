@@ -91,7 +91,10 @@ public class YtMREnv extends RemoteMREnv {
     options.add("read");
     options.add("--format");
     options.add("<has_subkey=true>yamr");
-    options.add(localPath(table) + "[:#100]");
+    if (table.mount == MRPath.Mount.LOG_BROKER)
+      options.add(localPath(table) + "[:#1]");
+    else
+      options.add(localPath(table) + "[:#100]");
     final MROperation outputProcessor = new MROperation(table) {
       @Override
       public void process(final MRRecord arg) {
@@ -433,6 +436,10 @@ public class YtMREnv extends RemoteMREnv {
       mnt = MRPath.Mount.HOME;
       path = table.substring(homePrefix.length());
     }
+    else if (table.startsWith("//logbroker-export/mobilesearch/mobreport/")) {
+      mnt = MRPath.Mount.LOG_BROKER;
+      path = table.substring("//logbroker-export/mobilesearch/mobreport/".length());
+    }
     else if (table.startsWith("//home/mobilesearch/")) {
       mnt = MRPath.Mount.LOG;
       path = table.substring("//home/mobilesearch/".length());
@@ -454,6 +461,9 @@ public class YtMREnv extends RemoteMREnv {
     switch (shard.mount) {
       case LOG:
         result.append("//home/mobilesearch/");
+        break;
+      case LOG_BROKER:
+        result.append("//logbroker-export/mobilesearch/mobreport/");
         break;
       case HOME: //https://st.yandex-team.ru/YTADMIN-1575
         result.append("//home/mobilesearch/personal_homes/").append(MR_USER_NAME).append("/");

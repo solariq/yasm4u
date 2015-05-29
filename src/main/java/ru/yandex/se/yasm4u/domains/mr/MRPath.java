@@ -121,7 +121,8 @@ public class MRPath implements Serializable, Ref<MRPath, MREnv> {
     ROOT("/"),
     TEMP("/tmp/"),
     HOME("/home/"),
-    LOG("/log/");
+    LOG("/log/"),
+    LOG_BROKER("/logbroker/");
 
     String prefix;
     Mount(String prefix){
