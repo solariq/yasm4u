@@ -307,6 +307,9 @@ public class YtMREnv extends RemoteMREnv {
     final List<String> options = defaultOptions();
     options.add("create");
     options.add("-r");
+    options.add("-i");
+    options.add("--attributes");
+    options.add("{compression_codec=gzip_best_compression}");
     options.add("table");
     options.add(localPath(shard));
     executeCommand(options, /* defaultOutputProcessor */ new Action<CharSequence>() {
@@ -653,6 +656,7 @@ public class YtMREnv extends RemoteMREnv {
           break;
         case 1:
           errors = metaJSON.get("inner_errors").get(0);
+          if (errors == null) break;
           errorCodeResolver(arg, errors, errors.get("code").asInt());
           break;
         default: {
