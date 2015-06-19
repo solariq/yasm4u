@@ -30,6 +30,8 @@ import java.io.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * User: solar
@@ -138,6 +140,17 @@ public class YtMREnv extends RemoteMREnv {
     }
   }
 
+  final static Pattern pattern = Pattern.compile("^(.*)\\[");
+  private static CharSequence cutOffNonJsonGarbage(CharSequence arg) {
+    Matcher matcher = pattern.matcher(arg);
+    CharSequence result;
+    if (matcher.find(0))
+      result = arg.subSequence(matcher.group(0).length() - 1, arg.length());
+    else
+      result = arg;
+    return result;
+  }
+
   @Override
   public MRPath[] list(final MRPath prefix) {
     if (!prefix.isDirectory())
@@ -166,7 +179,7 @@ public class YtMREnv extends RemoteMREnv {
       final CharSequence rawListResult = resultProcessor.sequence();
       JsonNode nodes = null;
       if (rawListResult.length() != 0) {
-        final JsonParser parser = JSONTools.parseJSON(rawListResult);
+        final JsonParser parser = JSONTools.parseJSON(cutOffNonJsonGarbage(rawListResult));
         nodes = mapper.readTree(parser);
         if (!prefix.isDirectory()) {
           readNode(prefix, result, mapper, nodes);
