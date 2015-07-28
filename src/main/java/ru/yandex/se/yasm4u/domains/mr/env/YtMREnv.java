@@ -399,7 +399,7 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--local-file");
     options.add(jar.getAbsolutePath());
 
-    options.add("/usr/local/java7/bin/java "
+    options.add("/usr/local/java8/bin/java "
       + (Boolean.getBoolean("yasm4u.enableJMX")? "-Dcom.sun.management.jmxremote " : "")
       + (Boolean.getBoolean("yasm4u.loggc")? "-Xloggc:/dev/stderr -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCApplicationStoppedTime -verbose:gc":"")
       + " -XX:-UsePerfData -XX:+PerfDisableSharedMem -Xmx3G -Xms3G -jar " + jar.getName());
