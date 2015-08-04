@@ -32,6 +32,8 @@ import java.util.concurrent.TimeUnit;
  * Time: 17:08
  */
 public class YaMREnv extends RemoteMREnv {
+  public static final String USER_MOUNT = System.getProperty("yasm4u.ya.user.mount", "mobilesearch");
+
   public YaMREnv(final ProcessRunner runner, final String user, final String master) {
     super(runner, user, master);
   }
@@ -355,9 +357,9 @@ public class YaMREnv extends RemoteMREnv {
     MRPath.Mount mnt;
     String path;
     final String homePrefix = user + "/";
-    if (table.startsWith("mobilesearch/")){
+    if (table.startsWith(USER_MOUNT + "/")){
       mnt = MRPath.Mount.LOG;
-      path = table.substring("mobilesearch/".length());
+      path = table.substring((USER_MOUNT + "/").length());
     }
     else if (table.startsWith(homePrefix)) {
       mnt = MRPath.Mount.HOME;
@@ -379,7 +381,7 @@ public class YaMREnv extends RemoteMREnv {
     final StringBuilder result = new StringBuilder();
     switch (shard.mount) {
       case LOG:
-        result.append("mobilesearch/");
+        result.append(USER_MOUNT).append("/");
         break;
       case HOME:
         result.append(user).append("/");
