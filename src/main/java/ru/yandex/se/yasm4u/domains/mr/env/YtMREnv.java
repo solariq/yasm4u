@@ -42,6 +42,7 @@ public class YtMREnv extends RemoteMREnv {
   private static int MAX_ROW_WEIGTH = 128000000;
   private static Logger LOG = Logger.getLogger(YtMREnv.class);
   final static String MR_USER_NAME = System.getProperty("user.name");
+  public static final String USER_MOUNT = System.getProperty("yasm4u.yt.user.mount", "mobilesearch");
 
   public YtMREnv(final ProcessRunner runner, final String tag, final String master) {
     super(runner, tag, master);
@@ -447,18 +448,18 @@ public class YtMREnv extends RemoteMREnv {
     MRPath.Mount mnt;
     String path;
     // see about homes https://st.yandex-team.ru/YTADMIN-1575
-    final String homePrefix = "//home/mobilesearch/personal_homes/" + MR_USER_NAME + "/";
+    final String homePrefix = "//home/" + USER_MOUNT + "/personal_homes/" + MR_USER_NAME + "/";
     if (table.startsWith(homePrefix)) {
       mnt = MRPath.Mount.HOME;
       path = table.substring(homePrefix.length());
     }
-    else if (table.startsWith("//logbroker-export/mobilesearch/mobreport/")) {
+    else if (table.startsWith("//logbroker-export/" + USER_MOUNT + "/mobreport/")) {
       mnt = MRPath.Mount.LOG_BROKER;
-      path = table.substring("//logbroker-export/mobilesearch/mobreport/".length());
+      path = table.substring(("//logbroker-export/" + USER_MOUNT + "/mobreport/").length());
     }
-    else if (table.startsWith("//home/mobilesearch/")) {
+    else if (table.startsWith("//home/" + USER_MOUNT + "/")) {
       mnt = MRPath.Mount.LOG;
-      path = table.substring("//home/mobilesearch/".length());
+      path = table.substring(("//home/" + USER_MOUNT + "/").length());
     }
     else if (table.startsWith("//tmp/")) {
       mnt = MRPath.Mount.TEMP;
@@ -476,13 +477,13 @@ public class YtMREnv extends RemoteMREnv {
     final StringBuilder result = new StringBuilder();
     switch (shard.mount) {
       case LOG:
-        result.append("//home/mobilesearch/");
+        result.append("//home/").append(USER_MOUNT).append("/");
         break;
       case LOG_BROKER:
-        result.append("//logbroker-export/mobilesearch/mobreport/");
+        result.append("//logbroker-export/").append(USER_MOUNT).append("/mobreport/");
         break;
       case HOME: //https://st.yandex-team.ru/YTADMIN-1575
-        result.append("//home/mobilesearch/personal_homes/").append(MR_USER_NAME).append("/");
+        result.append("//home/").append(USER_MOUNT).append("/personal_homes/").append(MR_USER_NAME).append("/");
         break;
       case TEMP:
         result.append("//tmp/");
@@ -498,7 +499,7 @@ public class YtMREnv extends RemoteMREnv {
   @Override
   protected boolean isFat(MRPath path) {
     final String localPath = localPath(path);
-    if ("//home/mobilesearch/logprocessing.daily/paradiso/".equals(localPath))
+    if (("//home/" + USER_MOUNT + "/logprocessing.daily/paradiso/").equals(localPath))
       return true;
     return false;
   }
