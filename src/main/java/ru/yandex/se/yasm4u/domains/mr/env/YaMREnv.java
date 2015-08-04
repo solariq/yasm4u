@@ -261,6 +261,11 @@ public class YaMREnv extends RemoteMREnv {
     wipeState(path);
   }
 
+  @Override
+  public long key(MRPath shard, String key, Processor<MRRecord> seq) {
+    return 0;
+  }
+
 
   private static final Set<String> FAT_DIRECTORIES = new HashSet<>(Arrays.asList(
           "user_sessions",

@@ -191,6 +191,11 @@ public final class ProfilerMREnv extends MREnvBase {
   }
 
   @Override
+  public long key(MRPath shard, String key, Processor<MRRecord> seq) {
+    return 0;
+  }
+
+  @Override
   public String name() {
     return wrapped.name();
   }

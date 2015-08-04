@@ -31,6 +31,7 @@ public interface MREnv extends Domain {
   void copy(MRPath[] from, MRPath to, boolean append);
   void delete(MRPath shard);
   void sort(MRPath shard);
+  long key(MRPath shard, String key, Processor<MRRecord> seq);
 
   String name();
 }

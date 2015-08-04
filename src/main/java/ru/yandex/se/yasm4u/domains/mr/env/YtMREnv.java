@@ -16,7 +16,6 @@ import com.spbsu.commons.seq.CharSeqBuilder;
 import com.spbsu.commons.seq.CharSeqReader;
 import com.spbsu.commons.seq.CharSeqTools;
 import com.spbsu.commons.util.JSONTools;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import ru.yandex.se.yasm4u.domains.mr.*;
@@ -368,6 +367,27 @@ public class YtMREnv extends RemoteMREnv {
         + "}}}");
     executeMapOrReduceCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
     wipeState(table);
+  }
+
+  @Override
+  public long key(MRPath shard, final String key, final Processor<MRRecord> seq) {
+    final List<String> options = defaultOptions();
+    options.add("read");
+    options.add("--format");
+    options.add("<has_subkey=true>yamr");
+    options.add(localPath(shard) + "[\"" + key +"\":\"" + key + "\\0x00\"]");
+    final long[] counter = new long[1];
+    final MROperation outputProcessor = new MROperation(shard) {
+      @Override
+      public void process(final MRRecord arg) {
+        counter[0]++;
+        seq.process(arg);
+      }
+    };
+    executeCommand(options, outputProcessor, defaultErrorsProcessor, null);
+    outputProcessor.invoke(CharSeq.EMPTY);
+
+    return counter[0];
   }
 
   @Override

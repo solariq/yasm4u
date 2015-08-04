@@ -426,6 +426,11 @@ public class CompositeMREnv extends MREnvBase {
   }
 
   @Override
+  public long key(MRPath shard, String key, Processor<MRRecord> seq) {
+    return original.key(shard, key, seq);
+  }
+
+  @Override
   public String name() {
     return original.name();
   }

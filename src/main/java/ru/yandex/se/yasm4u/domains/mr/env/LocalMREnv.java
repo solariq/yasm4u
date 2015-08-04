@@ -286,6 +286,11 @@ public class LocalMREnv extends MREnvBase {
     }
   }
 
+  @Override
+  public long key(MRPath shard, String key, Processor<MRRecord> seq) {
+    return 0;
+  }
+
   private long modtime(File file) {
     try {
       final BasicFileAttributes attributes = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
