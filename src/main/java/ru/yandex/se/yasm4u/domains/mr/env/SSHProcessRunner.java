@@ -190,6 +190,8 @@ public class SSHProcessRunner implements ProcessRunner {
     tempFile.deleteOnExit();
 
     final StringBuilder waitCmd = new StringBuilder();
+    // waitCmd.append("set -x\n");
+    // waitCmd.append("USER=").append(WhiteboardImpl.USER).append("\n");
     waitCmd.append("SSH=\"").append(SSH_COMMAND).append("\"\n");
     waitCmd.append("remote=").append(proxyHost).append("\n");
     waitCmd.append("runner=").append(runner).append("\n");
