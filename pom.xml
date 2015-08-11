@@ -133,6 +133,14 @@
         </file>
       </activation>
       <id>standalone-build</id>
+      <!-- I hate maven, WTF they needs both modules and dependencies -->
+      <dependencies>
+        <dependency>
+          <groupId>com.spbsu</groupId>
+          <artifactId>commons</artifactId>
+          <version>1.0-SNAPSHOT</version>
+        </dependency>
+      </dependencies>
       <modules>
         <module>commons</module>
       </modules>
