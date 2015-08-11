@@ -40,11 +40,11 @@
       <artifactId>log4j</artifactId>
       <version>1.2.16</version>
     </dependency>
-    <dependency>
+    <!--dependency>
       <groupId>com.spbsu</groupId>
       <artifactId>commons</artifactId>
       <version>1.0-SNAPSHOT</version>
-    </dependency>
+    </dependency-->
     <dependency>
       <groupId>org.javassist</groupId>
       <artifactId>javassist</artifactId>
@@ -129,7 +129,7 @@
       <activation>
         <activeByDefault>false</activeByDefault>
         <file>
-          <missing>../jmll/commons</missing>
+          <missing>../commons</missing>
         </file>
       </activation>
       <id>standalone-build</id>
@@ -141,13 +141,17 @@
       <activation>
         <activeByDefault>false</activeByDefault>
         <file>
-          <exists>../jmll/commons</exists>
+          <exists>../commons</exists>
         </file>
       </activation>
       <id>dev</id>
-      <modules>
-        <!--module>../jmll/commons</module-->
-      </modules>
+      <dependencies>
+        <dependency>
+          <groupId>com.spbsu</groupId>
+          <artifactId>commons</artifactId>
+          <version>1.0-SNAPSHOT</version>
+        </dependency>
+      </dependencies>
     </profile>
   </profiles>
 </project>
