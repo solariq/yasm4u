@@ -95,7 +95,11 @@ public abstract class MROperation implements Processor<MRRecord>, Action<CharSeq
             }
           }
           System.exit(2);
-        } else LockSupport.parkNanos(100000);
+        }
+        /**
+         * This operation provoke operation hang. please envisitgate it deeper, and then use.
+         * else LockSupport.parkNanos(100000);
+         */
       }
     }
     if (unhandled != null) {
