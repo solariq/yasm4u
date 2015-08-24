@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
  */
 
 public class LocalMREnv extends MREnvBase {
-    public static final String DEFAULT_HOME = System.getProperty("user.home") + "/.MRSamples";
+    public static final String DEFAULT_HOME = System.getProperty("user.home") + "/.MRSamples/" + System.currentTimeMillis();
 
   private final File home;
 
@@ -306,6 +306,8 @@ public class LocalMREnv extends MREnvBase {
   }
 
   public File file(final String path, boolean sorted) {
+    System.out.println("hhhhh" + home);
+    System.out.println("ppppp" + path);
     final File file = new File(home, path + (sorted ? ".txt.sorted" : ".txt"));
     if (!file.getParentFile().exists()) {
       try {
@@ -385,8 +387,10 @@ public class LocalMREnv extends MREnvBase {
       return new File(fullPath.toString());
     else if (path.sorted)
       return new File(fullPath.toString() + ".txt.sorted");
-    else
+    else {
+      System.out.println("|||||||||" + fullPath.toString());
       return new File(fullPath.toString() + ".txt");
+    }
   }
 
   private String crc(File file) {
