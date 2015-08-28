@@ -19,6 +19,8 @@ import ru.yandex.se.yasm4u.domains.mr.ops.impl.MRRoutineBuilder;
 import ru.yandex.se.yasm4u.domains.mr.ops.impl.MRTableState;
 
 import java.io.*;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -78,7 +80,7 @@ public abstract class RemoteMREnv extends MREnvBase {
       //noinspection ResultOfMethodCallIgnored
       jar.delete();
       jar.deleteOnExit();
-      process = RuntimeUtils.runJvm(MRRunner.class, "--dump", jar.getAbsolutePath());
+      process = runJvm(MRRunner.class, "--dump", jar.getAbsolutePath());
       final ByteArrayOutputStream builderSerialized = new ByteArrayOutputStream();
       try (final ObjectOutputStream outputStream = new ObjectOutputStream(builderSerialized)) {
         outputStream.writeObject(builder);
@@ -340,4 +342,32 @@ public abstract class RemoteMREnv extends MREnvBase {
     return result;
   }
 
+  /* copy from commons */
+  private static Process runJvm(final Class<?> mainClass, final String... args) {
+    try {
+      final Method main = mainClass.getMethod("main", String[].class);
+      if (main.getReturnType().equals(void.class)
+          && Modifier.isStatic(main.getModifiers())
+          && Modifier.isPublic(main.getModifiers())) {
+        try {
+          final List<String> parameters = new ArrayList<>();
+          parameters.add(System.getProperty("java.home") + "/bin/java");
+          parameters.add("-Xmx3g");
+          parameters.add("-classpath");
+          parameters.add(System.getProperty("java.class.path"));
+          parameters.add(mainClass.getName());
+          parameters.addAll(Arrays.asList(args));
+          System.err.println("runjvm: " + parameters.toString());
+          return Runtime.getRuntime().exec(parameters.toArray(new String[parameters.size()]));
+        }
+        catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+    }
+    catch (NoSuchMethodException e) {
+      //
+    }
+    throw new IllegalArgumentException("Main class must contain main method :)");
+  }
 }
