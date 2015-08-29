@@ -98,6 +98,10 @@ public class LocalMREnv extends MREnvBase {
     if (path.isDirectory())
       throw new IllegalArgumentException("Path must not be directory");
     final File file = file(path);
+    if (file.getName().equals(".txt")) {
+      System.err.println("path: " + path);
+      throw new RuntimeException("empty file name");
+    }
     if (file.exists()) {
       final long[] recordsAndKeys = countRecordsAndKeys(file);
       return new MRTableState(file.getAbsolutePath(), true, path.sorted, crc(file), length(file), recordsAndKeys[1], recordsAndKeys[0], modtime(file), System.currentTimeMillis());
@@ -294,7 +298,6 @@ public class LocalMREnv extends MREnvBase {
 
   private long modtime(File file) {
     try {
-      if (file.getName().equals(".txt")) throw new RuntimeException("");
       final BasicFileAttributes attributes = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
       return attributes.lastModifiedTime().toMillis();
     } catch (IOException e) {
