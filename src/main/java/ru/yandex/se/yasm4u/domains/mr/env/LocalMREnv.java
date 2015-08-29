@@ -49,6 +49,7 @@ public class LocalMREnv extends MREnvBase {
   }
 
   public LocalMREnv(String home) {
+    System.err.println("LocalMREnv: home: " + home);
     if(home.charAt(home.length() - 1) != '/')
       home = home + "/";
 
@@ -306,8 +307,6 @@ public class LocalMREnv extends MREnvBase {
   }
 
   public File file(final String path, boolean sorted) {
-    System.out.println("hhhhh" + home);
-    System.out.println("ppppp" + path);
     final File file = new File(home, path + (sorted ? ".txt.sorted" : ".txt"));
     if (!file.getParentFile().exists()) {
       try {
@@ -388,7 +387,6 @@ public class LocalMREnv extends MREnvBase {
     else if (path.sorted)
       return new File(fullPath.toString() + ".txt.sorted");
     else {
-      System.out.println("|||||||||" + fullPath.toString());
       return new File(fullPath.toString() + ".txt");
     }
   }
