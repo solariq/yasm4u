@@ -294,6 +294,7 @@ public class LocalMREnv extends MREnvBase {
 
   private long modtime(File file) {
     try {
+      if (file.getName().equals(".txt")) throw new RuntimeException("");
       final BasicFileAttributes attributes = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
       return attributes.lastModifiedTime().toMillis();
     } catch (IOException e) {
