@@ -376,6 +376,10 @@ public class LocalMREnv extends MREnvBase {
         fullPath.append("home/");
         fullPath.append(path.path);
         break;
+      case LOG_BROKER:
+        fullPath.append("log_broker/");
+        fullPath.append(path.path);
+        break;
       case ROOT:
         fullPath.append(path.path);
         break;
