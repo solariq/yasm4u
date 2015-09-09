@@ -29,10 +29,10 @@ public abstract class MROperation implements Processor<MRRecord>, Action<CharSeq
   private final long timeout;
   private int currentInputIndex = 0;
   private volatile boolean interrupted = false;
-  private AtomicReference<CharSequence> next = new AtomicReference<>();
+  private final AtomicReference<CharSequence> next = new AtomicReference<>();
   private volatile Throwable unhandled;
   private volatile MRRecord currentRecord;
-  private Thread routineTh;
+  private final Thread routineTh;
 
   public MROperation(MRPath[] inputTables, MRErrorsHandler output, State state) {
     this.inputTables = inputTables;

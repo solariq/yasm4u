@@ -1,0 +1,3632 @@
+commit fa9fdb459cd5d4f0a7fc200ed70cc4327ad19a6d
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sat Aug 29 09:55:30 2015 +0300
+
+    uniqualize MREnvState
+
+commit f36b7dffee459ae0ced6f7cff7775f8da7c0ba84
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sat Aug 29 09:47:05 2015 +0300
+
+    LOGBROKER mount point support
+
+commit da7f75b20244cc3e309b5794258c4d9dfdf10087
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sat Aug 29 09:37:49 2015 +0300
+
+    placed exception throwing introduced in 794714cd9dcc3b4e774679bc018d56f2c36961d5 upper in the stack
+
+commit 794714cd9dcc3b4e774679bc018d56f2c36961d5
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sat Aug 29 09:12:00 2015 +0300
+
+    exception on emty name file creation
+
+commit 0f0c1bfd2192c14144cf65ea38817afd0e72def6
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sat Aug 29 09:10:25 2015 +0300
+
+    removed nice tracing of local file operations
+
+commit 1306264a26636de2ced0b1eb2a01320ead075a5e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Aug 28 21:21:23 2015 +0300
+
+    traced jvmrun
+
+commit 614be326fb56044adecf670762703ff28e38cda9
+Author: vkokarev <vkokarev@yandex-team.ru>
+Date:   Mon Aug 24 14:28:57 2015 +0300
+
+    use different .MRSamples
+
+commit 5d57abc8ec4b58d228b61e6b5ae704a60f86b85f
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Aug 18 10:18:43 2015 +0300
+
+    disable parkNanos, because still no evidence that it makes something good here@
+
+commit ce381d7289dabffccd9421bc955e0be1b233652f
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Aug 11 10:00:59 2015 +0300
+
+    attempt to fix standalone build
+
+commit 6294557df8f9a530152e66c6fddf2325d5485d6b
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Aug 11 09:50:09 2015 +0300
+
+    jMRtasks switched to 1st level dependencies
+
+commit 73f352199df46c26b6b9f0a775660ef07ae91f3d
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Aug 4 17:29:25 2015 +0300
+
+    added key(MRPath path, String key, Processor<MRRecord> seq) for processing records for a given key
+
+commit 64560e37ac8c464c36a0258b2115d9b21aa9c1f6
+Author: irlab <irlab@yandex-team.ru>
+Date:   Tue Aug 4 15:52:00 2015 +0300
+
+    GATEWAY-2610 собрать клики для метрики и датасета для дефолтного открытия вертикалей
+
+commit 779e15db1d1f51c3819bdd1b8e00803c4bfa6909
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Aug 4 10:49:28 2015 +0300
+
+    introduced system property yasm4u.ya.user.mount yasm4u.yt.user.mount to inform environment about /home/ mapping
+
+commit 5ef205462af529c61da113add6dcfda53e9b798e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Jul 28 08:03:50 2015 +0300
+
+    support java8
+
+commit 997fbedcf0c4e67d8640943dd58a1f1f89717dbd
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Jun 19 12:44:42 2015 +0300
+
+    LOGSNG-497: fix for remote access, workaround for lack of split of STDOUT and STDERR
+
+commit dc38d3aff0e68aa54d689604a8e82296b7b1b1d2
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Jun 18 09:35:32 2015 +0300
+
+    increase memory alloacrtion up to 3Gb for map and reduce operations.
+
+commit e4ae0567d7f3d846788a766eefb0e0a3b974928c
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Jun 17 11:59:05 2015 +0300
+
+    Yt: create table with attribute: compression_codec=gzip_best_compression
+
+commit 5ef6f0c8dffb5971be82242d6b000248aae2d952
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri May 29 08:23:05 2015 +0300
+
+    make test happier with yasm4u.test=true
+
+commit 036d6d5bc1ecc1abf01ef1b0ad43db44ee505131
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri May 29 08:21:58 2015 +0300
+
+    log-broker support.
+
+commit 2b7c8b1e23f61956b3a1ca743b5f0463eff8a046
+Author: bobsmirnov <bobsmirnov@yandex-team.ru>
+Date:   Wed Apr 29 12:29:48 2015 +0300
+
+    Fixed format for long vars
+
+commit 9cdc5328c8d4c6e5ad7082955dd00c9f1d14100d
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Sat Apr 25 05:51:34 2015 +0300
+
+    Special support of LOG mount in CompositeMREnv
+
+commit 25e18a8b334a9576e5d22b424382246ea8f6f072
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Apr 24 18:04:12 2015 +0300
+
+    Stupid bug fix
+
+commit e392df0f2f932b391d47470d2aaf09bf432dc426
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Apr 24 17:59:34 2015 +0300
+
+    Support for empty constructor
+
+commit 367cb9a348b851edeca110899dd735c0a6a502c6
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Apr 24 17:34:28 2015 +0300
+
+    ReduceConverter introduced, SPUAggrCalc done
+
+commit 25a02a5b5c88d73b72eeca30c9244f836195b40a
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Apr 24 16:13:37 2015 +0300
+
+    Metrics framework scratches
+
+commit 0520759d3f27209cf096e91eba1cc71897129560
+Author: Salavat Amirkhanov <salavat@yandex-team.ru>
+Date:   Thu Apr 23 14:52:20 2015 +0300
+
+    fix for LockSupport.parkNanos
+
+commit 95c2aa3adac38882215e840dd21991d868179758
+Author: bobsmirnov <bobsmirnov@yandex-team.ru>
+Date:   Wed Apr 22 15:06:02 2015 +0300
+
+    In case of sampling sorted file the write function deletes sample just after write
+
+commit 64167ebe823e0fcdb6d02168d7e4c777da22ed19
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Wed Apr 22 11:28:29 2015 +0300
+
+    Restored CompositeMREnv functionality
+
+commit a9f87a02087a7e0b646895a01b565e0d9c256233
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Tue Apr 21 13:47:56 2015 +0300
+
+    Incorrect usage of goals removed
+
+commit 4d94b60bad2eeb60021b5ea462fcf988b02f2904
+Merge: a12abb4 ede5dc0
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Apr 20 17:56:25 2015 +0300
+
+    Merge branch 'master' of https://github.yandex-team.ru/mobile-search/YASM4U
+    
+    Conflicts:
+    	src/main/java/ru/yandex/se/yasm4u/domains/mr/env/MROutput2Writer.java
+
+commit ede5dc03beeb8e25378318a4d8fe782bd472f1dc
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Thu Apr 16 20:22:03 2015 +0300
+
+    Planner problems fixed
+    
+    Conflicts:
+    	src/main/java/ru/yandex/se/yasm4u/impl/Planner.java
+    	src/test/java/planner/PlannerTest.java
+
+commit 23f21711183251bed1d8a3547f7fda14902e4997
+Author: bobsmirnov <bobsmirnov@yandex-team.ru>
+Date:   Thu Apr 16 13:12:05 2015 +0300
+
+    Debug information added
+    Synchronized added
+
+commit a9cd7a1fecaced15b1562cf2fd25efe6b4bc78e6
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Apr 14 05:01:22 2015 +0300
+
+    State reading bug introduced on merge.
+
+commit e607d5b4911ee15710c910fa94d02877e0f5fae9
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Apr 13 17:19:37 2015 +0300
+
+    It better to have one entry point for creation MRPath::create(), and createFromURI make private.
+
+commit 7a61b67870b25f75fdbd14bdf4fcdb59bdbf17e3
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Apr 13 14:41:30 2015 +0300
+
+    catch EOF.
+
+commit a3384fe99e1e34dbc68cdccbc29767990dc21f09
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sun Apr 12 18:53:33 2015 +0300
+
+    sync yasm4u.
+
+commit 81dd019413a71acc03c039cde6af1535fb0ef0ab
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sun Apr 12 13:50:09 2015 +0300
+
+    AnnotatedMRProcess doesn't require safety :).
+
+commit d0ede55ba52586bd316f48486ed78f566de16344
+Author: Sergey Lyadzhin <lyadzhin@yandex-team.ru>
+Date:   Fri Apr 10 23:10:48 2015 +0300
+
+    ReportHttpService proof of concept
+
+commit f6de7e2a3793a66853c0e4e90c817883872d18b8
+Author: Sergey Lyadzhin <lyadzhin@yandex-team.ru>
+Date:   Fri Apr 10 17:55:29 2015 +0300
+
+    ReportHttpService proof of concept
+
+commit 6458f4d0c7381d20d1495a98c4ad519824bc4a13
+Author: Sergey Lyadzhin <lyadzhin@yandex-team.ru>
+Date:   Fri Apr 10 17:39:42 2015 +0300
+
+    ReportHttpService proof of concept
+
+commit c7c236b52904f667f315c850a0553f959a3fe6a4
+Author: Sergey Lyadzhin <lyadzhin@yandex-team.ru>
+Date:   Fri Apr 10 17:33:59 2015 +0300
+
+    ReportHttpService proof of concept
+
+commit 056748f63868d018cabd9de4bc0d4fbbe438d60b
+Author: Sergey Lyadzhin <lyadzhin@yandex-team.ru>
+Date:   Fri Apr 10 17:11:06 2015 +0300
+
+    ReportHttpService proof of concept
+
+commit e4ed82995df9e0f9c6fadf74cff6b65a7f6529d7
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Apr 10 15:06:31 2015 +0300
+
+    MergeRoutine fixed
+
+commit 3f36014cacf7d3e178d0b01a1e5986b5cc13d6a9
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Apr 10 14:37:51 2015 +0300
+
+    Joba.Stub hashCode/equals, Planner algorithm changed, Merge simplified
+
+commit c3fd4aac55500b1d21acb0b5b3bb1f45e0c1b654
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Apr 6 18:28:43 2015 +0300
+
+    .name again
+
+commit 3908b37870918b0e188a6b3129ac81419d5a1a92
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Apr 6 18:20:20 2015 +0300
+
+    NPE AIOOB fixes in Yt, explicit declaration of hashCode and equals at Ref
+
+commit 8750f685cd646226f050aec13a8691c746a684ff
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Apr 6 17:58:51 2015 +0300
+
+    Trash removed
+
+commit acc50409c62acef95ba569bc560034cc6c4615bf
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Apr 6 17:50:47 2015 +0300
+
+    Massive refactoring for Refs
+
+commit 377d07d2fefa3d6cfbc061632313621c1514d9c8
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Wed Apr 1 16:44:58 2015 +0300
+
+    minor fix
+
+commit 5c7bf8f650da85785338572979628cf0400655fb
+Author: Sergey Lyadzhin <lyadzhin@yandex-team.ru>
+Date:   Sat Apr 4 14:21:21 2015 +0300
+
+    ReportHttpService proof of concept
+
+commit 2d3ad875abf80cb82a90395ee7f024ef55ffcc24
+Author: Sergey Lyadzhin <lyadzhin@yandex-team.ru>
+Date:   Sat Apr 4 14:08:51 2015 +0300
+
+    refactoring: Domain.publicRoutines -> Domain.init
+
+commit 131f7907264630aa2efe18588f3f0238c558b71a
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Tue Mar 31 15:50:31 2015 +0300
+
+    Merge now works fine
+
+commit 4cfa542aa38195eccbdcab3efa3fb204868e33a6
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Mar 30 20:05:42 2015 +0300
+
+    SortRoutine seems to be properly planned
+
+commit 0ce545f1dd134e0108e3b5d1d6504ce95b8bc9d8
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Mar 30 16:39:27 2015 +0300
+
+    More fixes. WPExperiment seems to work now.
+
+commit 3de30a1b863331bf4c1a7977989ccce4bb1f23ed
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Mar 30 14:45:46 2015 +0300
+
+    Seems to work in some cases
+
+commit 609f4f422fd30fc0a33401f3fefb8c25dd6388cc
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Mar 30 12:09:29 2015 +0300
+
+    Unmerge functionality appended to AnnotatedMRProcess
+
+commit 298a34e097ae6bc60a49eb70c425d40b22c3abeb
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Mar 27 19:08:13 2015 +0300
+
+    Domains now compiles
+
+commit 083e6250331e457375ee0b634d757b065267283a
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Apr 7 16:13:18 2015 +0300
+
+    LOGSNG-202: switch to java8.
+
+commit 8bcc498114e637acc5295f93fd54250ceea08a5f
+Author: bobsmirnov <bobsmirnov@yandex-team.ru>
+Date:   Wed Apr 8 10:55:24 2015 +0300
+
+    pretty printing
+
+commit b00dd53f343b6b2517d10d698504bed402a0158f
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Apr 7 15:05:01 2015 +0300
+
+    System.exit(2) on timeout.
+
+commit 8b898c3f77f4ae78fd98b556f8f7af0ca3a49a30
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Tue Apr 7 13:10:03 2015 +0300
+
+    park added to active waiting
+
+commit 4aa38839269eb3a8d900f0d6e1d35c1eb6ff1490
+Author: Remezov Dmitry <bagiro44@yandex-team.ru>
+Date:   Mon Apr 6 18:59:47 2015 +0300
+
+    RemoteMREnv.java: Reading thread added
+
+commit fe8125a545b20c7fe7e5946b1d6ee773995b915e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Apr 6 11:03:13 2015 +0300
+
+    MRRoutine.java: missed volatile.
+
+commit 706c23ebb491e693ffbc51892395ab1915f4405a
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sun Apr 5 07:36:05 2015 +0300
+
+    More verbose options for yasm4u.loggc
+    and in common -XX:+PerfDisableSharedMem added.
+
+commit 50b71b5e9335e86ffcee2db63b0a1f696e9f05aa
+Author: bobsmirnov <bobsmirnov@yandex-team.ru>
+Date:   Fri Apr 3 11:42:44 2015 +0300
+
+    Timeout increased
+
+commit 2484c4731e0f8eab2c78d9c0791bbd312113d53e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Apr 1 10:29:54 2015 +0300
+
+    optimized imports.
+
+commit 7a6e6ee97ab4d9a7975111b253060dd0004c25b0
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Mar 31 05:58:24 2015 +0300
+
+    introduces flag "-Dyasm4u.loggc" to log gc stats in MR operations
+
+commit 55012a947f0a532b7f04d21402081b4fe19cf29c
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Mar 30 20:44:14 2015 +0300
+
+    YtMREnv workaround of empty input from operation.
+
+commit f4b9ae6ed670e5a479c24d859f7ca87557877c12
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Mar 30 14:47:39 2015 +0300
+
+    LOGSNG-202 replace LinkedTransferQueue with ArrayBlockingQueue.
+
+commit 63ee55544da6b238ac040ff0c1d995a74749aefd
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Mar 27 13:15:28 2015 +0300
+
+    fix of NPE on non-existing directory.
+
+commit a78774d7bad3dcca67d4f557b31dba104a489f2a
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Mar 27 13:08:11 2015 +0300
+
+    log all exceptions.
+
+commit a11f5be40a796a63ab86c4cdb34841f10e0b7ac6
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Mar 27 12:15:18 2015 +0300
+
+    Attempt to fix "hang".
+
+commit a12abb4214210cfd15fb9d1a20bd1e418e68d9eb
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Mar 27 12:09:45 2015 +0300
+
+    Seems to work as expected. Dances with consistency during local write operations.
+
+commit 90910f7394b326305b6daf92fa4a780532f96941
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Mar 25 15:35:18 2015 +0300
+
+    Check poison pill and non poison pill empty charsequence, to avoid parsing output of YT operation.
+
+commit c3885c0195a9af5358f9dd36921ac4039899fb21
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Mar 25 09:28:09 2015 +0300
+
+    introduced optio yasm4u.enableJMX to enable JMX on the MR task.
+
+commit 448a1e27b9842d2421c6d68c833be563e12ae403
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Tue Mar 24 18:04:14 2015 +0300
+
+    fix field order
+
+commit a2416cd00ed280970e435397ab60720a2bb95557
+Author: unknown <inikifor@INIKIFOR-NB-W7.ld.yandex.ru>
+Date:   Mon Mar 23 19:38:52 2015 +0300
+
+    fix scp command for Windows
+
+commit d63536b25e6712c516dc82cb01a2e7fdc9a18061
+Author: unknown <inikifor@INIKIFOR-NB-W7.ld.yandex.ru>
+Date:   Mon Mar 23 16:47:59 2015 +0300
+
+    workaround wait.sh bug on Windows
+
+commit 97dafc80e2249c90b75d4f17ebe931de1979aa0f
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sat Mar 21 20:44:15 2015 +0300
+
+    do not fetch json objects if json is null/
+
+commit c384b0392bc96a22257e6aa46952838c539938c6
+Author: unknown <inikifor@INIKIFOR-NB-W7.ld.yandex.ru>
+Date:   Fri Mar 20 16:02:02 2015 +0300
+
+    fix process runner
+
+commit 3f60beaf069f600132c681374f62d76e1b1e3a07
+Author: unknown <inikifor@INIKIFOR-NB-W7.ld.yandex.ru>
+Date:   Thu Mar 19 13:57:46 2015 +0300
+
+    fix ListNDrop test on Windows
+
+commit ca26b4190c105d7eea46d9a147c25160f38e0ea3
+Author: unknown <inikifor@INIKIFOR-NB-W7.ld.yandex.ru>
+Date:   Thu Mar 19 13:41:51 2015 +0300
+
+    Fix deleting opened resources on Windows
+
+commit dc539c7357d55f4834b0d03fa911494f3c2c5c95
+Author: vkokarev <vkokarev@yandex-team.ru>
+Date:   Wed Mar 18 13:18:48 2015 +0300
+
+    writing strings over 64K
+
+commit e7be08c5bdda47f78e5a9245489fcf27614ccd69
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Mar 17 18:01:52 2015 +0300
+
+    removes ":" from toString (YT)
+
+commit fa15172742ff56c1884568d6f44e35fafd4a98a1
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Mar 16 22:20:04 2015 +0300
+
+    returns back ae6e0bdc4ba1be138208370d4135b3154672a29b and do optional optimization (-Dyasm4u.getInsteadOfList)
+
+commit e0b8e715f691d0e1a43202ea117d40745f027e5a
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Mar 16 16:01:34 2015 +0300
+
+    send poison-pill.
+
+commit ae6e0bdc4ba1be138208370d4135b3154672a29b
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sun Mar 15 15:55:30 2015 +0300
+
+    introduced method get() in MREnv, for speed up resolveAll,
+    it fetch table attributes (YtMREnv) to cache
+    for other environments it do list(table.parent).
+
+commit 93df702fe11b4c9d2cd003a3ee605d9e8b03c5cf
+Author: bobsmirnov <bobsmirnov@yandex-team.ru>
+Date:   Thu Mar 12 17:17:33 2015 +0300
+
+    added convertToString.
+
+commit 748dd0cddcfdd4f54011c1a9e0ef641a18853fda
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Mar 12 12:23:07 2015 +0300
+
+    by default test LocalEnv.
+
+commit d25102bbe15e3c97e850a6b09b7e1691ee06f76a
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Mar 12 12:22:25 2015 +0300
+
+    pom.xml: clean up.
+
+commit b17aaabea860b6b2c76bd7448be0e3c0a2d3ae54
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Mar 12 08:20:08 2015 +0300
+
+    yasm4u: test compilation fix
+
+commit 4c217d2276af78b3786286583a73cf7f93437429
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Mar 12 07:46:09 2015 +0300
+
+    tests added.
+
+commit f3e50889c442077ea345729bc9ebf653ece357b1
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Mar 11 20:47:00 2015 +0300
+
+    pom.xml: standalone-build/jMRtasks builds.
+
+commit 9abccf51f295e6add2fac5fadbc8937c7cdcab4b
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Mar 11 20:46:43 2015 +0300
+
+    sync commons.
+
+commit 7d1df041ac9993c319134707f1a9da6eee2647a0
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Mar 11 10:27:39 2015 +0300
+
+    BooleanConverter.
+
+commit 1afafcd2aa298d2c6bc22d4eab7048bcca642dc7
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Mar 9 22:46:14 2015 +0300
+
+    Yt: directory deletion.
+
+commit d11c8cd3f7ae41a1146b148ed56801fd644bee7f
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Mar 9 07:26:40 2015 +0300
+
+    LocalMREnv: unconditionally delete target file when write.
+
+commit c64ffb15369c70aef5f9a5b1b28222acd37866bb
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Mar 6 10:08:44 2015 +0300
+
+    LocalEnv: We'd like to delete sorted table-file after write whether shard points on sorted table or not.
+
+commit 24301458ea7bc001fbb49b1aee78762af905054d
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Mar 6 05:57:56 2015 +0300
+
+    Whiteboard marshalling
+
+commit 9e886f9551c92b144868cbe225b69aa3b69a435c
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Mar 5 23:15:20 2015 +0300
+
+    RemoteMREnv: makes cascade list less greedy.
+
+commit 1ae94062fecf12a002d72624a61ea10367b11218
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Mar 5 23:11:49 2015 +0300
+
+    Yt: another table guid format added.
+
+commit 0a5f65d5a604dde62e288d44f677085230cec093
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Mar 5 22:38:37 2015 +0300
+
+    Drop last list of parent result from the state on delete operation.
+
+commit 6f7c141e60f369a023e054631bd0b7a3a16a7b02
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Mar 5 22:04:33 2015 +0300
+
+    mixed tests
+
+commit 733dc37590004f9ede1f8c92f2e78135058041a5
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Mar 5 22:04:07 2015 +0300
+
+    Force unboxing.
+
+commit dc871bbd5589dd21464b22d0294105c2f387614b
+Author: Vasily Levchenko <minamoto@prod1-test-mob.serp.yandex.ru>
+Date:   Thu Mar 5 12:13:36 2015 +0300
+
+    LocalProcessRunner. fixed.
+
+commit b53fd71fe6d7bada8400eb0afd74f033af03e0ed
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Mar 5 12:12:00 2015 +0300
+
+    Revert "findBestPrefixes shouldn't return not-directories."
+    
+    This reverts commit ada0d3726a9a3227d961a2bcbfe9a0a638937af2.
+
+commit ada0d3726a9a3227d961a2bcbfe9a0a638937af2
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Mar 5 12:01:48 2015 +0300
+
+    findBestPrefixes shouldn't return not-directories.
+
+commit fcb8d92feddcc4d7fa327f0f525fef7d5af7d023
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Mar 5 10:32:39 2015 +0300
+
+    make Yt happier
+
+commit d5200f4fcd79782ee82f90e1b562605355027aa0
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Mar 5 07:25:25 2015 +0300
+
+    LocalProcessRunner.java: charsequence.
+
+commit 848ed4e7b8fe555a91f4816e3068883787514b93
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Mar 5 07:12:08 2015 +0300
+
+    split some tests.
+
+commit 44ab395f878ba84a0078dbd099cb2e5757c585ce
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Mar 5 06:40:28 2015 +0300
+
+    Yt: don't fall to json parsing if uuid of created table were returned.
+
+commit 86ad8b5dadcb62e16433462dfaa886638bb300ef
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Mar 4 23:03:43 2015 +0300
+
+    MRPath: root of the mount point is Directory too.
+
+commit 0500e6d74706306792116535c0050f7ded12e9b9
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Mar 4 22:58:14 2015 +0300
+
+    Tests: New contract of MRPath wasn't included in the test.
+
+commit d293029564ceb8acb3e43569efbb7ab5d63f5fb3
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Mar 4 22:02:00 2015 +0300
+
+    Yt: intended local resource processing in 564431f087c2cd400f53a3dc2c89991ec8bfc221
+
+commit f078639cd611b128507de668df0a6aa84175911d
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Mar 4 21:44:39 2015 +0300
+
+    LocalRunnerTest
+
+commit 097141467d219a0f87d9c6cf8656cec8afc36580
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Mar 4 21:43:36 2015 +0300
+
+    changes according new command line format.
+
+commit db7f6b3f1d05fcb2cadae31edd1293c972f304dc
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Mar 4 21:00:16 2015 +0300
+
+    Yt: 1. be more specific when update cache (sorted table isn't equal to sorted one).
+    2. don't create destination tables before routine input availability check.
+
+commit a8e2064a148823dd07ee1e3ab5a8d4d040698587
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Mar 4 20:26:34 2015 +0300
+
+    ignore BigWrites test.
+
+commit 4118a69d5f9850eb8ca54df082da3ff8c8df849f
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Mar 4 17:56:49 2015 +0300
+
+    More information about skiped routines.
+
+commit 2bfaea30475a6f11d65b227a3cf9790b38ea23e1
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Wed Mar 4 17:25:15 2015 +0300
+
+    parent call fixed
+
+commit e615bb68c9a11d9adc358a39ad3a282ee1810083
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Mar 4 17:17:43 2015 +0300
+
+    parent for preffix in resolveAll
+
+commit a750b0de450c707877a4ff2ab6160ed6dd002865
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Wed Mar 4 15:06:44 2015 +0300
+
+    Assertions appended
+
+commit 890d2abd7573a958d788a42c565725f7e2deec32
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Wed Mar 4 13:56:27 2015 +0300
+
+    Need to sleep more
+
+commit 3d8c9374441950462a02fbad5c9687711b7cdca5
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Wed Mar 4 12:50:35 2015 +0300
+
+    Poison pill was skipped in many places
+
+commit f89507e0dd1a7c4724f9db984a82ceac18c6e90d
+Author: Vasily Levchenko <minamoto@prod1-test-mob.serp.yandex.ru>
+Date:   Wed Mar 4 07:31:35 2015 +0300
+
+    removed module inclusion.
+
+commit 41371c921983817ba02c6959ccda175e8f68082d
+Author: Vasily Levchenko <minamoto@prod1-test-mob.serp.yandex.ru>
+Date:   Wed Mar 4 07:14:35 2015 +0300
+
+    removed unwaned import.
+
+commit 11e2e9d5613e62913cf64527495615209cc0d67f
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Mar 2 11:09:12 2015 +0300
+
+    Acceptable performance for timeout handling
+
+commit 6005db89ee2d4302bd5f62d43788ff69d6ff528f
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Mar 2 09:16:16 2015 +0300
+
+    Timeouts for routine execution on key added
+
+commit cd78ca09416184cc2fd75ac8cf6bdd7af71e90b3
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sun Mar 1 20:25:49 2015 +0300
+
+    fix of issues introduced in 564431f087c2cd400f53a3dc2c89991ec8bfc221,
+    thought LocalProcessRunner is broken as well.
+
+commit 0e3ef989594557b90b824f6e667aaeedd46d4c7f
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sun Mar 1 17:32:11 2015 +0300
+
+    MRPath.java: added tableName methods returning leaf of the path, and checks for '//' in path were added.
+
+commit 564431f087c2cd400f53a3dc2c89991ec8bfc221
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Sat Feb 28 12:22:14 2015 +0300
+
+    Removed some shit from the code
+
+commit b4546b28e0bc2bc2ee383ba81c61b7614fb7a996
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sat Feb 28 11:19:51 2015 +0300
+
+    MRReduce.java: don't take record.key if record is null.
+
+commit 130a8a9cfae287aa0035d3fee2388ffc60dbb42e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sat Feb 28 11:11:26 2015 +0300
+
+    Fix of bug the introduced in  c3840d117708e351fbdc49712cda9e695c8c8148. instead of sorted path returned unsorted after sort operation.
+
+commit ec963f5f8176f7b4520661218ad8746648b6448b
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 26 22:48:49 2015 +0300
+
+    switch tests from plato to aristotle
+
+commit 4190b65af9d180c4d281daa02441d3495eeb1e33
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Sat Feb 28 10:06:10 2015 +0300
+
+    SSHProcessRunner enhanced
+
+commit c3840d117708e351fbdc49712cda9e695c8c8148
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Wed Feb 25 19:56:22 2015 +0300
+
+    performance issues fixed
+
+commit 8c8712bdb94e9c943f150113dfbb6f46fde532bd
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 25 16:18:53 2015 +0300
+
+    yet another bump for write operation + test.
+
+commit 53071bc31ba2e216eda84a93dfafdaabda70b6d3
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 25 14:40:13 2015 +0300
+
+    add wipe.
+
+commit 8b6f8d819190c4d4202c55c962ab66c835e5f159
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 25 12:58:44 2015 +0300
+
+    Yt better fix for ignoring outut
+
+commit 0e0242e5f5fecf450e7531fbe1c38e1490e6d575
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 25 12:37:45 2015 +0300
+
+    Yt: we don't want see these guids from create table
+
+commit 1d3a3d4e232911159d7f2262585759a96c14b261
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 25 11:10:20 2015 +0300
+
+    more testing.
+
+commit eb664dbff9c1387cfc3abfb0a70013fadb27fdab
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 25 11:09:50 2015 +0300
+
+    Whitebaord tests.
+
+commit 148b4ece840c312ed4146f85307b39e284b68b29
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 25 10:55:23 2015 +0300
+
+    dependency on jmll/commons
+
+commit ba03c376625b478f020bfe36ddcc6631877a4bca
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 25 10:53:38 2015 +0300
+
+    Ssh: drops, tools.jar dependency.
+
+commit bd16ff943cf4f9098065f9ea232987f03f4e566f
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 25 06:02:29 2015 +0300
+
+    Yt: set table writer limit to 128Mb.
+
+commit f0253a50b819c8fc9105755a02cb4176c4b9d5e5
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Feb 24 22:21:29 2015 +0300
+
+    Yt:shut up, yt's guid parser.
+
+commit 1dbbf9dde5d1d6895fb1c38394983169f932a9ce
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Tue Feb 24 12:28:19 2015 +0300
+
+    MROutput is no capable to work with empty input
+
+commit 58ec1351215ffb4271ebd86f87952beed2dc57a5
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Feb 23 10:03:54 2015 +0300
+
+    Yt: isFat should return true for directories.
+
+commit 714dbb2fbb63512840ff21aae8aae1409577c7d2
+Author: Vasily Levchenko <minamoto@prod1-test-mob.serp.yandex.ru>
+Date:   Mon Feb 23 09:39:20 2015 +0300
+
+    fix build.
+
+commit 7fa35431f156f75b2ffcaee8d14452b17cebcd57
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Feb 23 06:16:21 2015 +0300
+
+    sorted added to equals and hashcode.
+
+commit 50cc46d9b9966425f915d4ec6f642add0c377f38
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Sat Feb 21 21:52:39 2015 +0300
+
+    fixed logic for sync of shards
+
+commit 74d00a04f806d8d16022c80d984ee3157b5fef0a
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Sat Feb 21 16:56:22 2015 +0300
+
+    append problem fixed
+
+commit 1922fb423b614ebddd270b21269c9cf0fe086735
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Sat Feb 21 16:50:13 2015 +0300
+
+    Error handling fixed
+
+commit 2f35863b135460be724170cd586069bee308b590
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Sat Feb 21 12:53:58 2015 +0300
+
+    Many small fixes
+
+commit 2837dc7b0df1b2657d641cc8091504b53a5f9f1c
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Sat Feb 21 08:20:53 2015 +0300
+
+    MRPath.parent() fixed, YtMREnv.isFat() fixed. add->put for limited queues in MROutput2MREnv.
+
+commit c8511278e3bd1fa766662657cc87eeb8dbb9667c
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Feb 20 23:30:31 2015 +0300
+
+    Generic arrays support in converters, empty value error fixed in wb.
+
+commit d29e98e50c9d9f91ba2cd532c8a9f17027860569
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Feb 20 18:14:11 2015 +0300
+
+    Seems to work as expected. Dances with consistency during local write operations.
+
+commit ffa480f7ca43a4e4d8f4d33d5073a115844a4014
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 20 18:10:57 2015 +0300
+
+    don't abuse other user with debug printing.
+
+commit 551af4ff1e2d127ebbd09d15861e74caf57ea3f6
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 20 17:45:25 2015 +0300
+
+    dumping remote exception to STDERR.
+
+commit e556a78e52380fc9bb175f84b6626a59370cfd02
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Feb 20 17:04:45 2015 +0300
+
+    Upgraded network failure handling in SSHProcessRunner
+
+commit 10cf81604785b5133b456bbd5a52f6ab371bc286
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Feb 20 16:45:32 2015 +0300
+
+    Upgraded network failure handling in SSHProcessRunner
+
+commit 938308c8e13d34cf1ca1c18a794fa7f4e3bcce8e
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Feb 20 16:12:53 2015 +0300
+
+    I hate git
+
+commit b4e892dfba4bbf403359b7996f7757cab22dced1
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Feb 20 16:04:52 2015 +0300
+
+    modtime instead of metaTS
+
+commit 062dcbfc3615fec137ffc8d7665947a101706108
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Feb 20 15:37:14 2015 +0300
+
+    code style, bugs from nightly commit, modtime
+
+commit 2bd440b1d705d4d9b599d3892fd64874277bd60e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 20 13:22:54 2015 +0300
+
+    missed "/" to inform MRpath ("it is a directory")
+
+commit 3f82b5b16f441f9ff1e955ca6feb5846d236487c
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 20 13:06:35 2015 +0300
+
+    list tests.
+
+commit 8b2cc8af858660521d171b6381526aee9122b7c4
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 20 12:37:13 2015 +0300
+
+    Shame on me missed long.
+
+commit 7a24a57e51855c2ea93b83beac3258a5fcfcb901
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 20 07:16:21 2015 +0300
+
+    switch to prod1-tes-mob.serp.yandex.ru from batista for YAMR configuration.
+
+commit eb91fbbc39279e800e469a26f42c81d57c257478
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 20 07:11:00 2015 +0300
+
+    LOGSNG-158: fetch only required attributes on list operation for all child nodes.
+
+commit 030b2760d528b75ed07d781a6ca447b5ad76d8f8
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 20 06:58:47 2015 +0300
+
+    missed wipe to remove.
+
+commit 01f4cec2790d123cfd73d252f729f380b542166f
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 20 02:22:00 2015 +0300
+
+    compatibility method added.
+
+commit 179dd112047b404ca93244f1772b620524417ef2
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 20 01:54:21 2015 +0300
+
+    prod1-test-mob.serp.yandex.ru instead of batista.
+
+commit b4d015a6a17341c0d6e62532b39afbcce826cf20
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 20 01:53:32 2015 +0300
+
+    no wipe before execute, please.
+
+commit 56e195076af93bf1eb67e09290b440c514c388d8
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 20 01:25:01 2015 +0300
+
+    we need extra queue for error reporting.
+
+commit e8535d6d85a3eb9d454db157770269c32ff0ddae
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 19 23:35:37 2015 +0300
+
+    adds LOG mount point (YT: //home/mobilesearch, YAMR: mobilesearch/).
+
+commit f6d6d5004e19bd8b1a514ff8256303bb12db33bf
+Merge: 15104b9 e9c7cac
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 20 00:59:28 2015 +0300
+
+    Merge branch 'master' of https://github.yandex-team.ru/mobile-search/YASM4U
+
+commit e9c7cac13ab33c534018cdd37561885cd1e51e36
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Feb 20 00:25:09 2015 +0300
+
+    Array converters fixed, few minor changes to improve debugability
+
+commit 7848e9145e298f4d872d21d4d28e2c7709cdc724
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Thu Feb 19 22:34:17 2015 +0300
+
+    Generic arrays now supported in type inference
+
+commit 9d1934918f04e2af2cba02e8ffe9eb644fba11b5
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Thu Feb 19 14:40:35 2015 +0300
+
+    sync fixed.
+    reduce input fixed
+
+commit 15104b919367d21f0000cf80b6168fa7471a4a54
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 19 10:53:10 2015 +0300
+
+    YtMREnv: two types of guid
+
+commit 9730a7366f1d88f13c072fd3f18c10f5432271b6
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Thu Feb 19 10:48:17 2015 +0300
+
+    Wipe fixed, resolve contract restored
+
+commit 553225ab6521d6b3045104bbb882293b4b02d0bb
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 19 10:40:22 2015 +0300
+
+    YtMREnv: handle guid change.
+
+commit 6eaa6d9076aacb6d628221ac2f58298f25180e72
+Merge: d39824d 507b14d
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 19 10:24:13 2015 +0300
+
+    Merge branch 'yasm4u-yt-processors'
+    
+    Conflicts:
+    	src/main/java/solar/mr/MRTestUtils.java
+
+commit d39824d30902ad307cda6a1e77842699b0a6d23b
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Thu Feb 19 10:11:16 2015 +0300
+
+    Temp files are fixed, tests fixed
+
+commit 507b14d02c5e3a617d44d9b5f5d86df24868cc4e
+Merge: 4af282a 712bc0e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 19 07:52:20 2015 +0300
+
+    Merge branch 'yasm4u-yt-processors' of https://github.yandex-team.ru/mobile-search/YASM4U into yasm4u-yt-processors
+    
+    Conflicts:
+    	src/main/java/solar/mr/env/SSHProcessRunner.java
+    	src/main/java/solar/mr/env/YtMREnv.java
+    	src/main/java/solar/mr/io/StringArray2CharSequenceConverter.java
+
+commit 4af282ada16d5be707c2fec85443431554ec3b4e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 19 07:26:09 2015 +0300
+
+    MRTestUtils: typo.
+
+commit 601c175197a0acce647daa3ca3a2e0dd575f9683
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 18 22:40:34 2015 +0300
+
+    environment test
+
+commit c75ee425dfc50183349b7d7e0c1945be70040ef8
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 18 21:52:05 2015 +0300
+
+    YtMREnv: list fixes
+
+commit fab91827faa2ae85152c21e0834c559eefcb8a2e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Feb 17 06:48:10 2015 +0300
+
+    SSHProcessRunner exports YT_ERROR_FORMAT=json
+
+commit 67be349e37d2956c5c1b6e7fa5661bd87de47321
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Feb 17 05:33:48 2015 +0300
+
+    MRTableState toString dumps bit more.
+
+commit cf5e32d27946f858318ba6b65f45fce628ac5673
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Feb 17 05:25:35 2015 +0300
+
+    CompositeMREnv: dump FF on yasm4u.dumpStatesFF
+
+commit 0e25f932a9b2d0f1ed987f8411967ff56fd33228
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Feb 17 05:07:53 2015 +0300
+
+    MRRoutineBuilder introduced to String dumping operation type and inputs outputs.
+
+commit 2fe30054d3096454e8af69a15c5697261b581007
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Feb 17 05:06:29 2015 +0300
+
+    CompositeMREnv: introduced property yasm4u.disableFF
+
+commit 9695186375d6d7094e1b846d8318c9322ecd1fca
+Author: Salavat Amirkhanov <salavat@yandex-team.ru>
+Date:   Mon Feb 16 16:14:18 2015 +0300
+
+    fixed writeRecords and dropRecords methods
+
+commit 270d6f03d48887a0eb324056b4a39e859b5fccca
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Feb 16 07:23:21 2015 +0300
+
+    YtMREnv::fixes working with cache
+
+commit 715202d93739d7866fd1138f3e2d065bcb60f22f
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Feb 16 05:53:19 2015 +0300
+
+    YtMREnv:: MR operations error analysis.
+
+commit b2d4b3d9d2fbec454cfd7868ad7016cee5559843
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sun Feb 15 21:46:04 2015 +0300
+
+    forward error code to the client.
+
+commit f5cee60926ba6264adfd83a3227091cb29e9ce89
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sun Feb 15 20:32:55 2015 +0300
+
+    YtMREnv:: another guid parsing mistake.
+
+commit 23c38190e22a19385485c892bb31a98a3f19b1b5
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sun Feb 15 20:01:18 2015 +0300
+
+    YtMREnv: fix uuid parsing.
+
+commit 20aaf4fb1b76e9a4021ca09fdd2b867c1f5a31ad
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sun Feb 15 19:06:06 2015 +0300
+
+    typo.
+
+commit 9d88a53f0a75f7e052272d03bc634f525f549361
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sat Feb 14 16:21:57 2015 +0300
+
+    disable panic mode, collect statistic
+
+commit b80647761999c7d02398e23329aa4c71bfde1ba0
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sat Feb 14 07:03:09 2015 +0300
+
+    YtMREnv::don't panic on uparsed content.
+
+commit 95e76566ef819b332d066e3c3d8beddd6acea16f
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sat Feb 7 07:55:34 2015 +0300
+
+    YtMREnv: token failed is processed
+
+commit de085d9dc0b6ed9ab9e075a8939e3fe580c72873
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 6 10:32:13 2015 +0300
+
+    YtMREnv: replace eatWhitespaces with CharSeqTools.trim
+
+commit 90ea3c1905ed6cea9309267048176d604a8618b5
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 6 10:28:18 2015 +0300
+
+    YtMREnv: take care about dropped ':'
+
+commit bf3005b00f26ffc67f56e9ea07c4d8a8bc9db958
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 6 09:23:48 2015 +0300
+
+    YtMREnv: "completing" status processing.
+
+commit 221664ae01badf34648d94bf625266a96357f830
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 6 09:18:29 2015 +0300
+
+    YtMREnv: copy should use executeMapOrReduceCommand
+
+commit c11faae358d87408eeb58337dc2d2fd143e38e94
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 6 09:14:28 2015 +0300
+
+    YtMREnv:: Ultra-fast operations NONE -> COMPLETED
+
+commit 011b899c446f780efa023263991ed4578279a469
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 6 09:08:22 2015 +0300
+
+    YtMREnv: "preparing" status processing.
+
+commit 033b93125cf6827a3507eab96a2623ffe0c30402
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 6 05:45:31 2015 +0300
+
+    YtMREnv: sort should use executeMapOrReduceCommand for correct processing of its output.
+
+commit 285ea2e0550e4b8c7cd056f73fb6a8b242e0f4ff
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 6 05:41:55 2015 +0300
+
+    YtMREnv: more logging.
+
+commit 987effd82b2995ecee4cdb5d09f760d9965e56f5
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 6 05:13:51 2015 +0300
+
+    YtMREnv: response reporters prints the unparsed lines.
+
+commit 77cfe08323d9fc66d42c076697f44ed9e7efab71
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 5 23:32:09 2015 +0300
+
+    YtMREnv: COMPLETED could be after PRINT HINT
+
+commit fe7815062e53830a06c4d84fc7602c0f6fef71da
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 5 21:57:27 2015 +0300
+
+    YtMREnv: set of possible outputs for yt remote and local.
+
+commit 1271e33c31ca3ae067384029b8088aba2799db4e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 5 21:55:57 2015 +0300
+
+    YtMREnv: map/reduce processors.
+
+commit 222f97f06ad04ea9df57ad2017aaba248b671349
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 5 18:47:59 2015 +0300
+
+    YtMREnv:  error json reading.
+
+commit 05c17e806d1c339468bf98751e32f17035ed0495
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 5 15:59:19 2015 +0300
+
+    YtMREnv: YT_ERROR_FORMAT=json
+
+commit beb4b24d07ed0fffed0f37e6fbddf12342d5905f
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 5 15:49:41 2015 +0300
+
+    YtMREnv: switched to JSON error format. requires YT_ERROR_FORMAT=json (tests are not passed)
+
+commit 8815d44ff03bb24ecf875abbfdbc8261726cb81f
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 5 10:14:11 2015 +0300
+
+    YtMREnv:extracted error message compilation to AppenderProcessor
+
+commit 2897bfcd420b463ae639908edfa3f4528aa8f22d
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 5 07:17:58 2015 +0300
+
+    YtMREnv: don't use System.err instead defaultErrorProcessor should be used.
+
+commit 059bab04e57991700e2eaf64c6f1b84bb4fd26ef
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 5 06:23:07 2015 +0300
+
+    YtMREnv: invalid substring.
+
+commit d705598f9885b2e382109e51f5a2906efc2e4117
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 5 06:22:39 2015 +0300
+
+    YtMREnv::refactoring extracts SshYtResponseProcessor and LocalYtResponse processor
+
+commit 2b1274eb0fc453c8ef3cf07aca9c604292a81140
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 4 22:00:06 2015 +0300
+
+    YtMREnv: localPath should care about ending symbol.
+
+commit 575d4333b8cd37298e48c451446cd0e4dfe00063
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 4 21:54:39 2015 +0300
+
+    fork for SSHRunner and LocalProcessRunner in LocalProcessRunnerwe can split STDERR and STDOUT
+
+commit 93a432114fddfb82f7f80fcd4f3cd37ecb05b52a
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 4 21:15:34 2015 +0300
+
+    Warning and error dignostic
+
+commit d652136031f170a1f9643cc7acf6b59f0ec3cee7
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sun Feb 15 12:32:54 2015 +0300
+
+    sync commons.
+
+commit 74c041ef7f8f022a414d5180f9d2766bd6abd863
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sat Feb 14 18:48:19 2015 +0300
+
+    small enhacement (doesn't change tests behaviour)
+
+commit 25054081c6c4bfa6cbf2f39de05d3f292a6b9dc6
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sat Feb 14 18:24:49 2015 +0300
+
+    added handy methods toCharSequence[NL]() to avoid toString conversion.
+
+commit 712bc0e5b8fc3d80419008acabb9f169e6e60613
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sat Feb 14 16:21:57 2015 +0300
+
+    disable panic mode, collect statistic
+
+commit 5cdda410dcc09b9a27dd21e4e0099098ecd76bc7
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sat Feb 14 07:03:09 2015 +0300
+
+    YtMREnv::don't panic on uparsed content.
+
+commit 59b171fc21cbe00660ebe94b67f368603691cda0
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 13 18:12:45 2015 +0300
+
+    small fixes.
+
+commit 49433b001570be08a1a1ad6ebb9f8f749525c02f
+Merge: d4e820e 079ffbb
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 12 11:27:05 2015 +0300
+
+    Merge branch 'mr-path' of https://github.yandex-team.ru/mobile-search/YASM4U into mr-path
+    
+    Conflicts:
+    	commons
+    	src/main/java/solar/mr/MRRoutine.java
+    	src/main/java/solar/mr/env/YaMREnv.java
+    	src/main/java/solar/mr/env/YtMREnv.java
+    	src/main/java/solar/mr/proc/AnnotatedMRProcess.java
+    	src/main/java/solar/mr/routines/MRMap.java
+    	src/test/java/functional/BaseMRTest.java
+
+commit d4e820e43242cab2664bfc9a05c1cf56fcff57b3
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 12 11:14:04 2015 +0300
+
+    BaseMRTest.java: prevent Fast-Forwarding with CompositMREnv(..., LocalEnv.createTmp()).
+
+commit b0b8f33341c04f364f433bc69c5fc9845a0bd55c
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 12 11:13:15 2015 +0300
+
+    missed test conversion (Yasm4u able convert uri to mrpath).
+
+commit fc24cfe4458922e5b40cfcd771fb3fa85f4d7d63
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 12 11:12:30 2015 +0300
+
+    MRReduce.java: cosmetic.
+
+commit 7912e9cf6a1920d2223ead5654094bcc0274f2aa
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 12 11:10:16 2015 +0300
+
+    disable existance checks in sort/delete. (require investigation).
+
+commit d91d12fc8bf94af9b38814468acad2f9566e8fa7
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 12 11:08:34 2015 +0300
+
+    AnnotatedMRProcess.java: missed "continue". breaking validation client code.
+
+commit 10aabbafc8a39d4080560f1930c26ba8379a3903
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 12 06:55:45 2015 +0300
+
+    removed check on availabilty in sort operation.
+
+commit 9329059d63497bd55ee14871d749ae0738bd1983
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 11 19:49:32 2015 +0300
+
+    some test configuration.
+
+commit 87cc4c15fd726779d8a8c5c0e9c8fb3588e83b5e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 11 19:48:22 2015 +0300
+
+    CompositeMREnv.java: hopes it doesn't hide anything BAD.
+
+commit 853174f2c6b4b7a737dc2d043f2189d8f6a5c231
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 11 15:32:44 2015 +0300
+
+    YtMREnv.java: some clean up.
+
+commit 2ceb3d15113ebe5b5c918b769508633fefcb41a5
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 11 15:29:40 2015 +0300
+
+    YtMREnv.java: execute avoids take decision on behalf of environment.
+    implemented functions required for mr-path functionality.
+
+commit 91ec0daab3dd787a9928866f24749a3aaf3b8c1a
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 11 15:22:26 2015 +0300
+
+    MRPath.java: remove sorted from equals and hashcode calculation.
+
+commit 3c8a776dc9c102a98709801bff08b327e5537c34
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 11 15:19:59 2015 +0300
+
+    StringArray2CharSequence: forward-ported from master.
+
+commit 8c600c60119a93f6c37646e15dece92cff708df8
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 11 15:19:04 2015 +0300
+
+    real test that array was stored in the state.
+
+commit 2ac950dfa029f3df8f15b86618ec303b152c44f0
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Feb 10 17:31:49 2015 +0300
+
+    MROutput*: we can't directly point to error table because MROutput used in LocalEnv without such table. Instead we know that builder.output().length is equal to index of error table.
+
+commit eb7d52d0e3602d9f5997a2c1dc8ea57cec29b15d
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Feb 10 17:29:18 2015 +0300
+
+    small fixes: all tests are passed.
+
+commit a43388ec1d310f94fe3fb5abfd98b21cc92e1bb8
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Feb 10 16:10:36 2015 +0300
+
+    WhiteboardImpl.java: arg.sub contains classname.
+
+commit ba85c2e6ae3ccf95d94f1680068ba41004892987
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Feb 10 14:58:49 2015 +0300
+
+    MRPath.java: Serializable and added equals/hashcode (idea generated)
+
+commit 393b778c75e594ae85aba16d8a6cdc9091e5921b
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Feb 10 14:56:57 2015 +0300
+
+    AnnotatedMRProcess.java: <init> check signature for new and the old versions of the Map.
+
+commit dff38ea29d9b610c9adc286cf9a435af434a463c
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Feb 10 10:49:16 2015 +0300
+
+    AnnotatedProcess.java: <init> checks routines signature.
+
+commit cdb2a5c0693035bae6281ccd305d9a3b0022b833
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Feb 6 12:48:29 2015 +0300
+
+    Local tests pass
+
+commit 132500d125ffd55a103768125f4b3a4bbfe8f0ae
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Thu Feb 5 16:36:56 2015 +0300
+
+    ArrayConverters, MRPath converters
+
+commit a93e8984d32e6ca022c67e04a51529e2355569b9
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Thu Feb 5 15:52:52 2015 +0300
+
+    MRPath implemented
+
+commit fa189b225d3842812c415e51a5f9aa1459542236
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Thu Feb 5 15:52:40 2015 +0300
+
+    MRPath implemented
+
+commit c0c5f919db30c3268f6a3880d6c5ab6051b918c1
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Wed Feb 4 20:26:49 2015 +0300
+
+    Now it compiles
+
+commit 7b49670789b8513b2992159a5fa9de4007a0b5d1
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Jan 26 12:29:30 2015 +0300
+
+    Routine introduced
+
+commit 079ffbb24048d34ece860666418ad5993530d0a5
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 11 19:49:32 2015 +0300
+
+    some test configuration.
+
+commit 9ea9e0e74bac51a12d767fa46af9d8e94c1805c9
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 11 19:48:22 2015 +0300
+
+    CompositeMREnv.java: hopes it doesn't hide anything BAD.
+
+commit 72125631ad9a696c1982dfc302b43082cf50a035
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 11 15:32:44 2015 +0300
+
+    YtMREnv.java: some clean up.
+
+commit d70c759f9e7473f55778c0a323a1a6b71a1cee30
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 11 15:29:40 2015 +0300
+
+    YtMREnv.java: execute avoids take decision on behalf of environment.
+    implemented functions required for mr-path functionality.
+
+commit 5372fff3655762b3183c73d11ded6a8959e32129
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 11 15:22:26 2015 +0300
+
+    MRPath.java: remove sorted from equals and hashcode calculation.
+
+commit 2e25f55874c79a50b68d2620156b326c017d44bd
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 11 15:19:59 2015 +0300
+
+    StringArray2CharSequence: forward-ported from master.
+
+commit 3b63cbdb4837dc87a3e368afde02e578693f90e1
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 11 15:19:04 2015 +0300
+
+    real test that array was stored in the state.
+
+commit c21ac2e6fc1bbd85c96d89e6903bbef48643254c
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Feb 10 17:31:49 2015 +0300
+
+    MROutput*: we can't directly point to error table because MROutput used in LocalEnv without such table. Instead we know that builder.output().length is equal to index of error table.
+
+commit 47c37e3254464bbcfaf8a5e60f5790ffd1963ea2
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Feb 10 17:29:18 2015 +0300
+
+    small fixes: all tests are passed.
+
+commit a0e28dcb78d1df3d459bf6a9993ca772f0c61003
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Feb 10 16:10:36 2015 +0300
+
+    WhiteboardImpl.java: arg.sub contains classname.
+
+commit a200c79c775a3b10afa1609abcca7267ae3196a2
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Feb 10 14:58:49 2015 +0300
+
+    MRPath.java: Serializable and added equals/hashcode (idea generated)
+
+commit eec8e0b44d46a691b2d190788db21bd95da7917a
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Feb 10 14:56:57 2015 +0300
+
+    AnnotatedMRProcess.java: <init> check signature for new and the old versions of the Map.
+
+commit 920d791bebddaaa745f1efa43befef04585dfc04
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Feb 10 10:49:16 2015 +0300
+
+    AnnotatedProcess.java: <init> checks routines signature.
+
+commit d5ed67d122add1d00268aac9a65c1c3b4b3f874a
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sat Feb 7 07:55:34 2015 +0300
+
+    YtMREnv: token failed is processed
+
+commit 1c84e64fcd199cec6420868088214836acf4e904
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Feb 6 12:48:29 2015 +0300
+
+    Local tests pass
+
+commit 4ddd90ced5ce8d9f0db02033a059ac5293404d96
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 6 10:32:13 2015 +0300
+
+    YtMREnv: replace eatWhitespaces with CharSeqTools.trim
+
+commit e96c02a64d5552fccbf8f8040d34472d8d3490c1
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 6 10:28:18 2015 +0300
+
+    YtMREnv: take care about dropped ':'
+
+commit cd7161b5674b9f2de4b42ab6a6eab2aed41a0ada
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 6 09:23:48 2015 +0300
+
+    YtMREnv: "completing" status processing.
+
+commit b9abf4b31ac1de40f0588a229ef3fdeb8ae6125e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 6 09:18:29 2015 +0300
+
+    YtMREnv: copy should use executeMapOrReduceCommand
+
+commit 7bc6ad48d7b4f9f3075e76bbb6be1e97a57de37c
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 6 09:14:28 2015 +0300
+
+    YtMREnv:: Ultra-fast operations NONE -> COMPLETED
+
+commit 74f4137d7d5c352f709589dcb8342cb78fff84f6
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 6 09:08:22 2015 +0300
+
+    YtMREnv: "preparing" status processing.
+
+commit 37863b63aa5d3f31855de133b3fa2a16caebcf7b
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 6 05:45:31 2015 +0300
+
+    YtMREnv: sort should use executeMapOrReduceCommand for correct processing of its output.
+
+commit 825017da20c1f092365740c1e94d8c85bf974d0e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 6 05:41:55 2015 +0300
+
+    YtMREnv: more logging.
+
+commit fb9800cef77d7ad7efc8cb90f6a3bf93af3f79d2
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Feb 6 05:13:51 2015 +0300
+
+    YtMREnv: response reporters prints the unparsed lines.
+
+commit c177e6e71ba29823b7ea3120252f23fe853ec03e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 5 23:32:09 2015 +0300
+
+    YtMREnv: COMPLETED could be after PRINT HINT
+
+commit fc2b7995154a4e03e0d2c8b39799afd0fa9eeba1
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 5 21:55:57 2015 +0300
+
+    YtMREnv: map/reduce processors.
+
+commit b8424d9b8340c73aa6b87d48270f5d6039fc9d5d
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 5 18:47:59 2015 +0300
+
+    YtMREnv:  error json reading.
+
+commit 2ffc192469379d922b162eb33115609cbe30c2b3
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 5 15:59:19 2015 +0300
+
+    YtMREnv: YT_ERROR_FORMAT=json
+
+commit 10f87e9b30e4cadbb078c00df2c56eaf291617de
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 5 15:49:41 2015 +0300
+
+    YtMREnv: switched to JSON error format. requires YT_ERROR_FORMAT=json (tests are not passed)
+
+commit 7d0e05ce3ae61b5ab2e417b2c2811e3da0c5bcd6
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 5 07:17:58 2015 +0300
+
+    YtMREnv: don't use System.err instead defaultErrorProcessor should be used.
+    
+    Conflicts:
+    	src/main/java/solar/mr/env/YtMREnv.java
+
+commit 02cc1c3a38b464d006fc5ac23ba8ff2bfa5f993d
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 5 10:14:11 2015 +0300
+
+    YtMREnv:extracted error message compilation to AppenderProcessor
+
+commit efbfa385fab7b3042a42a68d598b55a8dd046e3b
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 5 07:17:58 2015 +0300
+
+    YtMREnv: don't use System.err instead defaultErrorProcessor should be used.
+
+commit 7c16002c7587d5fbab098a842a5241b3d8e41fc8
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 5 07:14:45 2015 +0300
+
+    YtMREnv: Warning on skiped operation.
+
+commit 28fb124c8519bc892772580ffa1396b2c8ac7cd7
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 5 06:44:48 2015 +0300
+
+    YtMREnv: localPath returns cleared path.
+
+commit 582793754a38177068b35b34a7e331c8762d5a8f
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 5 06:23:07 2015 +0300
+
+    YtMREnv: invalid substring.
+
+commit b083ff64ef18d86bc22a552b2b36a2aca99f0487
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Feb 5 06:22:39 2015 +0300
+
+    YtMREnv::refactoring extracts SshYtResponseProcessor and LocalYtResponse processor
+
+commit ed4892535a3d679de810844342617f60eefdb774
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 4 22:00:06 2015 +0300
+
+    YtMREnv: localPath should care about ending symbol.
+
+commit bc05f6dc1a06e8a474d4179648de7202720dd402
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 4 21:54:39 2015 +0300
+
+    fork for SSHRunner and LocalProcessRunner in LocalProcessRunnerwe can split STDERR and STDOUT
+
+commit b2c772fd977ff19b03bc05e6b9c6b37f07b889af
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 4 21:15:34 2015 +0300
+
+    Warning and error dignostic
+
+commit 4bbc8ad5b15f2f537923b5bcfc2152a876443366
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Thu Feb 5 16:36:56 2015 +0300
+
+    ArrayConverters, MRPath converters
+
+commit 0072edeb59912ac4cf4daf3553d218548eb83926
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Thu Feb 5 15:52:52 2015 +0300
+
+    MRPath implemented
+
+commit 31df1c5a3bba8c14bf879d16a98e6717f4e2a883
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Thu Feb 5 15:52:40 2015 +0300
+
+    MRPath implemented
+
+commit 42f7042b1ad339849719135799c6327458c945e9
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Wed Feb 4 20:26:49 2015 +0300
+
+    Now it compiles
+
+commit baba63a68ed2e2f2faf5431e68a9c9b47723dc84
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Feb 4 11:11:45 2015 +0300
+
+    fix separator and base64 encoding.
+
+commit 7f66a097438acb0676c3d6dbc1a64a0b3ddcfab2
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Feb 3 10:43:20 2015 +0300
+
+    LOGSNG-90
+
+commit 4a3f196564c18e074a7365e0a8fc8e7b96ee31fd
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Mon Feb 2 12:36:18 2015 +0300
+
+    one more fix for local runner
+
+commit bd770f4c039050386ef4d9c6e7e73f57bff1b917
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Mon Feb 2 12:27:55 2015 +0300
+
+    fix local runner
+
+commit 597aa65d54f1ee1d7a2ee7bf55cb8c3e661372df
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Mon Feb 2 12:04:08 2015 +0300
+
+    fix runners
+
+commit fb3820b944bfca5225e193d5b50a0475c42a06ee
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Feb 2 10:35:54 2015 +0300
+
+    yasm4u: LocalProcessRunner.
+
+commit ba77fc006fafa8473fc960bb33a6754bec9e6704
+Author: Vasily Levchenko <minamoto@prod1-test-mob.serp.yandex.ru>
+Date:   Sun Feb 1 06:35:30 2015 +0300
+
+    LocalProcessRunner.java: enhancements.
+
+commit 97b1813714a0c7fc1181eeb316e4d9ef836a0d91
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sun Feb 1 03:09:18 2015 +0300
+
+    LocalProcessRunner 1st attempt.
+
+commit ef6ba7691b05638f035490110dde4cf1f67d71ca
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sun Feb 1 02:26:59 2015 +0300
+
+    YtMREnv::Max row weight bumped up to 128Mb.
+
+commit 951858576ce3902f3b3739ac9b726b5367483391
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sun Feb 1 02:22:50 2015 +0300
+
+    limitited output blocking queue.
+
+commit 11d60778afc222292a4c151300b31287b4d7b9ac
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Jan 30 05:44:48 2015 +0300
+
+    ssh options : PasswordAuthentication=no
+
+commit 8ee5292fc0b346097e8c9f6d6fec527f3eda0a98
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Jan 30 05:41:38 2015 +0300
+
+    don't track target content in git.
+
+commit c49be0393ceae7d94edbfad986dbc8bf661d3551
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Jan 30 05:40:51 2015 +0300
+
+    add target to .gitignore.
+
+commit 67099aa19724be338566a6ef2449538e27e97149
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Jan 30 05:38:38 2015 +0300
+
+    YtMREnv.java: bumped memory limits to 2Gb.
+
+commit 809aaace1cfbb2cabcc8094571bbc3677eb4ccf2
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Jan 29 14:25:44 2015 +0300
+
+    close input stream before process detaching.
+
+commit 045c96bc50a4d3a4a1e951bfe5b3f25a068f267c
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Tue Jan 27 15:32:19 2015 +0300
+
+    remove err output
+
+commit 093ef8deb77a9d8bc9ffe00bfee2c94ee0070ded
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Jan 27 07:30:09 2015 +0300
+
+    timeouts.
+
+commit 2f06008457932bcd9d147cba1584c4ea4d6482a5
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Jan 27 07:28:53 2015 +0300
+
+    timeout 10 min.
+
+commit db6d3a2bba80d50678453eec70934e625517a45d
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Jan 27 07:26:42 2015 +0300
+
+    Removed filtering out JVM errot stdout from stderr.
+
+commit 48c7e4a52c43768e078399ebaa535c3f8bedccb5
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Jan 23 12:02:47 2015 +0300
+
+    poka-yoke: don't miss constructor.
+
+commit e872ffb3255ae74549d11fab196a0a207145e998
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Jan 23 00:00:58 2015 +0300
+
+    YtMREnv: fixed sort and replacement  "map-reduce" with "reduce".
+
+commit edbc62c5a85a59ea0b5a177ea7ab71428a735969
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Jan 22 21:56:38 2015 +0300
+
+    Poka-yoke: don't let spend too much time on staying at methods signature.
+
+commit 68d7df2a0a0b6a51395cf39685c6ea35404dcf36
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Mon Jan 26 18:04:47 2015 +0300
+
+    fix list NPE
+
+commit fb860c24edf8b61323ae3812a990b101dd488539
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Jan 26 12:29:30 2015 +0300
+
+    Routine introduced
+
+commit 47a4be901356e50aa1780d1d41990fa16950cfec
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Mon Jan 26 11:31:20 2015 +0300
+
+    endless test
+
+commit 218d74e2afae80e2eee9549b699b42a43f51e8ef
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Fri Jan 23 14:13:01 2015 +0300
+
+    timeout for execution
+
+commit 2b65c25a34b91cc9aa525ed3c50e0040f44287e3
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Wed Jan 21 12:52:59 2015 +0300
+
+    move commons
+
+commit c8214329e71b510fd046905257ea1e2c33f8aaa4
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Jan 20 14:58:31 2015 +0300
+
+    disable filtering output.
+
+commit 8acbce33a6f5a1897c5cae2d4378bd25a73cdb6e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Jan 20 13:42:44 2015 +0300
+
+    use WhiteboardImpl.USER to log file naming.
+
+commit 3e79e0876c9dd03adccc4b304ececd4f469a507e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Jan 20 13:39:27 2015 +0300
+
+    HACK-ALERT: ClassCastExseption workaround.
+
+commit a2345e3f1bc388fb9b4b7f9d1b45cfc0e0d38d2d
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Jan 20 13:36:02 2015 +0300
+
+    use "mr.user" and "user.name"
+
+commit 5d12e98464adfe9671732b533b314fa9ee351c47
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Jan 20 13:34:27 2015 +0300
+
+    filter out thread dump in stdout
+
+commit 9e4ef8bd339b84ad579da04a53cf2cc13e4954ba
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sun Jan 18 13:01:15 2015 +0300
+
+    wait.sh test of perl runner isn't required, because we do this check when transfering file.
+
+commit 7195b53a2fd916289c3761a2d1fb84f45979266d
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sun Jan 18 12:58:19 2015 +0300
+
+    SSHProcessRunner repeate copy till file really copied to destination.
+
+commit 56130279d69e4922c1529dbdcd9e45e78256bdd8
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Jan 16 15:31:41 2015 +0300
+
+    process error on list.
+
+commit 17a522c899ed0abd07d12add41108a63b65dbe3e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Jan 16 12:00:54 2015 +0300
+
+    limit number of tries.
+
+commit 9108a9c3e951fda76f9bb4e871dde1ad733c9f04
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Jan 16 11:40:42 2015 +0300
+
+    wait.sh - wait till runner appears on remote host.
+
+commit d0f0974e8cf1675bbf2b255ca67fe614d4de460b
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Jan 16 09:54:04 2015 +0300
+
+    MROutput missed daemonization.
+
+commit 722a5fd0dfaa8b2c97d5c44f5e9ea83940353d60
+Merge: 263c17a 92a44c8
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Fri Jan 16 16:15:45 2015 +0300
+
+    merge
+
+commit 263c17ad8167dce7aa5fd523596d36dd871ed614
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Fri Jan 16 16:10:38 2015 +0300
+
+    fix ssh process execution
+
+commit 92a44c858c1c38e213d4b414774a848694f011c3
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Jan 16 15:49:32 2015 +0300
+
+    dropping test tables
+
+commit f6cfcaa9f4c607047c46d9641cd12826b87e398f
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Jan 16 15:48:53 2015 +0300
+
+    Fixed whiteboard serialization, composite environment
+
+commit cf8ed48db56c9f63045b90738741de6cbc66ced6
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Jan 15 15:54:52 2015 +0300
+
+    Split off Yamr and Yt specific options for "file" on operation in different clauses.
+
+commit 188bebe0ae657a53d767bc7735a52d31634a1c2f
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Jan 15 15:47:34 2015 +0300
+
+    YtEnv cut off (Yamr specific map/reduce operation output diagnostic).
+
+commit 1b9b0c15c182d803ba89be3cb3e2845bfade6b89
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Jan 15 15:46:43 2015 +0300
+
+    Fix cache usage for YtEnv.
+
+commit 3ec31fdddea3df8be5af8ea3998c9f10a167a24b
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Jan 15 15:35:06 2015 +0300
+
+    replace "$" to ".", assuming that target for replacements are tanble names usually.
+
+commit 0949c1f476f3a82f8708b5c47db0563959076473
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Jan 14 20:59:51 2015 +0300
+
+    sync commons.
+
+commit 51f1991d47956cd63bdbd436e8c918468e55dd5e
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Thu Jan 15 14:35:21 2015 +0300
+
+    fix outofmemory in CatoMinor
+
+commit 693282d9aac9c9deacadcabbee9d07920794e886
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Wed Jan 14 22:35:07 2015 +0300
+
+    1gb is not enought to build jar
+
+commit 19bb49de936a99426133d857369a8283a310d5bb
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Wed Jan 14 22:31:40 2015 +0300
+
+    YaMREnv MRTableShard exists should be always true
+
+commit bdd969557c38d619cb55fc712e687d6b54b1d78d
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Wed Jan 14 18:41:38 2015 +0300
+
+    Stupid copy&paste issue fixed
+
+commit c3651fe5b725b5e1e7f3b77d7943e724a57833c0
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Wed Jan 14 18:22:27 2015 +0300
+
+    More debug information
+
+commit e4c3b7a0bf544b3625cd42d17325ea21c45e18e0
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Wed Jan 14 18:21:26 2015 +0300
+
+    buildJar moved to RemoteMREnv
+
+commit 2af46bef812f5430f9804eb29cd93d6e623fabda
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Jan 14 17:12:21 2015 +0300
+
+    exception fix.
+
+commit cfd11613d46f91664bbbc12eb75e5ac8226cd6a5
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Jan 14 15:07:11 2015 +0300
+
+    merge preparements.
+
+commit 2bae272a26030d20736983b09acd33482f09fc68
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Jan 14 14:13:54 2015 +0300
+
+    MRRunner.java: merge preparement.
+
+commit ef48fae7e4e8ee99fbf9f6201d361327359690aa
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Jan 14 14:12:40 2015 +0300
+
+    merge preparement.
+
+commit 6be33373385db56a085eaf21a2abec9e58a3f8da
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Jan 14 13:20:55 2015 +0300
+
+    nuked trailing whitespaces.
+
+commit 2cefd531c4bc4d14e4b2ba97694336e8e9f05a1d
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Jan 14 13:18:29 2015 +0300
+
+    cosmetic extra lines and imports.
+
+commit ba71f4616c3bb7c6d287ff5876c1ff1bdb33609b
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Jan 14 13:00:30 2015 +0300
+
+    RoutineJoba.java (reverted merge).
+
+commit 10771f01e83e73ea620ac0193575ef8e17ac585b
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Jan 14 12:47:44 2015 +0300
+
+    merge fix.
+
+commit 0e71517f6c0fb6d8041f93e423d61b23e6bf8736
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Dec 29 16:44:41 2014 +0300
+
+    merge + warnings.
+
+commit f3e89c5343f30d41046145cd554a7c9c412afb2f
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Sat Dec 27 22:42:57 2014 +0300
+
+    Rework for jar generation, MREnv execution interface, introduced job builders
+
+commit 304ec1ed006fc295aa7c269335f99411c4b6ef2d
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Sat Dec 27 22:42:57 2014 +0300
+
+    Rework for jar generation, MREnv execution interface, introduced job builders
+
+commit 3743c398ae2496215d6d3af655ebada2fd15b73a
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Tue Jan 13 19:52:59 2015 +0300
+
+    MRTableShard is now MREnv free. Bugs in exception handling during jar generation
+
+commit 5b6b619292265b6d6d0c0151ec80f18b77368f63
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Tue Jan 13 18:25:08 2015 +0300
+
+    Jars generation is now fixed
+
+commit a308ca6d353217155e59bad2a73e710451d07b76
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Jan 12 19:26:12 2015 +0300
+
+    Fixed jar generation
+
+commit 12d9a4289186ce58296aacdf44d078f616e4fa72
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Dec 29 16:44:41 2014 +0300
+
+    merge + warnings.
+
+commit 142ab6490fee23392d33d01db718f93360720ede
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Sat Dec 27 22:42:57 2014 +0300
+
+    Rework for jar generation, MREnv execution interface, introduced job builders
+
+commit 7184468bc748992aa8f0e03b69ae24593e6e94ee
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Sat Dec 27 22:42:57 2014 +0300
+
+    Rework for jar generation, MREnv execution interface, introduced job builders
+
+commit dec337a1b1630e3040f424aa6e20527428bb24e1
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Jan 14 13:20:55 2015 +0300
+
+    nuked trailing whitespaces.
+
+commit 1a94f37250fab2c7da47b992ada64cf912129538
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Jan 14 13:18:29 2015 +0300
+
+    cosmetic extra lines and imports.
+
+commit 58b491958cb2fce063f788f1588a83a3434c52a3
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Jan 14 13:00:30 2015 +0300
+
+    RoutineJoba.java (reverted merge).
+
+commit 1b0da2cb8b2984054ce9a390359bda5db03b285c
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Jan 14 12:47:44 2015 +0300
+
+    merge fix.
+
+commit 57c599b55e62aa34a312eb473f5e27000a272afa
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Jan 14 10:47:05 2015 +0300
+
+    MREnv.java: unwanted imports.
+
+commit ebcf26b12a587de6a00696abff76590809afb479
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Jan 14 10:44:54 2015 +0300
+
+    YtMREnv::list fix.
+
+commit e6a0bdfa025ec611142b4bbda8cb3b2bfe89228e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Jan 14 10:18:30 2015 +0300
+
+    warning (foreach)
+
+commit 667f13fab08168aba7e011cca092cac40c43bdc6
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Jan 14 10:17:24 2015 +0300
+
+    Map & reduce fix.
+
+commit d18cbf13adbf86df355c4b3e06644a873bf0ebfc
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Dec 29 16:44:41 2014 +0300
+
+    merge + warnings.
+
+commit ab44527ec0c12f3490b84f919482ad2595d34ada
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Sat Dec 27 22:42:57 2014 +0300
+
+    Rework for jar generation, MREnv execution interface, introduced job builders
+
+commit d98f2908556295c78daf28327836322d5fde4150
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Sat Dec 27 22:42:57 2014 +0300
+
+    Rework for jar generation, MREnv execution interface, introduced job builders
+
+commit 477e2289f2ee3c9cd51c49f3fed96371343fb29d
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Tue Jan 13 19:52:59 2015 +0300
+
+    MRTableShard is now MREnv free. Bugs in exception handling during jar generation
+
+commit 99436e9fbf1236c1d58c3e08d230ed9d063dc55d
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Tue Jan 13 18:25:08 2015 +0300
+
+    Jars generation is now fixed
+
+commit 45238dc645816979a04db1ea7192fc938933d9b1
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Tue Jan 13 16:17:34 2015 +0300
+
+    AsteriskTest won't work. Additional debug info in runner. JarBuild for several inputs fixed
+
+commit 33f220269b6eb787e171d27450a143b424b43e76
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Jan 12 19:26:12 2015 +0300
+
+    Fixed jar generation
+
+commit 4010fc6007421152ec67d84cabcb43912ed47d05
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Jan 12 15:20:34 2015 +0300
+
+    Read needs to resolve the source table but not get it from the snapshot
+
+commit 244c244203e2d872f64650f9862953cdd30a0073
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Jan 12 15:09:09 2015 +0300
+
+    Asterisks resolution
+
+commit 549a6dabc260a6ef08b5928f33127c2f66130b3e
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Jan 12 13:43:42 2015 +0300
+
+    Method signature must differ in case of @MRProcess and routine.
+
+commit 6ab275afc29da875847b7df02c20d51434317fc7
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Dec 29 16:44:41 2014 +0300
+
+    merge + warnings.
+
+commit 04030be05bbbaf0ba46b4922c801de76ff076be3
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Sat Dec 27 22:42:57 2014 +0300
+
+    Rework for jar generation, MREnv execution interface, introduced job builders
+
+commit 0f7fda7868d97c0d684695c67dc1817229cdd6f9
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Sat Dec 27 22:42:57 2014 +0300
+
+    Rework for jar generation, MREnv execution interface, introduced job builders
+
+commit e95d226e2ae1fce5cef562fb96a5b8b6e33bac99
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Dec 25 18:08:01 2014 +0300
+
+    YtMREnv.java: more clean up.
+
+commit c5f6f8f3a896dded232ba40d06444acd32660ba8
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Dec 25 18:04:08 2014 +0300
+
+    Yt clean up.
+
+commit 3c06a19bfc7f35b57d823ed40d3e1e497de50f39
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Dec 25 15:48:26 2014 +0300
+
+    StateImpl.java: do not serialize lazy tables.
+
+commit 37841c8a0383f11a0252666472d993c0d91dc219
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Dec 25 15:47:21 2014 +0300
+
+    Yt commulitive patch.
+
+commit b16f7c34f584a48d0d790036520677c9527e84c3
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Dec 25 15:46:41 2014 +0300
+
+    pass routine class to closureJarBuilder::build.
+
+commit 3572b86df2cdea27c64856d4b049c26440aff9c4
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Dec 25 15:03:52 2014 +0300
+
+    ClosureJarBuilder.java: why we need instance variable for routine, instead we can pass it directly as parameter to build procedure.
+
+commit a288577d66b8f0ced07bcc816e46e8880f237f22
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Dec 25 15:01:14 2014 +0300
+
+    MRTools.java: attempt to decrease memory footprint.
+
+commit a86812606f4193fe9de699abb86b6084241ffe32
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Thu Dec 25 17:44:07 2014 +0300
+
+    workaround fix for list prefixes calculation
+
+commit 5b37f331b0ad8de1dc0770c9c614192d59f189a9
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Thu Dec 18 16:29:30 2014 +0300
+
+    move commons
+
+commit 0468d5034769ce5d8153d61a9eaea4c4aa45cb6d
+Author: Salavat Amirkhanov <salavat@yandex-team.ru>
+Date:   Wed Dec 17 18:08:53 2014 +0300
+
+    fixed list method for local environment
+
+commit fdbd32b0823a4e1474cb6ad226b023ff02d65eb8
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Dec 17 12:17:57 2014 +0300
+
+    YtMRenv.java: checkin the table isn't enough, have to check with isAvailable().
+
+commit c91f7e12a95386262af2b734a84934fd6932e43a
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Dec 17 10:24:20 2014 +0300
+
+    small changes.
+
+commit 8955a64086ffdef5849daa8578fe88ca6a44fc48
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Dec 17 10:23:41 2014 +0300
+
+    StateImpl.java: return of "instanceof YtMREnv".
+
+commit 6c1c54413558ce0db1c5872071d62e896325bbcb
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Dec 17 10:19:53 2014 +0300
+
+    MRTestUtils.java: renaming.
+
+commit 1b42ed0b03bbb42137b23fc6acdc38930d45ab44
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Dec 17 10:18:06 2014 +0300
+
+    YtMREnv.java: resolve fix.
+
+commit abd6d243e556a8dd2167eba1b6c0647ea2b19fa5
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Dec 17 10:17:30 2014 +0300
+
+    YtMREnv.java: copy fix.
+
+commit 1ab31c97477cdcb6bfd3ea3f13391d0d2f2545fc
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Dec 17 10:16:32 2014 +0300
+
+    YtMREnv.java: fix reduce, Yt expects sourted source tables in reduce, otherwise it's recommended to use map-reduce.
+
+commit 8ea8d97ed4dd159428eb64a29da9a60d011fda90
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Dec 17 10:13:13 2014 +0300
+
+    ignore not TSV records.
+
+commit 52ddb03e14eb6f080c36f61a38d4f34e38c094e8
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Dec 17 10:12:05 2014 +0300
+
+    path-prefixes generalization.
+
+commit 5f14e9eba33c20c5433f2a54b56ed63de358e90c
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Dec 17 10:10:13 2014 +0300
+
+    was removed in a7679162c3224d5010e7a61fbf93c367168c052e.
+
+commit b49e6c6e93bfa0c05b1991dd30eceee59352a87d
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Dec 17 10:08:05 2014 +0300
+
+    in Yt "reduce" expects that tables are sorted, that we can't surelly provide, instead we use map-reduce with empty --mapper.
+
+commit d392f0416927da62f1df16c81cba32bc3d8f316d
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Dec 17 10:06:15 2014 +0300
+
+    MRRunner.java: Fix of unboxing issue.
+
+commit 318b638d066177ba5b6c0acadda57862c4b141cc
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Dec 15 16:30:56 2014 +0300
+
+    merging...
+
+commit 682117cb691d8c58f4d5f712cf84944170517f20
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Dec 15 15:04:50 2014 +0300
+
+    disable Yt testing.
+
+commit ee7bc11163a67231b71572025b4bf7a976d5083a
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Dec 15 15:04:32 2014 +0300
+
+    TABLE_NAME_PREFIX.
+
+commit d4bebbf0f0556b049132d16e6f37d5ce17de7303
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Dec 15 15:01:02 2014 +0300
+
+    handle --local-file switch, in yt 'yt map --local-file ....', while in MR it's 'mapreduce -file ... -map', that require a bit different replacement localresources with remote ones.
+
+commit 330d69420d70224c4125f6c79e6d8c75dc6672d6
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Dec 15 14:58:46 2014 +0300
+
+    extract cache in BaseEnv, universal path <-> Yt path fixes, copy, use enable_table_index in format description for map/reduce operations.
+
+commit 7831d1b346109d167d464ea864a52e9932da0c04
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Sun Dec 14 10:34:14 2014 +0300
+
+    do drop test in separate folder.
+
+commit 11e027276c440daf208cb365d57112387afefb7f
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Dec 12 17:30:01 2014 +0300
+
+    YaMREnv: fix cache, we add MRShard with key path, but not local path.
+
+commit 48dfc32a80aa705a3ec484c71b45d1c3a9c462b2
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Dec 12 14:43:52 2014 +0300
+
+    MRTestUtils.java: use Lazy conversion path to shard table.
+
+commit 7c1be060cad94af79db7078f99ca47f4d4369058
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Dec 11 18:23:42 2014 +0300
+
+    yasm4u: copying resources(wait.sh) to classpath
+
+commit 79f9fb19c32cdbff2fa6615284afce6297ceb3c1
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Dec 11 16:17:09 2014 +0300
+
+    resolving in generic manner.
+
+commit 93ce50808e067f0f8475337a752812b3f33bff98
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Dec 11 09:23:53 2014 +0300
+
+    Revert "pre-define variables:"
+    
+    This reverts commit c30368507c78ab04dc08005929a9620a1331a187.
+
+commit 1e156ab02f5667b34485ea1643cc91439d98aefe
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Dec 11 09:23:10 2014 +0300
+
+    Revert "slash magic."
+    
+    This reverts commit 62641ffedb7b5273ce9203707cb4aa4abfc9b749.
+
+commit e50802e1404507a49159cb4ac822e29efc86807b
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Dec 11 09:22:17 2014 +0300
+
+    Revert "getEnvTmp() doesn't return path ending on '/'."
+    
+    This reverts commit 5d25260ec78dec64e501a568bd18bb73faa628ff.
+
+commit 77041066faffc1d780d87f146ca3ce0b97e71cf4
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Dec 10 13:24:10 2014 +0300
+
+    replace //tmp with {var:tmp}.
+
+commit d71b8978c50df3d53328d4a112220492f8f23037
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Dec 10 13:23:26 2014 +0300
+
+    extract BaseEnv from YaMREnv and YtEnv.
+
+commit 34b52d09e09d226e0350bf83e136b9b61888340e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Dec 10 13:22:25 2014 +0300
+
+    getEnvTmp() doesn't return path ending on '/'.
+
+commit 09dac5b5cd5d798e03c9d078440c1164f2d677da
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Dec 10 11:23:04 2014 +0300
+
+    variables in tests.
+
+commit 1e83374337430c9ec7884c13768639c515547daa
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Dec 10 11:21:56 2014 +0300
+
+    slash magic.
+
+commit 3d95952b0f3dbcec02d759fe2ca18cfe23fa083d
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Dec 9 17:09:41 2014 +0300
+
+    pre-define variables:
+    
+    var:user
+    var:timestamp
+    var:random
+    var:env
+    var:root
+    var:tmp
+
+commit 735bbd7605def55be2e531b89f3a2e029ac488b9
+Author: Salavat Amirkhanov <salavat@yandex-team.ru>
+Date:   Mon Dec 15 15:57:55 2014 +0300
+
+    fixed issue with duplicate of paths in local MREnv
+
+commit 84d5a5cf029d3ac871cf706eddda5b25ed901cb3
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Dec 12 16:34:15 2014 +0300
+
+    Merge
+
+commit a7679162c3224d5010e7a61fbf93c367168c052e
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Dec 12 16:27:30 2014 +0300
+
+    Massive renaming
+
+commit 457a7c14e7e78da1a57fe06fbd7b4ef92d54b92c
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Fri Dec 12 12:52:01 2014 +0300
+
+    Support for interruption inside read process.
+
+commit ffcd8729ce2c213a651e423d0cbbf962393c61e5
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Fri Dec 12 13:18:42 2014 +0300
+
+    fix several tests
+
+commit 9665da183681b130244896df170bb0364f638496
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Wed Dec 10 21:26:08 2014 +0300
+
+    move MR test utils to main source
+
+commit 5f2b3d5080f06ddbd965a98c8504976a0fedf5f1
+Merge: 2e2e7c7 f53c557
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Wed Dec 10 17:04:23 2014 +0300
+
+    Merge branch 'master' of https://github.yandex-team.ru/mobile-search/YASM4U
+
+commit 2e2e7c7b2c4fab99fef771d33793d3f9880f7807
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Wed Dec 10 17:04:11 2014 +0300
+
+    tests fix
+
+commit f53c55786e4c70f224d50cae8d84fedfcb1a3bd6
+Author: Salavat Amirkhanov <salavat@yandex-team.ru>
+Date:   Wed Dec 10 16:18:11 2014 +0300
+
+    hot fix for temp dirs, not stripping first char for temp/...
+
+commit 781786aad2d65637bf9d0ac951d1afb14b012f36
+Author: Salavat Amirkhanov <salavat@yandex-team.ru>
+Date:   Wed Dec 10 15:47:12 2014 +0300
+
+    Normalized path outside of MREnv and local paths for internal usage + fixed redirecting STDERR in perl
+
+commit a96776c0e194369185377f38ee39fa4ce83668fa
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Wed Dec 10 13:00:25 2014 +0300
+
+    fix reduce exception test
+
+commit a3a282278b02edb302bc6b49336bcd15f854d78f
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Wed Dec 10 12:22:18 2014 +0300
+
+    local env should deal with empty tables
+
+commit 392dd49c3d4abbbb3a8365d440a6c16caa98046f
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Wed Dec 10 11:38:13 2014 +0300
+
+    fix tests table default path
+
+commit b823d08c600fc269ba195d450a91952a13893078
+Merge: 52cb916 e309d4b
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Tue Dec 9 23:03:21 2014 +0300
+
+    Merge branch 'master' of https://github.yandex-team.ru/mobile-search/YASM4U
+
+commit 52cb91601648eb32eb02840122f7129c044670b2
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Tue Dec 9 23:03:11 2014 +0300
+
+    fix list-related tests
+
+commit e309d4b6dc07412f8941bb2d6b21f20651428d32
+Merge: d1c1de8 285e04a
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Tue Dec 9 19:00:15 2014 +0300
+
+    Merge branch 'master' of https://github.yandex-team.ru/mobile-search/YASM4U
+    
+    Conflicts:
+    	src/main/java/solar/mr/env/SSHProcessRunner.java
+
+commit d1c1de84fe512336ebf44c0c9439cb077c0477db
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Tue Dec 9 18:41:36 2014 +0300
+
+    Reworked SSH ProcessRunner. Created Dictionary builder from MR Table.
+
+commit 285e04ad83b996c7de94aa929edbc3fdbfdb7691
+Author: Salavat Amirkhanov <salavat@yandex-team.ru>
+Date:   Tue Dec 9 17:54:28 2014 +0300
+
+    MRTestUtils renamed to MRUtils
+
+commit 7b73b97ff06829c54b7512d087d575e42f252b65
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Tue Dec 9 15:20:13 2014 +0300
+
+    process should report it's goals
+
+commit abef411aad0f6b6c91350e7192084c0027e16bb8
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Tue Dec 9 13:20:18 2014 +0300
+
+    let it local as default
+
+commit e951a29c7629b3e200c4bd7681477c58dff31db7
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Tue Dec 9 11:59:40 2014 +0300
+
+    add drop test
+
+commit 5ffd21f16e9a2d7fb2e6e11d126afc690331a366
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Dec 9 06:22:56 2014 +0300
+
+    disable LocalMR in test.
+
+commit d8a5c386f223d28afd810e29e36e47da9baf4e30
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Dec 9 05:49:34 2014 +0300
+
+    BaseNRTest.java: base test for Yt.
+
+commit a7a48960c3f229cb062ab7fcef10eed091b8d8bd
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Dec 9 05:31:33 2014 +0300
+
+    Yt::copy.
+
+commit 1ee8bfe537c831bf833dc7b7123f35ade6dc123c
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Dec 9 05:15:56 2014 +0300
+
+    YtMREnv,java: yt create has undocumented option "-r" for recursive creation tables and nodes.
+
+commit be70bba078155778205fc04ebdef8d6766d5cc71
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Dec 9 04:51:38 2014 +0300
+
+    YtMREnv.java: "merge" result.
+
+commit f6ccc4b9dfc7b9c66f03cab7c6fa765ec1fd4c41
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Dec 4 02:37:46 2014 +0300
+
+    merge chages in Yt branch.
+
+commit 2b2e396d902b0964dfc290d06169243f53cde09f
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Dec 3 11:38:48 2014 +0300
+
+    drop private limitation on LazyTableShard.
+
+commit 82ffe2948af61458e2d79031bcc728c07204576b
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Dec 3 11:38:00 2014 +0300
+
+    MRWhiteboardImpl::get() working with temp: protocol in Yt.
+
+commit e727d2d87b0aac6dac6b69e4f57cabca62342a12
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Dec 3 11:35:24 2014 +0300
+
+    MRSateImpl::get() please consider Yt as well.
+
+commit 4af1d93ee7819a94cb57cbb982e86d7bfc888fba
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Dec 3 11:33:47 2014 +0300
+
+    YtMREnv::list returns list of lazy tables, and introduced cache to avoid dublication efforts on creating nodes and tables.
+
+commit 658aa25c3f661a4d750eea0e45779db2c09010f2
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Nov 28 19:11:27 2014 +0300
+
+    YT: flags to java to run in yt environment.
+
+commit 7c586f3e5fd7814c617e52093c10f304ad90adc0
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Nov 24 12:40:04 2014 +0300
+
+    YtMREnv: has_subkey should be used in yamr format.
+
+commit 13769daba29479eefc743fa599e5751ba0728bcc
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Nov 24 10:04:04 2014 +0300
+
+    conversion to corresponding environment.
+
+commit 79a4c752e6096117b9497d2b29289de4ab5646f4
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Nov 24 09:54:25 2014 +0300
+
+    Yt test pathes fix.
+
+commit 3854adfbed82d1b1db62cd6b6005b106a7101e01
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Nov 24 09:52:58 2014 +0300
+
+    YtMREnv.java: map/reduce implementation.
+
+commit 85151b89db50fc08dc199bf82d2b72ff9ef94130
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Mon Nov 24 09:50:33 2014 +0300
+
+    SSHProcessRunner.java: handling --local-file option for Yt environment.
+
+commit 92d4dfa3a6dea869a20c7a8366df9aa4a9177e90
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Nov 20 15:32:33 2014 +0300
+
+    sample and write operations fix.
+
+commit 87cfbf82e36e88267d709f27fce76bcd6004fba6
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Nov 20 10:48:51 2014 +0300
+
+    YtMREnv.java: couple pastos.
+
+commit d9910bbb99b1dd4b264c6bdc57972093a6c5dab0
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Nov 20 09:17:41 2014 +0300
+
+    MRWhiteboardImpl.java Yt don't like when 1st '/' cut offed.
+
+commit e2637605e901406fb05963be58167d7086ca18ea
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Nov 20 09:12:27 2014 +0300
+
+    MRWhiteboardImpl.java: duplication of methods because of merge.
+
+commit dbb7bac1fdfd3e5c3cc7e2d11f9289e8184483a6
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Nov 20 09:10:50 2014 +0300
+
+    YtMRenv::list first checks attributes of prefix, if it's table just return the entry if it's a node compose json array from fetched table attributes.
+
+commit db13a96494aabbb1de55c5e8de7be49d5dca61df
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 19 20:55:08 2014 +0300
+
+    Yt support.
+
+commit a7b4789175db12c1355103168087fbc3b708dec2
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 19 20:38:36 2014 +0300
+
+    Yt-support:intermediate changes.
+
+commit d3e45e9e5dbfe84e159aed3a3f3fd6fab41d8738
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Nov 18 17:05:00 2014 +0300
+
+    Yt: list support + test, several fixes of yamr format, with subkey.
+
+commit e02ae0008230ab3e0b8c23c0530b86bcc12cf34e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Nov 18 10:10:35 2014 +0300
+
+    yt-test.
+
+commit 8655921297916926048d64d02fc85dfccaba66e7
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Nov 18 10:10:21 2014 +0300
+
+    Introduced Yt support.
+
+commit 9a6fc0c99148923748d4259136d6b4ed976d7545
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Fri Dec 5 18:35:33 2014 +0300
+
+    emptiness test
+
+commit 9970c830c60af51ae05b4d03968a146be6e2f38e
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Fri Dec 5 18:16:22 2014 +0300
+
+    asterisk test
+
+commit ad86c1b44dbfd3e87d8ded2ea8d19bf3c77b12ca
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Fri Dec 5 16:54:52 2014 +0300
+
+    add vars test
+
+commit 437b2e19711659b2de695a9e98d21c8f2f5e55c2
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Thu Dec 4 18:30:41 2014 +0300
+
+    more tests
+
+commit aa37ef45331f6effb2e5b9ed4782c2b48227cc72
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Thu Dec 4 16:45:13 2014 +0300
+
+    reduce tests added
+
+commit 6c46b9c6035a77869a23c63ed864d21e36b930fe
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Thu Dec 4 14:38:32 2014 +0300
+
+    fix failing test on local env
+
+commit 7417c4a9e6e8a8361268e270e2cd1f114c2b44d8
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Thu Dec 4 13:49:59 2014 +0300
+
+    some reduce tests added
+
+commit 3e5e7996813a955f9d1e53c251138575898e9a90
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Thu Dec 4 12:12:16 2014 +0300
+
+    extend multimap test
+
+commit acb1bc7255e7baded8969c252821e8034be42070
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Wed Dec 3 19:33:37 2014 +0300
+
+    some broken tests added
+
+commit ec3d46a211a23847afd6016670d6511d9a5502ef
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Wed Dec 3 18:44:25 2014 +0300
+
+    Updates need to be handled properly
+
+commit 4c3a755acf85415c236266a20ddac52062cfbe02
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Wed Dec 3 18:22:30 2014 +0300
+
+    Shard cache introduced
+
+commit e0372ff4bfa0d761f2dc0ee24b787330c5686cc7
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Wed Dec 3 14:44:58 2014 +0300
+
+    ts logic fixed
+
+commit f3741018838e5c3ed36cdf05bff045c22fbb35c7
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Wed Dec 3 14:41:10 2014 +0300
+
+    Timestamps logic fixed
+
+commit 2a5666288543aea932ae59b95b146d6fc576529b
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Wed Dec 3 13:10:58 2014 +0300
+
+    read write test finished
+
+commit 2117fb1e31d4be78f733087e13bf371d85fafbbf
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Dec 2 23:16:50 2014 +0300
+
+    .gitignore: yasm4u.iml
+
+commit ff9156e37cd2dfae036a6958619f9eabad5f058e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Dec 2 23:15:10 2014 +0300
+
+    pom.xml: idea support.
+
+commit 1ca46b4d295c1a036859d638c5838bec304efae0
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Dec 2 19:20:24 2014 +0300
+
+    Revert "yasm4u: fix idea pathes."
+    
+    This reverts commit ab578abac6ae2b17d823d01f99f4d41b0c9e2153.
+
+commit a7a26aad17860bb78c5dd8826df52d41e2c8d786
+Merge: bdee2b9 51e8a90
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Tue Dec 2 19:16:31 2014 +0300
+
+    Merge branch 'master' of https://github.yandex-team.ru/mobile-search/YASM4U
+
+commit bdee2b9b5cdb6b70cef98a5ba55345b28f14b8f8
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Tue Dec 2 19:16:25 2014 +0300
+
+    simple test harness for yasm4u
+
+commit 51e8a90da0623b5188a83b3f7436f1f3078a7bfa
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Tue Dec 2 17:41:49 2014 +0300
+
+    Reduced -list calls
+
+commit 92baed8699953e500ca4f25d87a25956ab013ab7
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Tue Dec 2 17:20:26 2014 +0300
+
+    profiler should be treated like original MREnv
+
+commit ab578abac6ae2b17d823d01f99f4d41b0c9e2153
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Tue Dec 2 15:03:01 2014 +0300
+
+    yasm4u: fix idea pathes.
+
+commit ac812d23558c04c996f3a75e36780b388a5aa8c0
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Mon Dec 1 15:01:39 2014 +0300
+
+    more fixes for list calculations
+
+commit 12d6ff8de18455346155a30231d0360952ff246c
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Mon Dec 1 12:36:45 2014 +0300
+
+    profilation fix
+
+commit a957424bae15783e5be11042139824693411cff5
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Sun Nov 30 22:15:14 2014 +0300
+
+    fix list time measure
+
+commit a364c65d7d4ab64be986774f27e4ae3630515b97
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Sun Nov 30 21:07:10 2014 +0300
+
+    profiling implementation
+
+commit 806ecbd769cbf04573bc503c5f9084c08840d92b
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Wed Nov 26 16:41:40 2014 +0300
+
+    fix MR job run command
+
+commit 4e63cdc44084d9dc1fcdf26e5808bd6273863c55
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Wed Nov 19 18:58:30 2014 +0300
+
+    Minor changes
+
+commit 626a5f3cd8e1c5d9bc1dfacb90bf3badb1edb08f
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 19 15:48:26 2014 +0300
+
+    array test.
+
+commit c1e99a14a4b28f4e42b4fefb8a7d9a763a2485c4
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 19 14:43:16 2014 +0300
+
+    Tests for array variables added.
+
+commit aa792fef690481ba93443ef2642f59040d960d4a
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 19 13:36:28 2014 +0300
+
+    support arrays in variables.
+
+commit 2af92af250b23f0f180c92a182db484bcf00fb0b
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Wed Nov 19 10:12:52 2014 +0300
+
+    Support arrays in variables
+
+commit e157e4b909b9432ef18009b1dc0b9e43a93081e3
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Mon Nov 17 22:39:48 2014 +0300
+
+    fix exception
+
+commit 6c39f4d0027dcc0f8b86d1a47950d93d8a43a361
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Nov 17 21:11:24 2014 +0300
+
+    Copy is now way faster
+
+commit 149d304c9ba7dc913d293a1d0d4eba647cc1d9b1
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Nov 17 21:01:48 2014 +0300
+
+    Reduced number of -list
+
+commit de386db6e31d076461c191c478c43245ce22e7d5
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Nov 17 20:57:58 2014 +0300
+
+    Stupid bugfix
+
+commit 87b064e4392c2a34e825c24e5bd3979af239f73d
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Nov 17 19:17:02 2014 +0300
+
+    New sampling scratches, dijkstra implemented
+
+commit af11256b486ea7a3884fbe75fd39d866a901a9e4
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Mon Nov 17 16:03:39 2014 +0300
+
+    fix regular expression
+
+commit 3ec855593ec3817da209d5278225f000686afef0
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Mon Nov 17 11:45:09 2014 +0300
+
+    minor fixes
+
+commit 6714842e4e93cf587b49cefb9e2da42dbf11eb52
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Nov 17 10:54:32 2014 +0300
+
+    CME fixed
+
+commit 82413194f5001b3cdd98331d6e636cd2c7101a9c
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Nov 17 09:24:23 2014 +0300
+
+    Support for * in mr resource names
+
+commit 47d0c07309c7d305e01b91a53b270941f4620502
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Sun Nov 16 23:53:12 2014 +0300
+
+    Reworked refresh to sync, reworked execution plan creation algorithm, made shared SSH process, added notification mechanism to MREnv and used it inside Whiteboard.
+
+commit 0c9bf6bcd612f8a4e704cbbe23c66dec3f54a901
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Fri Nov 14 17:46:57 2014 +0300
+
+    fix not found bug
+
+commit bd932af64c7ea50a195fedff39aa59988d52a363
+Merge: aae846d 57ccae3
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Fri Nov 14 15:46:03 2014 +0300
+
+    Merge branch 'master' of https://github.yandex-team.ru/mobile-search/YASM4U
+
+commit aae846db15c8ab087d836fcb14b8367a5fc40f96
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Fri Nov 14 15:37:11 2014 +0300
+
+    fox copy
+
+commit 57ccae3265746e6371be8033bd21dde29e2f19c6
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Nov 14 14:34:05 2014 +0300
+
+    MRStateImpl.java: move RuntimeException throwing after resolving.
+
+commit bf65eb76761b259fa28ea499c7c8834584ce6d80
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Fri Nov 14 13:04:02 2014 +0300
+
+    infinite loop fixed
+
+commit 256d08833e661744147e5f08d2c8ee34c1ada130
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Fri Nov 14 12:48:32 2014 +0300
+
+    several MR small fixes
+
+commit b0bc006a4ca9165d43af3349ddf25b96cf05e96b
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Nov 14 05:41:26 2014 +0300
+
+    commons sync.
+
+commit 41d7b2486ed05fd28bbd9d03c2aca3de01c5f062
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Nov 14 05:38:42 2014 +0300
+
+    MRStateImpl.java: nested resolving.
+
+commit a465a25582af656e08d672667e34000aacd66065
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Nov 14 05:37:47 2014 +0300
+
+    MRStateImpl.java: regexp fix and empty group 2 handling.
+
+commit 3b45c39365441dcec590cdbbb153cc0c8c8ec6aa
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Nov 13 22:16:53 2014 +0300
+
+    extracted global variable with connection inforamation and more tests for variable binding and resolving.
+
+commit c47149ee02a816f13f855003ab83b1d4632524d7
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Nov 13 13:30:29 2014 +0300
+
+    extract one variable for all test with server name.
+
+commit c24bf6dd7d6b75972fb9135267a4ded787bf2f88
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Thu Nov 13 18:41:37 2014 +0300
+
+    -reducews is now correctly supported
+
+commit 4ac784282b5733f5e22c6d8cf387204f17a4ccd2
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Thu Nov 13 17:51:14 2014 +0300
+
+    several MR fixes
+
+commit 4d9997b0fb67350b60031d5fb981cbe940f8f91e
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Thu Nov 13 17:16:25 2014 +0300
+
+    Plan making error fixed
+
+commit 418b5ed8fdd1dcce92b0c02445858fc83c74c5e1
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Wed Nov 12 19:08:04 2014 +0300
+
+    let work queue wait for while it will be empty
+
+commit aecbc661af0d2b111b1f910bbe6e0c5c941bc431
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Mon Nov 10 22:01:19 2014 +0300
+
+    small mr fixes
+
+commit 29404311352fb0d074e3a352cebe036bf25a4a02
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Nov 10 19:39:03 2014 +0300
+
+    I hate trove sometimes
+
+commit 00303dfa9d8d02dd1beb1f4ae682adf0a48b64ff
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Nov 10 19:32:08 2014 +0300
+
+    Advance commons
+
+commit 27652d9f7f752de03d5db21dc449129aeab38a61
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Mon Nov 10 15:34:53 2014 +0300
+
+    Supported merge and reworked MRProcessImpl
+
+commit 6810b41cc5fe1bd24f8cb72ce627f57cf7de14db
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Mon Nov 10 17:43:14 2014 +0300
+
+    some fixes
+
+commit e64c9d6ad0501fa34f6dfdc3e244fe744f500d2f
+Author: Igor Nikiforov <inikifor@yandex-team.ru>
+Date:   Fri Nov 7 13:17:34 2014 +0300
+
+    Enhancing error handling
+
+commit 44a3af1c3dcaf4c63ea627e1f9964bed9a24c824
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Nov 7 09:22:53 2014 +0300
+
+    yasm4u/idea-integration: fixed sourceDirectory.
+
+commit 4af3e40d91b3985e4e738d1356ca3a0d24cd2542
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Nov 7 08:45:34 2014 +0300
+
+    yasm4u:pom.xml use right folder for compiling sources.
+
+commit d0fcab45dfd6445f457295de929c52b4b0dd375e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Fri Nov 7 08:30:19 2014 +0300
+
+    maven so cute, that you should explicitly ask to compile your sources in compile stage.
+
+commit aa41e459972b369e0a10898735f78fb8695c5428
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Thu Nov 6 18:56:58 2014 +0300
+
+    Fixed many small issues
+
+commit d9aa8a3e5223973b104546e72ec34ad0e6934be9
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Thu Nov 6 17:11:49 2014 +0300
+
+    Remote errors handling during write processes
+
+commit 8bea240fa387b48b4ba2de67e6f894cbbfde80f0
+Merge: 07cb68e 95ead68
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Thu Nov 6 17:09:56 2014 +0300
+
+    Merge branch 'master' of https://github.yandex-team.ru/mobile-search/YASM4U
+    
+    Conflicts:
+    	src/main/java/solar/mr/io/MRTableShardConverter.java
+
+commit 07cb68e7e1adf3303cf93c5c0ba797814b9dae91
+Author: Igor E. Kuralenok <solar@yandex-team.ru>
+Date:   Thu Nov 6 17:05:35 2014 +0300
+
+    Remote errors handling during write processes
+
+commit 95ead6814b03bea39ace53f5a67fd0416ab178b5
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Nov 6 16:52:22 2014 +0300
+
+    intermediate solar@ fixes.
+
+commit f94e964107c323cc74b86e70df448a3403f23710
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Nov 6 16:32:04 2014 +0300
+
+    commit 3e0229dbf5d7d20c67c72094af7930ec3c9eaca9
+    Author: Igor E. Kuralenok <solar@yandex-team.ru>
+    Date:   Thu Nov 6 15:45:31 2014 +0300
+    
+        removed MRTable, added automatic table sort handling to MRProcess, reworked MRTableShard
+
+commit 0cd5526fbefc212b693a0659a473b35d1b0a7011
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Nov 6 16:01:31 2014 +0300
+
+    commons sync.
+
+commit cbf64d2f81a85e92acb5125635d28b6b80f8d6af
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Nov 6 15:59:46 2014 +0300
+
+    commit 3e0229dbf5d7d20c67c72094af7930ec3c9eaca9
+    Author: Igor E. Kuralenok <solar@yandex-team.ru>
+    Date:   Thu Nov 6 15:45:31 2014 +0300
+    
+        removed MRTable, added automatic table sort handling to MRProcess, reworked MRTableShard
+
+commit 462f131ef6b55460839c4aeacee7d25449633f30
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Nov 6 13:32:57 2014 +0300
+
+    commons sync.
+
+commit d79dbae81f1b026521bd5fab97fa9a7c0c28a7c8
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Nov 6 13:28:54 2014 +0300
+
+    modules added.
+
+commit 76ec1d19eaa159a5884c91f07c420a839a4ea91d
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Nov 6 13:24:58 2014 +0300
+
+    commit 5f8261e7d63a2aa32dea2266d4ee2b0bb9ecd0c8
+    Author: Igor E. Kuralenok <solar@yandex-team.ru>
+    Date:   Thu Nov 6 12:52:17 2014 +0300
+    
+        MRRecord spread through out the project
+
+commit d9a4f3eed5c1f34deea2b554e66b9fb0180c6d22
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Nov 6 12:52:15 2014 +0300
+
+    inikifor's scripts moved to jMRtasks.
+
+commit 0711622f2316d80e70b8ecf4437a905d4b3e9103
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Nov 6 12:06:12 2014 +0300
+
+    commons submodule added https://github.com/spbsu-ml-community/commons.git
+
+commit 607e138b993415b0b94fbdcc1e9a62fbf8f3242a
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Nov 6 07:40:11 2014 +0300
+
+    moved junk/src -> ./src.
+
+commit b765d0cbea4bcdfe701f80990cc7ce9b908fd172
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Nov 6 06:17:39 2014 +0300
+
+    commit bde522877abbacd4ee229b6e634cdecb45e2fdec
+    Author: Igor Nikiforov <inikifor@yandex-team.ru>
+    Date:   Wed Nov 5 19:04:25 2014 +0300
+    
+        Sample MR script update & MR lib fixes
+    
+    from minamoto@: this is actually "Sample MR script update" part.
+
+commit 4e6ab033d2907fb90a048cd72ed74011cd5ffa41
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Thu Nov 6 06:17:03 2014 +0300
+
+    commit 7297cfa4166beb951958ffbb6e35548644e10e0b
+    Author: Igor Nikiforov <inikifor@yandex-team.ru>
+    Date:   Wed Nov 5 17:03:49 2014 +0300
+    
+        Sample MR script
+
+commit c84f371d55ee474863243fbfb9271fc2452c150b
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 5 21:12:26 2014 +0300
+
+    commit bde522877abbacd4ee229b6e634cdecb45e2fdec
+    Author: Igor Nikiforov <inikifor@yandex-team.ru>
+    Date:   Wed Nov 5 19:04:25 2014 +0300
+    
+        Sample MR script update & MR lib fixes
+    
+    re-commit from @minamoto: this changeset doesn't include "Sample MR script update" from inikifor@ and contains "MR lib fixes" only.
+
+commit 5535fe79c8d77a4f40df429064722091d5be4d4f
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 5 21:09:29 2014 +0300
+
+    commit c6117a417be6fc324808606d2817f3f245ba9f21
+    Author: Igor E. Kuralenok <solar@yandex-team.ru>
+    Date:   Wed Nov 5 14:41:46 2014 +0300
+    
+        Small interface refactoring
+
+commit 78902d6278ebbd4620ffd5a39ffedee0d7e6e50c
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 5 20:38:21 2014 +0300
+
+    .gitignore.
+
+commit be56cee6b17307bd670bb94e9c3aa58da43211d6
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 5 20:36:33 2014 +0300
+
+    maven build script.
+
+commit e2520e090aa27642d367d822c99490bd860b89b6
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 5 18:01:01 2014 +0300
+
+    commit 6cb2a786feab3cd0cc1b329c6e5f154189737f68
+    Author: Igor E. Kuralenok <solar@yandex-team.ru>
+    Date:   Mon Nov 3 15:04:52 2014 +0300
+    
+        Populate on errors scheme seems to work for both map and reduce
+
+commit 643f29523d673b318ecdc98eeaaf4b31153f8578
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 5 18:00:27 2014 +0300
+
+    commit 71a3e5612e4a2f39e126afb98c7210306425912b
+    Author: Igor E. Kuralenok <solar@yandex-team.ru>
+    Date:   Mon Nov 3 13:22:59 2014 +0300
+    
+        proper error handling for map operations
+
+commit 3c8998149e39278cc0b846d0394c6a9c8cc9d462
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 5 17:59:49 2014 +0300
+
+    commit 71a3e5612e4a2f39e126afb98c7210306425912b
+    Author: Igor E. Kuralenok <solar@yandex-team.ru>
+    Date:   Mon Nov 3 13:22:59 2014 +0300
+    
+        proper error handling for map operations
+
+commit 49ca66ab4bca1e27f09b7a5061ad681e3bf392c1
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 5 17:50:28 2014 +0300
+
+    commit f40639b05cdb2b68e52fca201f7834e98f2b2548
+    Author: Igor E. Kuralenok <solar@yandex-team.ru>
+    Date:   Tue Oct 28 17:55:19 2014 +0300
+    
+        MR Seems to work fine
+
+commit ab9cf9b13b67345f51151e76e0aa1893b7a132e8
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 5 17:49:50 2014 +0300
+
+    commit 81add2768941f4b200e659880b95963b1d79f147
+    Author: Igor E. Kuralenok <solar@yandex-team.ru>
+    Date:   Tue Oct 28 11:27:53 2014 +0300
+    
+        Proper state returned
+
+commit e7cabe9956842f3b1548c19ac733c57db957f339
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 5 17:48:35 2014 +0300
+
+    commit d3e5295f4c7b92157d32daaa2d1582a0dacd0bca
+    Author: Igor E. Kuralenok <solar@yandex-team.ru>
+    Date:   Tue Oct 28 11:26:45 2014 +0300
+    
+        Read joba fixed
+
+commit 2dbd9770091fea4a765957f2ef05c520e7bc642d
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 5 17:47:46 2014 +0300
+
+    commit 41fec764a407bddaf71acf6357f3a53f867670ae
+    Author: Igor E. Kuralenok <solar@yandex-team.ru>
+    Date:   Tue Oct 28 10:36:04 2014 +0300
+    
+        Nearly works
+
+commit 7eac35782902910e5cd6ad01499dbde24919be8d
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 5 17:47:10 2014 +0300
+
+    commit 6be1df4ae60ebddfcdfd52ff71bd642793737a4e
+    Author: Igor E. Kuralenok <solar@yandex-team.ru>
+    Date:   Fri Oct 24 12:45:55 2014 +0400
+    
+        Fixing small bugs
+
+commit 3c4445c478452fb22cc057510cf2c2ec8a6c458e
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 5 17:45:54 2014 +0300
+
+    commit ae968d15be11c7005d42b6908ea0897e0f948597
+    Author: Igor E. Kuralenok <solar@yandex-team.ru>
+    Date:   Wed Oct 22 15:36:39 2014 +0400
+    
+        Fixed few bugs
+
+commit bd3df4123534ce378b029b08ae788e261bd0350d
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 5 17:44:29 2014 +0300
+
+    commit e3c2814326a8eb029c6fa17c5e3dea425483771c
+    Author: Igor E. Kuralenok <solar@yandex-team.ru>
+    Date:   Tue Oct 21 08:28:04 2014 +0400
+    
+        Reworked the MR library
+
+commit 397325bb75fd1f967618484b91990d0161a498b7
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 5 17:38:40 2014 +0300
+
+    commit 0bcbf2b6534917210dd383a19fd40f6b8da98274
+    Author: Igor E. Kuralenok <solar@yandex-team.ru>
+    Date:   Tue Oct 7 12:47:14 2014 +0400
+    
+        removed MRTable inheritance from Seq
+
+commit 186b0949debbc8c0aee822f631564ff234277d09
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 5 17:34:32 2014 +0300
+
+    commit 08d65dd9c38fc966f5851fde40599549ad168b4d
+    Author: Igor E. Kuralenok <solar@yandex-team.ru>
+    Date:   Thu Oct 2 17:26:14 2014 +0400
+    
+        MR seems to work
+
+commit d8ca0ef9124c1d1ec8de80ca0370c6b3d4704a9c
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 5 17:31:57 2014 +0300
+
+    commit 08d65dd9c38fc966f5851fde40599549ad168b4d
+    Author: Igor E. Kuralenok <solar@yandex-team.ru>
+    Date:   Thu Oct 2 17:26:14 2014 +0400
+    
+        MR seems to work
+
+commit d3bc3406875fc2396c59810f2043222b1936ce04
+Author: Vasily Levchenko <minamoto@yandex-team.ru>
+Date:   Wed Nov 5 17:31:21 2014 +0300
+
+    commit 539e76c30f4ddcd9bf980a2bcc48ce2316cd737c
+    Author: Igor E. Kuralenok <solar@yandex-team.ru>
+    Date:   Fri Sep 26 03:49:49 2014 +0400
+    
+        tests fixed

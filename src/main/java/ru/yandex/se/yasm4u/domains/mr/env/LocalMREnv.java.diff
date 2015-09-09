@@ -1,0 +1,12 @@
+diff --git a/src/main/java/ru/yandex/se/yasm4u/domains/mr/env/LocalMREnv.java b/src/main/java/ru/yandex/se/yasm4u/domains/mr/env/LocalMREnv.java
+index 4710430..93c2ada 100644
+--- a/src/main/java/ru/yandex/se/yasm4u/domains/mr/env/LocalMREnv.java
++++ b/src/main/java/ru/yandex/se/yasm4u/domains/mr/env/LocalMREnv.java
+@@ -293,6 +293,7 @@ public class LocalMREnv extends MREnvBase {
+ 
+   private long modtime(File file) {
+     try {
++      if (file.getName().equals(".txt")) throw new RuntimeException("");
+       final BasicFileAttributes attributes = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
+       return attributes.lastModifiedTime().toMillis();
+     } catch (IOException e) {
