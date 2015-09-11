@@ -61,6 +61,9 @@ public abstract class MROperation implements Processor<MRRecord>, Action<CharSeq
       @Override
       public void uncaughtException(Thread t, Throwable e) {
         unhandled = e;
+        System.err.println("---8<---");
+        e.printStackTrace(System.err);
+        System.err.println("---8<---");
       }
     });
     routineTh.start();
