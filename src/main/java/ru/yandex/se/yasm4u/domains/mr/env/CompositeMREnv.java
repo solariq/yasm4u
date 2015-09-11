@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  * Time: 16:12
  */
 public class CompositeMREnv extends MREnvBase {
-  public static final MRPath SHARD = MRPath.create("/MREnvState." + System.currentTimeMillis());
+  public static final MRPath SHARD = MRPath.create("/MREnvState");
   private final RemoteMREnv original;
   private final LocalMREnv localCopy;
   private final Map<MRPath, Pair<MRTableState, MRTableState>> tables = new HashMap<>();
