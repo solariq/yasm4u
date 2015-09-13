@@ -403,7 +403,7 @@ public class YtMREnv extends RemoteMREnv {
     options.add("/usr/local/java8/bin/java "
       + (Boolean.getBoolean("yasm4u.enableJMX")? "-Dcom.sun.management.jmxremote " : "")
       + (Boolean.getBoolean("yasm4u.loggc")? "-Xloggc:/dev/stderr -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCApplicationStoppedTime -verbose:gc":"")
-      + " -XX:-UsePerfData -XX:+PerfDisableSharedMem -Xmx4G -Xms4G -jar " + jar.getName());
+      + " -XX:-UseGCOverheadLimit -XX:-UsePerfData -XX:+PerfDisableSharedMem -Xmx4G -Xms4G -jar " + jar.getName());
     int inputCount = 0;
     final MRTableState[] all = resolveAll(in, false, MRTools.DIR_FRESHNESS_TIMEOUT);
     for(int i = 0; i < all.length; i++) {
