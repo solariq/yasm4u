@@ -97,7 +97,8 @@ public abstract class MROperation implements Processor<MRRecord>, Action<CharSeq
                       + "(" + e.getFileName() + ":" + e.getLineNumber() + ")");
             }
           }
-          System.exit(2);
+          unhandled = new RuntimeException("TIMEOUT");
+          //System.exit(2);
         }
         /**
          * This operation provoke operation hang. please envisitgate it deeper, and then use.
