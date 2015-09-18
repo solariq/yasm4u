@@ -15,12 +15,12 @@ import java.util.zip.GZIPInputStream;
  */
 public class TestUtil {
   @NotNull
-  public static MRRoutineBuilder launchFakeMROperation(String testName, final InputStream in, final OutputStream out, Class<?> routineClass, String methodName, MRPath mrPath, MRPath[] outs, StateImpl state) throws IOException {
+  public static MRRoutineBuilder launchFakeMRReduceOperation(String testName, final InputStream in, final OutputStream out, Class<?> routineClass, String methodName, MRPath[] ins, MRPath[] outs, StateImpl state) throws IOException {
     final MethodRoutineBuilder builder = new MethodRoutineBuilder();
     builder.setRoutineClass(routineClass);
     builder.setMethodName(methodName);
     builder.setType(MRRoutineBuilder.RoutineType.REDUCE);
-    builder.addInput(mrPath);
+    builder.addInput(ins);
     builder.addOutput(outs);
     builder.setState(state);
     MRRunner runner = new MRRunner(new InputStreamReader(new GZIPInputStream(in)),
