@@ -18,10 +18,10 @@ import ru.yandex.se.yasm4u.domains.mr.MRPath;
 public abstract class MRReduce extends MROperation {
   public static final MRRecord EOF = new MRRecord(MRPath.create("/dev/random"), "", "", "");
 
-  public static final int MAX_REDUCE_SIZE = 100000;
+  public static final int MAX_REDUCE_SIZE = 100;
   private final Thread reduceThread;
   private final ArrayBlockingQueue<MRRecord> recordsQueue = new ArrayBlockingQueue<>(MAX_REDUCE_SIZE);
-  protected MROutput output;
+  final protected MROutput output;
 
   public MRReduce(MRPath[] inputTables, final MROutput output, State state) {
     super(inputTables, output, state);
