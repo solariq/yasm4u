@@ -32,14 +32,7 @@ public class MRRunner implements Runnable {
 
   public MRRunner() {
     this(new InputStreamReader(System.in, StreamTools.UTF),
-         new OutputStreamWriter(System.out, StreamTools.UTF) {
-           @Override
-           public Writer append(CharSequence csq) throws IOException {
-             for (int i = 0; i < csq.length(); ++i)
-               super.write(csq.charAt(i));
-             return this;
-           }
-         },
+         new OutputStreamWriter(System.out, StreamTools.UTF),
          readFromStream(MRRunner.class.getResourceAsStream("/" + BUILDER_RESOURCE_NAME), MRRunner.class.getClassLoader()));
   }
 
