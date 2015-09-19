@@ -328,7 +328,8 @@ public class CompositeMREnv extends MREnvBase {
 
   @Nullable
   private synchronized MRTableState localShard(MRPath shard, MRTableState state) {
-    if (shard.mount == MRPath.Mount.LOG && !Boolean.getBoolean("yasm4u.test")) { // logs must not change their structure over time. No additional checks necessarily
+    if ((shard.mount == MRPath.Mount.LOG
+    || shard.mount == MRPath.Mount.LOG_BROKER) && !Boolean.getBoolean("yasm4u.test")) { // logs must not change their structure over time. No additional checks necessarily
       final MRTableState resolve = localCopy.resolve(shard);
       if (state != null)
         tables.put(shard, Pair.create(state, resolve));

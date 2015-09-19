@@ -350,7 +350,8 @@ public class LocalMREnv extends MREnvBase {
     return new MRPath(mnt, path, sorted);
   }
 
-  private Pattern pattern = Pattern.compile("/\\d{8}/\\d{8}(?:_\\d+)+$");
+  private Pattern paradiso_pattern = Pattern.compile("/\\d{8}/\\d{8}(?:_\\d+)+$");
+  private Pattern logbroker_pattern = Pattern.compile("mobilesearch-(\\w+)-log\\/\\d{4}-\\d{2}-\\d{2}\\/\\d{10}$");
   public File file(final MRPath path) {
     final StringBuilder fullPath = new StringBuilder();
     fullPath.append(home.getAbsolutePath()).append("/");
@@ -358,7 +359,7 @@ public class LocalMREnv extends MREnvBase {
       case LOG:
         fullPath.append("logs/");
         if (!Boolean.getBoolean("yasm4u.test")) {
-          final Matcher matcher = pattern.matcher(path.path);
+          final Matcher matcher = paradiso_pattern.matcher(path.path);
           if(matcher.find()) // make single file for all dates
             fullPath.append(matcher.replaceAll(""));
           else
@@ -378,7 +379,16 @@ public class LocalMREnv extends MREnvBase {
         break;
       case LOG_BROKER:
         fullPath.append("log_broker/");
-        fullPath.append(path.path);
+        if (!Boolean.getBoolean("yasm4u.test")) {
+          final Matcher matcher = logbroker_pattern.matcher(path.path);
+          if(matcher.find()) // make single file for all dates
+            fullPath.append(matcher.group(1));
+          else
+            fullPath.append(path.path);
+        }
+        else {
+          fullPath.append(path.path);
+        }
         break;
       case ROOT:
         fullPath.append(path.path);

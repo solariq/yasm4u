@@ -94,10 +94,7 @@ public class YtMREnv extends RemoteMREnv {
     options.add("read");
     options.add("--format");
     options.add("<has_subkey=true>yamr");
-    if (table.mount == MRPath.Mount.LOG_BROKER)
-      options.add(localPath(table) + "[:#1]");
-    else
-      options.add(localPath(table) + "[:#100]");
+    options.add(localPath(table) + "[:#100]");
     final MROperation outputProcessor = new MROperation(table) {
       @Override
       public void process(final MRRecord arg) {
