@@ -15,11 +15,21 @@ import java.util.zip.GZIPInputStream;
  */
 public class TestUtil {
   @NotNull
-  public static MRRoutineBuilder launchFakeMRReduceOperation(String testName, final InputStream in, final OutputStream out, Class<?> routineClass, String methodName, MRPath[] ins, MRPath[] outs, StateImpl state) throws IOException {
+  public static MRRoutineBuilder launchFakeMRReduceOperation(final InputStream in, final OutputStream out, Class<?> routineClass, String methodName, MRPath[] ins, MRPath[] outs, StateImpl state) throws IOException {
+    return getMrRoutineBuilder(in, out, routineClass, methodName, ins, outs, state, MRRoutineBuilder.RoutineType.REDUCE);
+  }
+
+  @NotNull
+  public static MRRoutineBuilder launchFakeMRMapOperation(final InputStream in, final OutputStream out, Class<?> routineClass, String methodName, MRPath[] ins, MRPath[] outs, StateImpl state) throws IOException {
+    return getMrRoutineBuilder(in, out, routineClass, methodName, ins, outs, state, MRRoutineBuilder.RoutineType.MAP);
+  }
+
+  @NotNull
+  private static MRRoutineBuilder getMrRoutineBuilder(InputStream in, OutputStream out, Class<?> routineClass, String methodName, MRPath[] ins, MRPath[] outs, StateImpl state, MRRoutineBuilder.RoutineType routineType) throws IOException {
     final MethodRoutineBuilder builder = new MethodRoutineBuilder();
     builder.setRoutineClass(routineClass);
     builder.setMethodName(methodName);
-    builder.setType(MRRoutineBuilder.RoutineType.REDUCE);
+    builder.setType(routineType);
     builder.addInput(ins);
     builder.addOutput(outs);
     builder.setState(state);
