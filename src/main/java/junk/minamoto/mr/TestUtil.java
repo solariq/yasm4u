@@ -33,7 +33,7 @@ public class TestUtil {
     builder.addInput(ins);
     builder.addOutput(outs);
     builder.setState(state);
-    MRRunner runner = new MRRunner(new InputStreamReader(new GZIPInputStream(in)),
+    MRRunner runner = new MRRunner(new InputStreamReader(in),
         new OutputStreamWriter(out),
         builder);
     runner.run();
