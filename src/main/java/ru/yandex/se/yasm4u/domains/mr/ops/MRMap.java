@@ -1,6 +1,7 @@
 package ru.yandex.se.yasm4u.domains.mr.ops;
 
 import ru.yandex.se.yasm4u.domains.mr.MROutput;
+import ru.yandex.se.yasm4u.domains.mr.env.MROutputBase;
 import ru.yandex.se.yasm4u.domains.mr.ops.impl.MROperation;
 import ru.yandex.se.yasm4u.domains.wb.State;
 import ru.yandex.se.yasm4u.domains.mr.MRPath;
@@ -23,4 +24,10 @@ public abstract class MRMap extends MROperation {
   }
 
   public abstract void map(MRPath table, String sub, CharSequence value, String key);
+
+  @Override
+  protected void onEndOfInput() {
+    /* should be safe because we're on the same thread */
+    ((MROutputBase)output).stop();
+  }
 }

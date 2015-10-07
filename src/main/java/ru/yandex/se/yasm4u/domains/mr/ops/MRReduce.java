@@ -6,6 +6,7 @@ import java.util.concurrent.*;
 
 
 import ru.yandex.se.yasm4u.domains.mr.MROutput;
+import ru.yandex.se.yasm4u.domains.mr.env.MROutputBase;
 import ru.yandex.se.yasm4u.domains.mr.ops.impl.MROperation;
 import ru.yandex.se.yasm4u.domains.wb.State;
 import ru.yandex.se.yasm4u.domains.mr.MRPath;
@@ -76,6 +77,8 @@ public abstract class MRReduce extends MROperation {
             };
             try {
               reduce(key, reduceIterator);
+              if (record == EOF)
+                ((MROutputBase)output).stop();
             } catch (Exception e) {
               if (lastRetrieved != null) {
                 output.error(e, lastRetrieved);

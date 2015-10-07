@@ -119,6 +119,7 @@ public abstract class MROutputBase implements MROutput {
   }
 
   protected abstract void push(int tableNo, CharSequence record);
+  public abstract void stop();
   public abstract void interrupt();
   public abstract void join();
 }
