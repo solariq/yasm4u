@@ -110,8 +110,12 @@ public class MRRunner implements Runnable {
       // skip
     } catch (IOException e) {
       out.error(e, MRRecord.EMPTY);
-    } finally {
       out.interrupt();
+    } finally {
+      /* looks very dangerous: interrupt puts STOP poison pill in the middle of MRoperation(MRMap,MRReduce) worker
+      * it's seems to be acceptable for abnormal termination scenario
+      */
+      //out.interrupt();
       out.join();
     }
   }

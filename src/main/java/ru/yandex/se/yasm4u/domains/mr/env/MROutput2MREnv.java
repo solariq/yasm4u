@@ -84,6 +84,10 @@ public class MROutput2MREnv extends MROutputBase {
     }
   }
 
+  public void stop() {
+    interrupt();
+  }
+
   public void interrupt() {
     for(int i = 0; i < queues.length; i++) {
       try {

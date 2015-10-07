@@ -73,11 +73,17 @@ public class MROutput2Writer extends MROutputBase {
       catch (InterruptedException ignored){}
   }
 
+  @Override
+  public void stop() {
+    if (!stopped)
+      try {
+        queue.put(STOP);
+      }
+      catch (InterruptedException ignored){}
+  }
+
   public void interrupt() {
-    try {
-      queue.put(STOP);
-    }
-    catch (InterruptedException ignored){}
+    stop();
     stopped = true;
   }
 }
