@@ -56,7 +56,6 @@ public class MROutput2Writer extends MROutputBase {
 
   public void join() {
     try {
-      queue.put(STOP);
       outputThread.join();
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
