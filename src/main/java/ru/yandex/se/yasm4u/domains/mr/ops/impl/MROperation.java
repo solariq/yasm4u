@@ -27,7 +27,7 @@ public abstract class MROperation implements Processor<MRRecord>, Action<CharSeq
   private final State state;
   private final MRPath[] inputTables;
   private final long timeout;
-  private int currentInputIndex = 0;
+  private volatile int currentInputIndex = 0;
   private volatile boolean interrupted = false;
   private final AtomicReference<CharSequence> next = new AtomicReference<>();
   private volatile Throwable unhandled;
@@ -114,6 +114,8 @@ public abstract class MROperation implements Processor<MRRecord>, Action<CharSeq
   }
 
   private final CharSequence[] split = new CharSequence[3];
+
+  /* this function called in thread routine thread */
   private void invokeInner(CharSequence record) {
     if (record == CharSeq.EMPTY)
       onEndOfInput();
