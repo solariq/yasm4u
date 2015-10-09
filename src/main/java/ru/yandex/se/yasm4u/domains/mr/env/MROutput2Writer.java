@@ -17,7 +17,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 public class MROutput2Writer extends MROutputBase {
   private static final Pair<Integer, CharSequence> STOP = new Pair<Integer, CharSequence>(-1, "");
   private static Logger LOG = Logger.getLogger(MROutputBase.class);
-  private Thread outputThread;
+  private final Thread outputThread;
   private int lastActiveTable = 0;
   private final ArrayBlockingQueue<Pair<Integer, CharSequence>> queue = new ArrayBlockingQueue<Pair<Integer, CharSequence>>(MRReduce.MAX_REDUCE_SIZE);
 
