@@ -18,7 +18,6 @@ public class MROutput2Writer extends MROutputBase {
   private static final Pair<Integer, CharSequence> STOP = new Pair<Integer, CharSequence>(-1, "");
   private static Logger LOG = Logger.getLogger(MROutputBase.class);
   private final Thread outputThread;
-  private int lastActiveTable = 0;
   private final ArrayBlockingQueue<Pair<Integer, CharSequence>> queue = new ArrayBlockingQueue<Pair<Integer, CharSequence>>(MRReduce.MAX_REDUCE_SIZE);
 
   public MROutput2Writer(final Writer out, MRPath[] outputTables) {
@@ -28,6 +27,7 @@ public class MROutput2Writer extends MROutputBase {
     outputThread = new Thread(new Runnable() {
       @Override
       public void run() {
+        int lastActiveTable = 0;
         try {
           try {
             //noinspection InfiniteLoopStatement
