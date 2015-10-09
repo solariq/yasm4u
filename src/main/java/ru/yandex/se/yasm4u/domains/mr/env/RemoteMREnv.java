@@ -354,7 +354,7 @@ public abstract class RemoteMREnv extends MREnvBase {
           parameters.add(System.getProperty("java.home") + "/bin/java");
           parameters.add("-Xmx3g");
           parameters.add("-classpath");
-          parameters.add(System.getProperty("java.class.path"));
+          parameters.add(System.getProperty("yasm4u.class.path", System.getProperty("java.class.path")));
           parameters.add(mainClass.getName());
           parameters.addAll(Arrays.asList(args));
           System.err.println("runjvm: " + parameters.toString());
