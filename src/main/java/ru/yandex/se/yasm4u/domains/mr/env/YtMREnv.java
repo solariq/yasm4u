@@ -245,8 +245,16 @@ public class YtMREnv extends RemoteMREnv {
   public void copy(final MRPath[] from, MRPath to, boolean append) {
     if (!append)
       delete(to); /* Yt requires that destination shouldn't exists */
-    createTable(to);
 
+    if (!append && from.length == 1) {
+      final List<String> options = defaultOptions();
+      options.add("copy");
+      options.add(localPath(from[0]));
+      options.add(localPath(to));
+      executeMapOrReduceCommand(options, defaultOutputProcessor, defaultErrorsProcessor, null);
+      return;
+    }
+    createTable(to);
     for (final MRPath sh : from){
       final List<String> options = defaultOptions();
       options.add("merge");
