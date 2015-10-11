@@ -425,10 +425,17 @@ public class YtMREnv extends RemoteMREnv {
     options.add("--local-file");
     options.add(jar.getAbsolutePath());
 
+    boolean withAgent = Boolean.getBoolean("yasm4u.agent");
+    if (withAgent) {
+      options.add("--local-file");
+      options.add("dumpagent.jnilib");
+    }
+
     options.add("/usr/local/java8/bin/java "
       + (Boolean.getBoolean("yasm4u.enableJMX")? "-Dcom.sun.management.jmxremote " : "")
       + (Boolean.getBoolean("yasm4u.loggc")? "-Xloggc:/dev/stderr -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -XX:+PrintGCApplicationStoppedTime -verbose:gc":"")
-      + " -XX:-UsePerfData -XX:+PerfDisableSharedMem -Xmx3G -Xms3G -jar " + jar.getName());
+      + (withAgent ? "-agentpath:./dumpagent.jnilib": "")
+      + " -XX:-UseGCOverheadLimit -XX:-UsePerfData -XX:+PerfDisableSharedMem -Xmx4G -Xms4G -jar " + jar.getName());
     int inputCount = 0;
     final MRTableState[] all = resolveAll(in, false, MRTools.DIR_FRESHNESS_TIMEOUT);
     for(int i = 0; i < all.length; i++) {
