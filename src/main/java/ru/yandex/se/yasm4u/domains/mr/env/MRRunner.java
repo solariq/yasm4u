@@ -31,7 +31,7 @@ public class MRRunner implements Runnable {
   private final Reader in;
 
   public MRRunner() {
-    this(new InputStreamReader(System.in, StreamTools.UTF),
+    this(new InputStreamReader(new DataInputStream(System.in), StreamTools.UTF),
          new OutputStreamWriter(System.out, StreamTools.UTF),
          readFromStream(MRRunner.class.getResourceAsStream("/" + BUILDER_RESOURCE_NAME), MRRunner.class.getClassLoader()));
   }
