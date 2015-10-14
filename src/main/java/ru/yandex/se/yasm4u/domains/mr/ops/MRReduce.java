@@ -39,8 +39,10 @@ public abstract class MRReduce extends MROperation {
               if (record == null) {
                 throw new RuntimeException("key: record is null");
               }
-            if (record == EOF)
+            if (record == EOF) {
+              ((MROutputBase) output).stop();
               return;
+            }
             final String key = record.key;
             final Iterator<MRRecord> reduceIterator = new Iterator<MRRecord>() {
               @Override
