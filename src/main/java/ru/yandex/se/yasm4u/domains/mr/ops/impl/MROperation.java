@@ -108,6 +108,7 @@ public abstract class MROperation implements Processor<MRRecord>, Action<CharSeq
     if (unhandled != null) {
       output.error(unhandled, currentRecord);
       isStopped = true;
+      onEndOfInput();
       //noinspection deprecation
       routineTh.stop();
     }
@@ -115,10 +116,10 @@ public abstract class MROperation implements Processor<MRRecord>, Action<CharSeq
 
   private final CharSequence[] split = new CharSequence[3];
   private void invokeInner(CharSequence record) {
-    if (record == CharSeq.EMPTY)
+    if (record == CharSeq.EMPTY || interrupted || record.length() == 0) { // this is trash and ugar but we need to read entire stream before closing it, so that YaMR won't gone mad
       onEndOfInput();
-    if (interrupted || record.length() == 0) // this is trash and ugar but we need to read entire stream before closing it, so that YaMR won't gone mad
       return;
+    }
     int parts = CharSeqTools.trySplit(record, '\t', split);
     if (parts == 1) // switch table record
       currentInputIndex = CharSeqTools.parseInt(split[0]);
