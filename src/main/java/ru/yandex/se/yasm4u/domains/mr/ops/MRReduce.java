@@ -96,7 +96,6 @@ public abstract class MRReduce extends MROperation {
           catch (InterruptedException e) {
             //
           }
-          ((MROutputBase) output).stop();
         }
       }
     }, "Reduce thread");
