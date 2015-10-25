@@ -116,10 +116,12 @@ public abstract class MROperation implements Processor<MRRecord>, Action<CharSeq
 
   private final CharSequence[] split = new CharSequence[3];
   private void invokeInner(CharSequence record) {
-    if (record == CharSeq.EMPTY || interrupted || record.length() == 0) { // this is trash and ugar but we need to read entire stream before closing it, so that YaMR won't gone mad
+    if (record == CharSeq.EMPTY) { // this is trash and ugar but we need to read entire stream before closing it, so that YaMR won't gone mad
       onEndOfInput();
       return;
     }
+    if (interrupted || record.length() == 0)
+      return;
     int parts = CharSeqTools.trySplit(record, '\t', split);
     if (parts == 1) // switch table record
       currentInputIndex = CharSeqTools.parseInt(split[0]);
