@@ -92,6 +92,7 @@ public abstract class MRReduce extends MROperation {
             }
             while (reduceIterator.hasNext())
               reduceIterator.next();
+            ((MROutputBase) output).stop();
           }
           catch (InterruptedException e) {
             //
