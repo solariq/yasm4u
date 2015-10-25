@@ -40,8 +40,7 @@ public abstract class MRReduce extends MROperation {
                 throw new RuntimeException("key: record is null");
               }
             if (record == EOF) {
-              ((MROutputBase) output).stop();
-              return;
+              break;
             }
             final String key = record.key;
             final Iterator<MRRecord> reduceIterator = new Iterator<MRRecord>() {
@@ -79,8 +78,6 @@ public abstract class MRReduce extends MROperation {
             };
             try {
               reduce(key, reduceIterator);
-              if (record == EOF)
-                ((MROutputBase)output).stop();
             } catch (Exception e) {
               if (lastRetrieved != null) {
                 output.error(e, lastRetrieved);
@@ -96,6 +93,7 @@ public abstract class MRReduce extends MROperation {
           catch (InterruptedException e) {
             //
           }
+          ((MROutputBase)output).stop();
         }
       }
     }, "Reduce thread");
