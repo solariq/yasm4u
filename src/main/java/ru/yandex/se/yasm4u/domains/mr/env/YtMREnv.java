@@ -328,7 +328,7 @@ public class YtMREnv extends RemoteMREnv {
     options.add("-r");
     options.add("-i");
     options.add("--attributes");
-    options.add("{compression_codec=gzip_best_compression}");
+    options.add("{force_nightly_compress=true}");
     options.add("table");
     options.add(localPath(shard));
     executeCommand(options, /* defaultOutputProcessor */ new Action<CharSequence>() {
