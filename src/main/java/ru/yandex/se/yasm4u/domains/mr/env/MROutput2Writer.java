@@ -4,6 +4,7 @@ import com.spbsu.commons.util.Pair;
 import org.apache.log4j.Logger;
 import ru.yandex.se.yasm4u.domains.mr.MRPath;
 import ru.yandex.se.yasm4u.domains.mr.ops.MRReduce;
+import ru.yandex.se.yasm4u.domains.mr.ops.impl.MROperation;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -76,6 +77,7 @@ public class MROutput2Writer extends MROutputBase {
   @Override
   public void stop() {
     if (!stopped)
+      MROperation.dumpThreadFull("output stopped");
       try {
         queue.put(STOP);
       }

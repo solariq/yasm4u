@@ -144,6 +144,15 @@ public abstract class MROperation implements Processor<MRRecord>, Action<CharSeq
     System.err.println(threadName + ": "+ stackTrace[1].getMethodName() + ":" + stackTrace[1].getLineNumber() + ": " + msg);
   }
 
+  public static void dumpThreadFull(String msg) {
+    final StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+    final String threadName = Thread.currentThread().getName();
+    System.err.println(threadName + ": "+ stackTrace[1].getMethodName() + ":" + stackTrace[1].getLineNumber() + ": " + msg);
+    for (StackTraceElement e:stackTrace) {
+      System.err.println(threadName + ": at " + e.getClassName() + "." + e.getMethodName() + ": " + e.getLineNumber());
+    }
+  }
+
   protected void interrupt() {
     interrupted = true;
   }
