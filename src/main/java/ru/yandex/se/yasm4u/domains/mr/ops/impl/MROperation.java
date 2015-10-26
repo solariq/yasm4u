@@ -76,8 +76,10 @@ public abstract class MROperation implements Processor<MRRecord>, Action<CharSeq
   private volatile boolean isStopped = false;
   @Override
   public void invoke(final CharSequence record) {
-    if (isStopped)
+    if (isStopped) {
+      dumpThread("stopped");
       return;
+    }
     final long time = System.currentTimeMillis();
     int count = 0;
 
@@ -117,12 +119,14 @@ public abstract class MROperation implements Processor<MRRecord>, Action<CharSeq
   private final CharSequence[] split = new CharSequence[3];
   private void invokeInner(CharSequence record) {
     if (record == CharSeq.EMPTY) { // this is trash and ugar but we need to read entire stream before closing it, so that YaMR won't gone mad
+      dumpThread("EMPTY");
       onEndOfInput();
-      isStopped = true;
       return;
     }
-    if (interrupted || record.length() == 0)
+    if (interrupted || record.length() == 0) {
+      dumpThread("interrupted: " + interrupted + "record.length: "  + record.length());
       return;
+    }
     int parts = CharSeqTools.trySplit(record, '\t', split);
     if (parts == 1) // switch table record
       currentInputIndex = CharSeqTools.parseInt(split[0]);
@@ -132,6 +136,12 @@ public abstract class MROperation implements Processor<MRRecord>, Action<CharSeq
       currentRecord = new MRRecord(currentTable(), split[0].toString(), split[1].toString(), split[2]);
       process(currentRecord);
     }
+  }
+
+  public static void dumpThread(String msg) {
+    final StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+    final String threadName = Thread.currentThread().getName();
+    System.err.println(threadName + ": "+ stackTrace[1].getMethodName() + ":" + stackTrace[1].getLineNumber() + ": " + msg);
   }
 
   protected void interrupt() {
