@@ -93,7 +93,7 @@ public abstract class MRReduce extends MROperation {
           catch (InterruptedException e) {
             //
           }
-        }
+        } /** end of while **/
         MROperation.dumpThread("loop exit");
         ((MROutputBase)output).stop();
       }
@@ -113,6 +113,7 @@ public abstract class MRReduce extends MROperation {
 
   @Override
   protected final void onEndOfInput() {
+    dumpThreadFull("endOfInput");
     super.onEndOfInput();
     try {
       try {
