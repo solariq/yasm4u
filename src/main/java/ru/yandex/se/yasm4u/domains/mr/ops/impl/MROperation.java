@@ -118,6 +118,7 @@ public abstract class MROperation implements Processor<MRRecord>, Action<CharSeq
   private void invokeInner(CharSequence record) {
     if (record == CharSeq.EMPTY) { // this is trash and ugar but we need to read entire stream before closing it, so that YaMR won't gone mad
       onEndOfInput();
+      isStopped = true;
       return;
     }
     if (interrupted || record.length() == 0)
