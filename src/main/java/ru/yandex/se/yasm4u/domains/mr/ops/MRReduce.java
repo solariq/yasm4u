@@ -93,9 +93,9 @@ public abstract class MRReduce extends MROperation {
           catch (InterruptedException e) {
             //
           }
-          MROperation.dumpThread("loop exit");
-          ((MROutputBase)output).stop();
         }
+        MROperation.dumpThread("loop exit");
+        ((MROutputBase)output).stop();
       }
     }, "Reduce thread");
     reduceThread.setDaemon(true);
