@@ -1,5 +1,7 @@
 package ru.yandex.se.yasm4u.domains.mr.ops;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.*;
@@ -40,6 +42,7 @@ public abstract class MRReduce extends MROperation {
                 throw new RuntimeException("key: record is null");
               }
             if (record == EOF) {
+              dumpThread("EOF received");
               break;
             }
             final String key = record.key;
@@ -85,12 +88,16 @@ public abstract class MRReduce extends MROperation {
                 output.error(e, new MRRecord(MRPath.create("/dev/random"), "unknown", "unknown", "unknown"));
               }
               interrupt();
+              StringWriter writer = new StringWriter();
+              e.printStackTrace(new PrintWriter(writer));
+              dumpThread("Exception:" + writer.toString());
               break;
             }
             while (reduceIterator.hasNext())
               reduceIterator.next();
           }
           catch (InterruptedException e) {
+            dumpThread("InterruptedException: " + e.getMessage());
             //
           }
         } /** end of while **/
