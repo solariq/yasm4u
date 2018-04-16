@@ -2,168 +2,23 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>ru.yandex.se.mobile</groupId>
+  <groupId>com.expleague</groupId>
   <artifactId>yasm4u</artifactId>
   <version>1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Yet Another State Machine for Universe</name>
 
-  <dependencies>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <version>2.4.2</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <version>3.3.2</version>
-    </dependency>
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>1.3.2</version>
-    </dependency>
-    <dependency>
-      <groupId>commons-logging</groupId>
-      <artifactId>commons-logging</artifactId>
-      <version>1.1.3</version>
-    </dependency>
-    <dependency>
-      <groupId>net.sf.trove4j</groupId>
-      <artifactId>trove4j</artifactId>
-      <version>3.0.3</version>
-    </dependency>
-    <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <version>1.2.16</version>
-    </dependency>
-    <!--dependency>
-      <groupId>com.spbsu</groupId>
-      <artifactId>commons</artifactId>
-      <version>1.0-SNAPSHOT</version>
-    </dependency-->
-    <dependency>
-      <groupId>org.javassist</groupId>
-      <artifactId>javassist</artifactId>
-      <version>3.18.1-GA</version>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.11</version>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
-  <!-- till syncronization end we need special rule to
-       compile sources.-->
-  <build>
-    <sourceDirectory>${basedir}/src/main/java</sourceDirectory>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.17</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <testSourceDirectory>${basedir}/src/test/java</testSourceDirectory>
-          <workingDirectory>${basedir}</workingDirectory>
-          <includes>
-            <include>**/*.java</include>
-          </includes>
-        </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>2.3.2</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>compile</goal>
-              <goal>testCompile</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <source>1.7</source>
-          <target>1.7</target>
-          <includes>
-            <include>**/*.java</include>
-          </includes>
-        </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-resources-plugin</artifactId>
-        <version>2.7</version>
-        <executions>
-          <execution>
-            <id>copy-resources</id>
-            <phase>validate</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${basedir}/target/classes/mr/ssh</outputDirectory>
-              <resources>
-                <resource>
-                  <directory>${basedir}/src/main/resources/mr/ssh</directory>
-                  <filtering>true</filtering>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-  <profiles>
-    <profile>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <file>
-          <missing>../commons</missing>
-        </file>
-      </activation>
-      <id>standalone-build</id>
-      <!-- I hate maven, WTF they needs both modules and dependencies -->
-      <dependencies>
-        <dependency>
-          <groupId>com.spbsu</groupId>
-          <artifactId>commons</artifactId>
-          <version>1.0-SNAPSHOT</version>
-        </dependency>
-      </dependencies>
-      <modules>
-        <module>commons</module>
-      </modules>
-    </profile>
-    <profile>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <file>
-          <exists>../commons</exists>
-        </file>
-      </activation>
-      <id>dev</id>
-      <dependencies>
-        <dependency>
-          <groupId>com.spbsu</groupId>
-          <artifactId>commons</artifactId>
-          <version>1.0-SNAPSHOT</version>
-        </dependency>
-      </dependencies>
-    </profile>
-  </profiles>
+  <modules>
+    <module>commons</module>
+    <module>core</module>
+    <module>ya</module>
+    <module>spark</module>
+  </modules>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.build.resourceEncoding>UTF-8</project.build.resourceEncoding>
+    <java.version>1.8</java.version>
+  </properties>
 </project>
-<!-- Local Variables: -->
-<!-- mode: nxml -->
-<!-- indent-tabs-mode: nil -->
-<!-- End: -->
