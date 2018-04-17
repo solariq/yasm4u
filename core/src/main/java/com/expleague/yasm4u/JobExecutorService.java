@@ -1,6 +1,8 @@
 package com.expleague.yasm4u;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Future;
 
 /**
@@ -13,7 +15,7 @@ public interface JobExecutorService extends Domain.Controller {
   void addJoba(Joba joba);
 
   <T> Future<T> calculate(Ref<T, ?> goal);
-  Future<List<?>> calculate(Ref<?, ?>... goals);
+  Future<List<?>> calculate(Set<Ref> from, Ref... goals);
 
   void addListener(ProgressListener listener);
 

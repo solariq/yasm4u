@@ -83,12 +83,12 @@ public abstract class MRReduce extends MROperation {
               if (record == EOF)
                 ((MROutputBase)output).stop();
             } catch (Exception e) {
+              interrupt();
               if (lastRetrieved != null) {
                 output.error(e, lastRetrieved);
               } else {
-                output.error(e, new MRRecord(MRPath.create("/dev/random"), "unknown", "unknown", "unknown"));
+                output.error(e, new MRRecord(record.source, key, "unknown", "unknown"));
               }
-              interrupt();
               break;
             }
             while (reduceIterator.hasNext())
@@ -102,6 +102,7 @@ public abstract class MRReduce extends MROperation {
     }, "Reduce thread");
     reduceThread.setDaemon(true);
     reduceThread.start();
+    reduceThread.setUncaughtExceptionHandler((t, e) -> {});
   }
 
   @Override

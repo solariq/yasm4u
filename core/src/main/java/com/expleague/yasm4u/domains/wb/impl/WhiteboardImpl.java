@@ -41,6 +41,7 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
               ((Consumer<Whiteboard>) converter).accept(WhiteboardImpl.this);
               return true;
             })
+            .or(typeConverter -> true)
     );
 
     myShard = new MRPath(MRPath.Mount.HOME, "state/" + id, false);

@@ -33,27 +33,33 @@ public class Planner {
   public Joba[] build(JobExecutorService jes, Ref... goals) {
     final Set<Ref> initialState;
     { // initialize universe and starting state
-      Set<Ref> consumes = new HashSet<>();
+      final Set<Ref> consumes = new HashSet<>();
       final Set<Ref> produces = new HashSet<>();
-      for (Routine routine : routines) {
-        for (final Joba job : routine.buildVariants(initial, jes)) {
-          consumes.addAll(Arrays.asList(job.consumes()));
-          produces.addAll(Arrays.asList(job.produces()));
-        }
-      }
-
+      final Set<Ref> possibleResources = new HashSet<>(Arrays.asList(initial));
       for (final Joba job : jobs) {
         consumes.addAll(Arrays.asList(job.consumes()));
         produces.addAll(Arrays.asList(job.produces()));
+        possibleResources.addAll(Arrays.asList(job.consumes()));
       }
 
-      consumes.removeAll(produces);
-      int consumesSize;
-      final Set<Joba> possibleJobas = new HashSet<>();
-      final Set<Ref> possibleResources = new HashSet<>();
+      int possibleResourcesSize;
+      do { // making closure
+        possibleResourcesSize = possibleResources.size();
+        for (Routine routine : routines) {
+          for (final Joba job : routine.buildVariants(possibleResources.toArray(new Ref[possibleResourcesSize]), jes)) {
+            consumes.addAll(Arrays.asList(job.consumes()));
+            produces.addAll(Arrays.asList(job.produces()));
+            possibleResources.addAll(Arrays.asList(job.consumes()));
+          }
+        }
+      }
+      while (possibleResourcesSize != possibleResources.size());
 
-      do {
-        consumesSize = consumes.size();
+      consumes.removeAll(produces);
+      final Set<Joba> possibleJobas = new HashSet<>();
+      possibleResources.clear();
+
+      while (true) {
         final Iterator<Ref> it = consumes.iterator();
         Set<Ref> next = new HashSet<>(consumes);
         while (it.hasNext()) {
@@ -64,11 +70,13 @@ public class Planner {
             next.add(res);
           }
         }
-        consumes = next;
+        if (consumes.equals(next)) {
+          break;
+        }
       }
-      while(consumesSize > consumes.size());
 
-      initialState = new HashSet<>(consumes);
+      initialState = new HashSet<>(Arrays.asList(initial));
+      initialState.addAll(consumes);
     }
 
 
@@ -78,7 +86,8 @@ public class Planner {
     final Set<Ref> goalsSet = new HashSet<>(Arrays.asList(goals));
     if (!forwardPath(jes, initialState, possibleJobas, possibleResources, goalsSet.toArray(new Ref[goalsSet.size()]))) {
       goalsSet.removeAll(possibleResources);
-      throw new IllegalArgumentException("Unable to create plan : " + Arrays.toString(goalsSet.toArray()) + " unreachable");
+      initialState.addAll(goalsSet);
+//      throw new IllegalArgumentException("Unable to create plan : " + Arrays.toString(goalsSet.toArray()) + " unreachable");
     }
     possibleResources.clear();
     possibleResources.addAll(goalsSet);
@@ -113,7 +122,7 @@ public class Planner {
       return cmp1;
     });
 
-    final HashSet<Ref> goalsSet = new HashSet<>(Arrays.asList(goals));
+    final Set<Ref> goalsSet = new HashSet<>(Arrays.asList(goals));
     states.put(goalsSet, new PossibleState(new ArrayList<>(), possibleJobas, initialState, 0.));
     order.add(goalsSet);
 

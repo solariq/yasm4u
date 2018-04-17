@@ -15,7 +15,6 @@ import java.util.Arrays;
  */
 @RunWith(Parameterized.class)
 public class BigWrites extends BaseMRTest {
-    @Ignore
     @Test
     public void write32M() {
 

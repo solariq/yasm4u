@@ -96,7 +96,6 @@ public final class ErrorsTest extends BaseMRTest {
     public void reduce(final String key, final Iterator<MRRecord> reduce, final MROutput output) {
       output.error("Error!", "Error!", new MRRecord(null, key, "#", "#"));
     }
-
   }
 
   @Test

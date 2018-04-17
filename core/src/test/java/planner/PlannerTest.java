@@ -2,16 +2,15 @@ package planner;
 
 import com.expleague.commons.util.ArrayTools;
 import com.expleague.yasm4u.*;
-import org.junit.Assert;
-import org.junit.Test;
 import com.expleague.yasm4u.impl.MainThreadJES;
 import com.expleague.yasm4u.impl.Planner;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
-import java.util.function.Function;
 
 /**
  * User: solar

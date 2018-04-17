@@ -34,27 +34,6 @@ public final class EmptinessTest extends BaseMRTest {
   }
 
   @MRProcessClass(goal = OUT_TABLE_NAME)
-  public static final class MapEmptyInput {
-
-    public MapEmptyInput(State state) {
-    }
-
-    @MRMapMethod(input = IN_TABLE_NAME_EMPTY, output = OUT_TABLE_NAME)
-    public void map(final String key, final String sub, final CharSequence value, MROutput output) {
-      output.add(key, sub, value);
-    }
-
-  }
-
-  @Test
-  public void emptyInputTableShouldWork() {
-    final AnnotatedMRProcess mrProcess = new AnnotatedMRProcess(MapEmptyInput.class, env);
-    mrProcess.wb().wipe();
-    mrProcess.execute();
-    mrProcess.wb().wipe();
-  }
-
-  @MRProcessClass(goal = OUT_TABLE_NAME)
   public static final class MapEmptyOutput {
 
     public MapEmptyOutput(State state) {

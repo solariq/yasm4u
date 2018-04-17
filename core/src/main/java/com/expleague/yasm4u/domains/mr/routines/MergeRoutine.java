@@ -37,7 +37,10 @@ public class MergeRoutine implements Routine {
     for (final RoutineJoba joba : jobs) {
       final MRPath[] outputs = new MRPath[joba.produces().length];
       for(int i = 0; i < outputs.length; i++) {
-        final MRPath resourceName = joba.produces()[i];
+        Ref ref = joba.produces()[i];
+        if (!(ref instanceof MRPath))
+          continue;
+        final MRPath resourceName = (MRPath) ref;
         if (sharded.get(resourceName) > 1) {
           final MRPath shard = new MRPath(MRPath.Mount.TEMP, resourceName.path + "merge/" + resourceName.mount + "/" + sharded.get(resourceName) + "-" + shardsCount.get(resourceName), false);
           outputs[i] = shard;
@@ -58,8 +61,11 @@ public class MergeRoutine implements Routine {
   public Joba[] buildVariants(Ref[] state, final JobExecutorService executor) {
     final Map<MRPath, MRPath[]> shardsMap = new HashMap<>();
     for(int i = 0; i < state.length; i++) {
-      if (MRPath.class.isAssignableFrom(state[i].type())) {
-        final MRPath ref = (MRPath)executor.resolve(state[i]);
+      Ref stateRef = state[i];
+      if (stateRef == null)
+        System.out.println();
+      if (MRPath.class.isAssignableFrom(stateRef.type())) {
+        final MRPath ref = (MRPath)executor.resolve(stateRef);
         if (ref.mount == MRPath.Mount.TEMP) {
           final Matcher matcher = MERGE_PATTERN.matcher(ref.path);
           if (matcher.find()) {

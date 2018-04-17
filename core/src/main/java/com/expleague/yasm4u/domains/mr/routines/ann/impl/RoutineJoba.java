@@ -1,14 +1,17 @@
 package com.expleague.yasm4u.domains.mr.routines.ann.impl;
 
+import com.expleague.commons.util.CollectionTools;
 import com.expleague.yasm4u.Ref;
 import com.expleague.yasm4u.Domain;
 import com.expleague.yasm4u.Joba;
 import com.expleague.yasm4u.domains.mr.MREnv;
 import com.expleague.yasm4u.domains.mr.MRPath;
 import com.expleague.yasm4u.domains.mr.ops.impl.MRRoutineBuilder;
+import com.expleague.yasm4u.domains.wb.TempRef;
 import com.expleague.yasm4u.domains.wb.Whiteboard;
 
 import java.lang.reflect.Method;
+import java.util.stream.Stream;
 
 /**
 * User: solar
@@ -17,24 +20,16 @@ import java.lang.reflect.Method;
 */
 public class RoutineJoba implements Joba {
   public final Domain.Controller controller;
-  public final MRPath[] input;
-  public final MRPath[] output;
+  public final Ref[] input;
+  public final Ref[] output;
   public final Method method;
   public final MRRoutineBuilder.RoutineType type;
 
-  public RoutineJoba(Domain.Controller controller, final Ref<? extends MRPath, ?>[] input, final Ref<? extends MRPath, ?>[] output, final Method method, MRRoutineBuilder.RoutineType type) {
+  public RoutineJoba(Domain.Controller controller, final Ref[] input, final Ref[] output, final Method method, MRRoutineBuilder.RoutineType type) {
     this.controller = controller;
     //noinspection unchecked
-    this.input = new MRPath[input.length];
-    for(int i = 0; i < input.length; i++) {
-      final MRPath resolve = controller.resolve(input[i]);
-      this.input[i] = type == MRRoutineBuilder.RoutineType.REDUCE ? resolve.mksorted() : resolve;
-    }
-    this.output = new MRPath[output.length];
-    for(int i = 0; i < output.length; i++) {
-      final MRPath resolve = controller.resolve(output[i]);
-      this.output[i] = resolve;
-    }
+    this.input = input;
+    this.output = output;
     this.method = method;
     this.type = type;
   }
@@ -42,22 +37,26 @@ public class RoutineJoba implements Joba {
   @Override
   public void run() {
     final MethodRoutineBuilder builder = new MethodRoutineBuilder();
-    builder.addInput(input);
-    builder.addOutput(output);
+    builder.addInput(Stream.of(input).filter(CollectionTools.instanceOf(MRPath.class)).map(CollectionTools.cast(MRPath.class)).toArray(MRPath[]::new));
+    builder.addOutput(Stream.of(output).filter(CollectionTools.instanceOf(MRPath.class)).map(CollectionTools.cast(MRPath.class)).toArray(MRPath[]::new));
     builder.setState(controller.domain(Whiteboard.class).snapshot());
     builder.setMethodName(method.getName());
     builder.setType(type);
     builder.setRoutineClass(method.getDeclaringClass());
-    controller.domain(MREnv.class).execute(builder, new DefaultMRErrorsHandler());
+    DefaultMRErrorsHandler errorsHandler = new DefaultMRErrorsHandler();
+    controller.domain(MREnv.class).execute(builder, errorsHandler);
+    if (errorsHandler.errorsCount() > 0) {
+      throw new RuntimeException(errorsHandler.first());
+    }
   }
 
   @Override
-  public MRPath[] consumes() {
+  public Ref[] consumes() {
     return input;
   }
 
   @Override
-  public MRPath[] produces() {
+  public Ref[] produces() {
     return output;
   }
 

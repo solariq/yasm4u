@@ -36,7 +36,7 @@ public class StateImpl implements State {
   public StateImpl() {
     trash = new JobExecutorServiceBase(this) {
       @Override
-      public Future<List<?>> calculate(Ref<?, ?>... goals) {
+      public Future<List<?>> calculate(Set<Ref> from, Ref... goals) {
         return null;
       }
     };
@@ -45,7 +45,7 @@ public class StateImpl implements State {
   public StateImpl(MREnv env) {
     trash = new JobExecutorServiceBase(this, env) {
       @Override
-      public Future<List<?>> calculate(Ref<?, ?>... goals) {
+      public Future<List<?>> calculate(Set<Ref> from, Ref... goals) {
         return null;
       }
     };
@@ -116,7 +116,7 @@ public class StateImpl implements State {
     state = new HashMap<>();
     trash = new JobExecutorServiceBase(this){ // no MREnv
       @Override
-      public Future<List<?>> calculate(Ref<?, ?>... goals) {
+      public Future<List<?>> calculate(Set<Ref> from, Ref... goals) {
         return null;
       }
     };

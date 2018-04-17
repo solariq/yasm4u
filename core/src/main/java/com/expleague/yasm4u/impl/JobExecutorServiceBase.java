@@ -10,7 +10,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 /**
  * User: solar
@@ -50,7 +49,7 @@ public abstract class JobExecutorServiceBase implements JobExecutorService {
 
   @Override
   public <T> Future<T> calculate(Ref<T, ?> goal) {
-    final Future<List<?>> calculate = calculate(new Ref[]{goal});
+    final Future<List<?>> calculate = calculate(Collections.emptySet(), (Ref<?, ?>[]) new Ref[]{goal});
     return new Future<T>() {
       @Override
       public boolean cancel(boolean mayInterruptIfRunning) {

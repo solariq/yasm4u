@@ -7,6 +7,7 @@ import com.expleague.yasm4u.Domain;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Future;
 
 /**
@@ -46,8 +47,8 @@ public class MainThreadJES extends JobExecutorServiceBase {
   }
 
   @Override
-  public Future<List<?>> calculate(Ref... goal) {
-    final Planner planner = new Planner(new Ref[0], routines(), jobs());
+  public Future<List<?>> calculate(Set<Ref> from, Ref... goal) {
+    final Planner planner = new Planner(from.toArray(new Ref[from.size()]), routines(), jobs());
     final Joba[] plan = planner.build(this, goal);
     for (final Joba joba : plan) {
       if (safe) {
