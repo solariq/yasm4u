@@ -58,7 +58,7 @@
     <dependency>
       <groupId>com.expleague</groupId>
       <artifactId>jmll</artifactId>
-      <version>1.4-SNAPSHOT</version>
+      <version>1.4.7</version>
     </dependency>
   </dependencies>
   <!-- till syncronization end we need special rule to

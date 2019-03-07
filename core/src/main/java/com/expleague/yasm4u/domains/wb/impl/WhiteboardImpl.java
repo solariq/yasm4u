@@ -34,15 +34,16 @@ public class WhiteboardImpl extends StateImpl implements Whiteboard {
     super(env);
     final RefParserImpl parser = new RefParserImpl();
     publishReferenceParsers(parser, trash);
-    marshaling = new SerializationRepository<>(State.SERIALIZATION).customize(
-        CollectionTools.<TypeConverter>instanceOf(Consumer.class, Whiteboard.class)
-            .and(converter -> {
-              //noinspection unchecked
-              ((Consumer<Whiteboard>) converter).accept(WhiteboardImpl.this);
-              return true;
-            })
-            .or(typeConverter -> true)
-    );
+    marshaling = new SerializationRepository<>(State.SERIALIZATION);
+//    .customize(
+//        CollectionTools.<TypeConverter>instanceOf(Consumer.class, Whiteboard.class)
+//            .and(converter -> {
+//              //noinspection unchecked
+//              ((Consumer<Whiteboard>) converter).accept(WhiteboardImpl.this);
+//              return true;
+//            })
+//            .or(typeConverter -> true)
+//    );
 
     myShard = new MRPath(MRPath.Mount.HOME, "state/" + id, false);
     env.read(myShard, arg -> {
