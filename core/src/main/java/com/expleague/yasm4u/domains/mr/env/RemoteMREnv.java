@@ -32,22 +32,22 @@ public abstract class RemoteMREnv extends MREnvBase {
   protected final Consumer<CharSequence> defaultErrorsProcessor;
   protected final Consumer<CharSequence> defaultOutputProcessor;
   protected final ProcessRunner runner;
+  private Class<? extends MRRunner> mrRunnerClass = MRRunner.class;
 
-  protected RemoteMREnv(final ProcessRunner runner, final String user, final String master) {
-    this(runner, user, master,
-        System.err::println,
-        System.out::println
-    );
+  protected RemoteMREnv(ProcessRunner runner, String user, String master) {
+    this(runner, user, master, System.err::println, System.out::println, MRRunner.class);
   }
 
-  protected RemoteMREnv(final ProcessRunner runner, final String user, final String master,
-                        final Consumer<CharSequence> errorsProc,
-                        final Consumer<CharSequence> outputProc) {
+  protected RemoteMREnv(ProcessRunner runner, String user, String master,
+                        Consumer<CharSequence> errorsProc,
+                        Consumer<CharSequence> outputProc,
+                        Class<? extends MRRunner> mrRunnerClass) {
     this.runner = runner;
     this.user = user;
     this.master = master;
     this.defaultErrorsProcessor = errorsProc;
     this.defaultOutputProcessor = outputProc;
+    this.mrRunnerClass = mrRunnerClass;
   }
 
   @Override
@@ -67,19 +67,25 @@ public abstract class RemoteMREnv extends MREnvBase {
       //noinspection ResultOfMethodCallIgnored
       jar.delete();
       jar.deleteOnExit();
-      process = runJvm(MRRunner.class, "--dump", jar.getAbsolutePath());
+      process = runJvm(mrRunnerClass, "--dump", jar.getAbsolutePath());
       final ByteArrayOutputStream builderSerialized = new ByteArrayOutputStream();
       try (final ObjectOutputStream outputStream = new ObjectOutputStream(builderSerialized)) {
         outputStream.writeObject(builder);
       }
       final Writer to = new OutputStreamWriter(process.getOutputStream(), StreamTools.UTF);
       final Reader from = new InputStreamReader(process.getInputStream(), StreamTools.UTF);
+      final Reader err = new InputStreamReader(process.getErrorStream(), StreamTools.UTF);
       to.append(CharSeqTools.toBase64(builderSerialized.toByteArray())).append("\n");
       to.flush();
       final MROutputBase output = new MROutput2MREnv(env, builder.output(), null);
-      final Thread asyncReaderTh = new Thread(() -> CharSeqTools.lines(from, false).forEach(output::parse));
-      asyncReaderTh.setDaemon(true);
-      asyncReaderTh.start();
+      {
+        final Thread asyncReaderTh = new Thread(() -> CharSeqTools.lines(from, false).forEach(output::parse));
+        asyncReaderTh.setDaemon(true);
+        asyncReaderTh.start();
+        final Thread asyncErrReaderTh = new Thread(() -> CharSeqTools.lines(err, false).forEach(System.err::println));
+        asyncErrReaderTh.setDaemon(true);
+        asyncErrReaderTh.start();
+      }
       final MRPath[] input = builder.input();
       final Set<String> visited = new HashSet<>();
       MRPath parent = null;
@@ -120,6 +126,7 @@ public abstract class RemoteMREnv extends MREnvBase {
           if (process != null) {
             process.getOutputStream().close();
             process.getInputStream().close();
+            process.getErrorStream().close();
             process.waitFor();
             StreamTools.transferData(process.getErrorStream(), System.err);
           }
@@ -130,9 +137,13 @@ public abstract class RemoteMREnv extends MREnvBase {
   }
 
   protected void executeCommand(final List<String> options, final Consumer<CharSequence> outputProcessor,
-                              final Consumer<CharSequence> errorsProcessor, InputStream contents) {
+                                final Consumer<CharSequence> errorsProcessor, InputStream contents) {
+    executeCommand(options, Collections.emptySet(), outputProcessor, errorsProcessor, contents);
+  }
+  protected void executeCommand(final List<String> options, final Set<String> files, final Consumer<CharSequence> outputProcessor,
+                                final Consumer<CharSequence> errorsProcessor, InputStream contents) {
     try {
-      final Process exec = runner.start(options, contents);
+      final Process exec = runner.start(options, files, contents);
       if (exec == null)
         return;
       final Thread outThread = new Thread(() -> {
@@ -236,16 +247,13 @@ public abstract class RemoteMREnv extends MREnvBase {
             continue;
           list(u);
         }
-        else {
-          if (u.mount == MRPath.Mount.LOG_BROKER) {
-            if (parent == null || !parent.equals(u.parent())) {
-              parent = u.parent();
-              list(parent);
-            }
+        else if (u.mount == MRPath.Mount.LOG_BROKER) {
+          if (parent == null || !parent.equals(u.parent())) {
+            parent = u.parent();
+            list(parent);
           }
-          else
-            get(u);
         }
+        else update(u);
       }
     }
     else {
@@ -319,6 +327,7 @@ public abstract class RemoteMREnv extends MREnvBase {
           parameters.add("-Xmx3g");
           parameters.add("-classpath");
           parameters.add(System.getProperty("yasm4u.class.path", System.getProperty("java.class.path")));
+          parameters.add("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000");
           parameters.add(mainClass.getName());
           parameters.addAll(Arrays.asList(args));
           System.err.println("runjvm: " + parameters.toString());

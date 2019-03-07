@@ -73,7 +73,7 @@ public class AnnotatedMRProcess implements Routine {
   }
 
   private boolean checkInput(final Ref[] available, List<Ref> in, List<Ref> out) {
-    { // trying to get input from Input interface
+    { // trying to update input from Input interface
       final Class<?>[] classes = processDescription.getClasses();
       for (int i = 0; i < classes.length; i++) {
         final Class<?> next = classes[i];

@@ -25,6 +25,7 @@ import java.io.Reader;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * User: solar
@@ -37,12 +38,14 @@ public class YaMREnv extends RemoteMREnv {
 
   public YaMREnv(final ProcessRunner runner, final String user, final String master) {
     super(runner, user, master);
+    runner.addOptionWithFile("-file");
   }
 
   protected YaMREnv(final ProcessRunner runner, final String user, final String master,
                     final Consumer<CharSequence> errorsProc,
                     final Consumer<CharSequence> outputProc) {
     super(runner, user, master, errorsProc, outputProc);
+    runner.addOptionWithFile("-file");
   }
 
   @SuppressWarnings("WeakerAccess")
@@ -88,7 +91,7 @@ public class YaMREnv extends RemoteMREnv {
 //      return;
 //    final MRWhiteboard wb = new MRWhiteboardImpl(this, "sample", user);
 //    wb.set("var:probability", Math.min(1., 1000. / table.keysCount()));
-//    final MRTableShard shard = wb.get("temp:mr:///sample");
+//    final MRTableShard shard = wb.update("temp:mr:///sample");
 //    wb.remove("temp:mr:///sample");
 //    MRState state = new MRStateImpl(wb);
 //    execute(KeysSampleMap.class, state, new MRTableShard[]{table}, new MRTableShard[]{shard}, new MRErrorsHandler() {
@@ -120,7 +123,7 @@ public class YaMREnv extends RemoteMREnv {
   }
 
   @Override
-  public void get(MRPath prefix) {
+  public void update(MRPath prefix) {
     if (prefix.isDirectory())
       throw new IllegalArgumentException("Prefix must be table");
     list(prefix.parent());

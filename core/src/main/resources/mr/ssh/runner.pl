@@ -12,7 +12,6 @@ if ($mode eq "next") {
     $file =~ /(.*\/)(\d+)$/;
     $index = $2;
     $dir = $1;
-    `rm -f $file`;
     $next = $dir.(++$index);
     if (-e $next) {
         print STDOUT "next $next\n";
@@ -39,17 +38,22 @@ elsif ($mode eq "run") {
     my $command = "$bin '".join("' '", @ARGV)."' 2>&1 |";
     open MR, $command;
     print STDERR "-> Run $$ $file $command\n";
-    $index = 0;
+    $index = $LINES_PER_CHUNK;
+    my $chunkIndex = -1;
+    my $timeStart = time();
     while(<MR>) {
-      my $modIndex = $index % $LINES_PER_CHUNK;
-      my $chunkIndex = 1 + int($index/$LINES_PER_CHUNK);
-      if ($modIndex == 0) {
+      $index++;
+      my $timePassed = time() - $timeStart;
+      if ($index > $LINES_PER_CHUNK || $timePassed > 5) {
+        $chunkIndex++;
+        $index = 0;
         my $nextOut = "$file/$chunkIndex";
-        close OUTPUT if $modIndex > 1;
+        close OUTPUT if $chunkIndex > 0;
         print STDERR "Redirecting to $nextOut\n";
         while (`ls $file | wc -w | awk '{print \$1}'` >= $MAX_FILES_WAITING) {
           sleep 5;
         }
+        $timeStart = time();
         open OUTPUT, ">$nextOut";
       }
       print OUTPUT $_;

@@ -4,15 +4,14 @@ import com.expleague.commons.io.StreamTools;
 import com.expleague.commons.seq.CharSeqBuilder;
 import com.expleague.commons.seq.CharSeqTools;
 import org.apache.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import com.expleague.yasm4u.domains.wb.impl.WhiteboardImpl;
 
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /**
  * User: solar
@@ -20,18 +19,22 @@ import java.util.List;
  * Time: 12:28
  */
 public class SSHProcessRunner implements ProcessRunner {
-  public static final String SSH_COMMAND = "ssh -o PasswordAuthentication=no -o ConnectionAttempts=1 -o ConnectTimeout=1";
   private static Logger LOG = Logger.getLogger(SSHProcessRunner.class);
   private final String proxyHost;
   private final String mrBinaryPath;
+  private final Set<String> optionsWithFile = new HashSet<>();
   private volatile Process process;
   private volatile Writer toProxy;
   private volatile LineNumberReader fromProxy;
+  private String privateKey;
 
   public SSHProcessRunner(final String proxyHost, final String binaryPath) {
     this.proxyHost = proxyHost;
     this.mrBinaryPath = binaryPath;
-    initProxyLink();
+  }
+
+  public void addOptionWithFile(String opt) {
+    optionsWithFile.add(opt);
   }
 
   private synchronized boolean initProxyLink() {
@@ -46,7 +49,7 @@ public class SSHProcessRunner implements ProcessRunner {
     }
     while (true) {
       try {
-        process = Runtime.getRuntime().exec(SSH_COMMAND + " " + proxyHost + " bash -s");
+        process = Runtime.getRuntime().exec(sshCommand() + " " + proxyHost + " bash -s");
         toProxy = new OutputStreamWriter(process.getOutputStream(), Charset.forName("UTF-8"));
         fromProxy = new LineNumberReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF-8")));
         toProxy.append("export YT_ERROR_FORMAT=json\n");
@@ -68,16 +71,13 @@ public class SSHProcessRunner implements ProcessRunner {
         throw new RuntimeException(e);
       }
     }
-    final Thread thread = new Thread() {
-      @Override
-      public void run() {
-        try {
-          StreamTools.transferData(process.getErrorStream(), System.err, true);
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
+    final Thread thread = new Thread(() -> {
+      try {
+        StreamTools.transferData(process.getErrorStream(), System.err, true);
+      } catch (IOException e) {
+        e.printStackTrace();
       }
-    };
+    });
     thread.setDaemon(true);
     thread.start();
     return true;
@@ -90,7 +90,7 @@ public class SSHProcessRunner implements ProcessRunner {
   }
 
   @Override
-  public Process start(final List<String> options, final InputStream input) {
+  public Process start(final List<String> options, final Set<String> files, final InputStream input) {
     try {
       initProxyLink();
 
@@ -102,19 +102,16 @@ public class SSHProcessRunner implements ProcessRunner {
           int index = 0;
           while (index < options.size()) {
             final String opt = options.get(index++);
-            switch (opt) {
-              case "--local-file":
-              case "--reduce-local-file":
-              case "-file": {
-                final File localResource = new File(options.get(index));
-                localResources.add(localResource);
-                final String name = localResource.getName();
-                final String ext = name.lastIndexOf('.') >= 0 ? name.substring(name.lastIndexOf('.')) : "";
-                final String remoteFile = transferFile(localResource.toURI().toURL(), ext, remoteResources, false);
-                options.set(index, remoteFile);
-                index++;
-                break;
-              }
+            if (files.contains(opt) || optionsWithFile.contains(opt)) {
+              if (files.contains(opt))
+                index--;
+              final File localResource = new File(options.get(index));
+              localResources.add(localResource);
+              final String name = localResource.getName();
+              final String ext = name.lastIndexOf('.') >= 0 ? name.substring(name.lastIndexOf('.')) : "";
+              final String remoteFile = transferFile(localResource.toURI().toURL(), ext, remoteResources, false);
+              options.set(index, remoteFile);
+              index++;
             }
           }
         }
@@ -145,18 +142,18 @@ public class SSHProcessRunner implements ProcessRunner {
           final String pid = split[0].toString();
           final String output = split[1].toString();
 
-          final File tempFile = generateWaitScript(remoteResources, runner, pid, output);
+          final File waitScript = generateWaitScript(remoteResources, runner, pid, output);
           // TODO: Hack to make Windows work
           final ProcessBuilder builder;
           if (System.getProperty("os.name").toLowerCase().startsWith("win")) {
-            builder = new ProcessBuilder("cmd", "/c", "bash -c '(" + tempFile.getAbsolutePath().replaceAll("\\\\", "/") + ")'");
+            builder = new ProcessBuilder("cmd", "/c", "bash -c '(" + waitScript.getAbsolutePath().replaceAll("\\\\", "/") + ")'");
           } else {
-            builder = new ProcessBuilder("bash", tempFile.getAbsolutePath());
+            builder = new ProcessBuilder("bash", waitScript.getAbsolutePath());
           }
           return builder.start();
         }
         else {
-          final Process process = Runtime.getRuntime().exec(SSH_COMMAND + " " + proxyHost + " bash -s");
+          final Process process = Runtime.getRuntime().exec(sshCommand()  + " " + proxyHost + " bash -s");
           final OutputStream toProxy = process.getOutputStream();
           final LineNumberReader fromProxy = new LineNumberReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF-8")));
 
@@ -182,6 +179,16 @@ public class SSHProcessRunner implements ProcessRunner {
     }
   }
 
+  @NotNull
+  private String sshCommand() {
+    return "ssh -o PasswordAuthentication=no -o ConnectionAttempts=1 -o ConnectTimeout=1" + (privateKey != null ? " -i " + privateKey: "");
+  }
+
+  @NotNull
+  private String scpCommand() {
+    return "scp" + (privateKey != null ? " -i " + privateKey : "");
+  }
+
   private File generateWaitScript(List<String> remoteResources, String runner, String pid, String output) throws IOException {
     final File tempFile = File.createTempFile("wait", ".sh");
     //noinspection ResultOfMethodCallIgnored
@@ -191,7 +198,7 @@ public class SSHProcessRunner implements ProcessRunner {
     final StringBuilder waitCmd = new StringBuilder();
     // waitCmd.append("set -x\n");
     // waitCmd.append("USER=").append(WhiteboardImpl.USER).append("\n");
-    waitCmd.append("SSH=\"").append(SSH_COMMAND).append("\"\n");
+    waitCmd.append("SSH=\"").append(sshCommand()).append("\"\n");
     waitCmd.append("remote=").append(proxyHost).append("\n");
     waitCmd.append("runner=").append(runner).append("\n");
     waitCmd.append("pid=").append(pid).append("\n");
@@ -199,22 +206,12 @@ public class SSHProcessRunner implements ProcessRunner {
     waitCmd.append("\n");
     waitCmd.append("function gc() {\n");
     for (final String remoteResource : remoteResources) {
-      waitCmd.append("  " + SSH_COMMAND + " ").append(proxyHost).append(" rm -rf ").append(remoteResource).append(";\n");
+      waitCmd.append("  ").append(sshCommand()).append(" ").append(proxyHost).append(" rm -rf ").append(remoteResource).append(";\n");
     }
     waitCmd.append("}\n");
     waitCmd.append(StreamTools.readStream(SSHProcessRunner.class.getResourceAsStream("/mr/ssh/wait.sh")).toString().replaceAll("\r", "\n"));
     StreamTools.writeChars(waitCmd, tempFile);
     return tempFile;
-  }
-
-  @Override
-  public Process start(String... options) {
-    return start(Arrays.asList(options), null);
-  }
-
-  @Override
-  public Process start(InputStream input, String... options) {
-    return start(Arrays.asList(options), input);
   }
 
   @Override
@@ -256,9 +253,9 @@ public class SSHProcessRunner implements ProcessRunner {
       while (rc != 0) {
         if (System.getProperty("os.name").toLowerCase().startsWith("win")) {
           // TODO: Hack to make scp from cygwin to work on Windows
-          rc = Runtime.getRuntime().exec("scp " + url.getFile().substring(1).replace("C:", "/cygdrive/c").replace("c:", "/cygdrive/c") + " " + proxyHost + ":" + absolutePath).waitFor();
+          rc = Runtime.getRuntime().exec(scpCommand() + " " + url.getFile().substring(1).replace("C:", "/cygdrive/c").replace("c:", "/cygdrive/c") + " " + proxyHost + ":" + absolutePath).waitFor();
         } else {
-          rc = Runtime.getRuntime().exec("scp " + url.getFile() + " " + proxyHost + ":" + absolutePath).waitFor();
+          rc = Runtime.getRuntime().exec(scpCommand() + " " + url.getFile() + " " + proxyHost + ":" + absolutePath).waitFor();
         }
         if (rc != 0) {
           Thread.sleep(delay * tries++);
@@ -266,7 +263,7 @@ public class SSHProcessRunner implements ProcessRunner {
       }
     }
     else {
-      final Process exec = Runtime.getRuntime().exec("ssh -o PasswordAuthentication=no proxyHost 'bash cat - > " + absolutePath + "'");
+      final Process exec = Runtime.getRuntime().exec(sshCommand() + " 'bash cat - > " + absolutePath + "'");
       final InputStream in = url.openStream();
       final OutputStream out = exec.getOutputStream();
       StreamTools.transferData(in, out);
@@ -294,4 +291,7 @@ public class SSHProcessRunner implements ProcessRunner {
     System.out.print(System.currentTimeMillis() + ": " + finalCommand);
   }
 
+  public void setPrivateKey(String pathTo) {
+    this.privateKey = pathTo;
+  }
 }

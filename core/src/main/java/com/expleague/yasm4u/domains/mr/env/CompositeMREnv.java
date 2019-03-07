@@ -218,7 +218,7 @@ public class CompositeMREnv extends MREnvBase {
   }
 
   @Override
-  public void get(MRPath prefix) {
+  public void update(MRPath prefix) {
     if (prefix.isDirectory())
       throw new IllegalArgumentException("Prefix must be table");
     list(prefix.parent());

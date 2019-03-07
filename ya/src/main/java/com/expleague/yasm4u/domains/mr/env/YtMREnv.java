@@ -31,6 +31,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * User: solar
@@ -40,11 +41,12 @@ import java.util.regex.Pattern;
 public class YtMREnv extends RemoteMREnv {
   private static int MAX_ROW_WEIGTH = 128000000;
   private static Logger LOG = Logger.getLogger(YtMREnv.class);
-  final static String MR_USER_NAME = System.getProperty("user.name");
-  public static final String USER_MOUNT = System.getProperty("yasm4u.yt.user.mount", "mobilesearch");
+  private static final String MR_USER_NAME = System.getProperty("user.name");
+  private static final String USER_MOUNT = System.getProperty("yasm4u.yt.user.mount", "mobilesearch");
 
   public YtMREnv(final ProcessRunner runner, final String tag, final String master) {
     super(runner, tag, master);
+    Stream.of("--local-file", "--reduce-local-file").forEach(runner::addOptionWithFile);
   }
 
   @SuppressWarnings("UnusedDeclaration")
@@ -105,7 +107,7 @@ public class YtMREnv extends RemoteMREnv {
   }
 
   @Override
-  public void get(final MRPath prefix){
+  public void update(final MRPath prefix){
     if (prefix.isDirectory())
       throw new IllegalArgumentException("Prefix must be table");
     final List<String> attributes = getAttributesOptions();

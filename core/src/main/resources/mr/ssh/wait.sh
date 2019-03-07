@@ -14,9 +14,12 @@ while [ `kill -0 $PPID &>/dev/null; echo $?` == "0" -a "dead" != "$status" ]; do
   read status file <<< $($SSH $remote "perl $runner next $pid $currentFile 2>>/tmp/runner-errors-$USER.txt" 2>/dev/null)
 #  echo $status 1>&2 2>>/Users/solar/errors.txt;
   if [ "next" == "$status" ]; then
-    $SSH $remote cat $file;
+    $SSH $remote cat $currentFile;
+    $SSH $remote rm -f $currentFile;
     currentFile=$file;
   elif [ "alive" == "$status" ]; then
     sleep 1;
   fi
 done
+
+$SSH $remote cat $currentFile;

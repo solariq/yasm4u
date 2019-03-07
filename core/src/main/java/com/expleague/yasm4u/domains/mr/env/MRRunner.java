@@ -16,24 +16,24 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
-import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
-* User: solar
-* Date: 23.09.14
-* Time: 10:41
-*/
-public class MRRunner implements Runnable {
+ * User: solar
+ * Date: 23.09.14
+ * Time: 10:41
+ */
+public class MRRunner implements Runnable, Serializable {
   public static final String BUILDER_RESOURCE_NAME = ".builder";
 
-  private final MRRoutineBuilder routineBuilder;
-  private final Writer out;
-  private final Reader in;
+  protected final MRRoutineBuilder routineBuilder;
+  protected transient final Writer out;
+  protected transient final Reader in;
 
   public MRRunner() {
     this(new InputStreamReader(new DataInputStream(System.in), StreamTools.UTF),
-         new OutputStreamWriter(System.out, StreamTools.UTF),
-         readFromStream(MRRunner.class.getResourceAsStream("/" + BUILDER_RESOURCE_NAME), MRRunner.class.getClassLoader()));
+        new OutputStreamWriter(System.out, StreamTools.UTF),
+        readFromStream(MRRunner.class.getResourceAsStream("/" + BUILDER_RESOURCE_NAME), MRRunner.class.getClassLoader()));
   }
 
   @SuppressWarnings("UnusedDeclaration")
@@ -46,7 +46,7 @@ public class MRRunner implements Runnable {
       final byte[] serializedBuilder = CharSeqTools.parseBase64(in.readLine());
 //      System.err.println("holder: " + holder);
       holder.setValue(serializedBuilder);
-      final ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(serializedBuilder)){
+      final ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(serializedBuilder)) {
         @Override
         protected Class<?> resolveClass(final ObjectStreamClass desc) throws IOException, ClassNotFoundException {
           try {
@@ -58,8 +58,9 @@ public class MRRunner implements Runnable {
           }
         }
       };
-      routineBuilder = (MRRoutineBuilder)is.readObject();
-    } catch (ClassNotFoundException | IOException e) {
+      routineBuilder = (MRRoutineBuilder) is.readObject();
+    }
+    catch (ClassNotFoundException | IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -70,11 +71,10 @@ public class MRRunner implements Runnable {
     this.routineBuilder = builder;
   }
 
-
   private static MRRoutineBuilder readFromStream(InputStream builderStream, final ClassLoader loader) {
     try {
       //noinspection unchecked
-      final ObjectInputStream is = new ObjectInputStream(builderStream){
+      final ObjectInputStream is = new ObjectInputStream(builderStream) {
         @Override
         protected Class<?> resolveClass(final ObjectStreamClass desc) throws IOException, ClassNotFoundException {
           try {
@@ -85,8 +85,9 @@ public class MRRunner implements Runnable {
           }
         }
       };
-      return  (MRRoutineBuilder)is.readObject();
-    } catch (ClassNotFoundException | IOException e) {
+      return (MRRoutineBuilder) is.readObject();
+    }
+    catch (ClassNotFoundException | IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -99,22 +100,27 @@ public class MRRunner implements Runnable {
       final MROperation instance = routineBuilder.build(out);
 
       long start = System.currentTimeMillis();
-      CharSeqTools.processLines(in, instance.recordParser());
+
+      CharSeqTools.lines(in).forEach(instance.recordParser());
       instance.recordParser().accept(CharSeq.EMPTY);
+
       final Boolean profile = instance.state().get(ProfilerMREnv.PROFILER_ENABLED_VAR);
       if (profile != null && profile) {
         final int profilingTable = outputTables.length - 2;
         dumpProfilingStats(out, start, profilingTable);
       }
-    } catch (RuntimeInterruptedException e) {
+    }
+    catch (RuntimeInterruptedException e) {
       // skip
-    } catch (IOException e) {
+    }
+    catch (IOException e) {
       out.error(e, MRRecord.EMPTY);
       out.interrupt();
-    } finally {
+    }
+    finally {
       /* looks very dangerous: interrupt puts STOP poison pill in the middle of MRoperation(MRMap,MRReduce) worker
-      * it's seems to be acceptable for abnormal termination scenario
-      */
+       * it's seems to be acceptable for abnormal termination scenario
+       */
       //out.interrupt();
       out.join();
     }
@@ -126,19 +132,24 @@ public class MRRunner implements Runnable {
 
   public static void main(String[] args) throws Exception {
     if (args.length > 1 && "--dump".equals(args[0])) {
-      final HashMap<String, byte[]> resourcesMap = new HashMap<>();
-      MRTools.buildClosureJar(MRRunner.class, args[1], aClass -> {
-        try {
-          final Object serializedBuilderHolder = aClass.getClassLoader().loadClass(Holder.class.getName()).newInstance();
-          //noinspection unchecked
-          final Runnable runnable = (Runnable) aClass.getConstructor(serializedBuilderHolder.getClass()).newInstance(serializedBuilderHolder);
-          resourcesMap.put(BUILDER_RESOURCE_NAME, (byte[])serializedBuilderHolder.getClass().getMethod("getValue").invoke(serializedBuilderHolder));
-          runnable.run();
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | ClassNotFoundException e) {
-          throw new RuntimeException(e);
-        }
-      }, resourcesMap);
+      buildJar(args[1], cls -> true);
     }
     else new MRRunner().run();
+  }
+
+  protected static void buildJar(String arg, Predicate<String> clsFilter) throws IOException {
+    final HashMap<String, byte[]> resourcesMap = new HashMap<>();
+    MRTools.buildClosureJar(MRRunner.class, arg, aClass -> {
+      try {
+        final Object serializedBuilderHolder = aClass.getClassLoader().loadClass(Holder.class.getName()).newInstance();
+        //noinspection unchecked
+        final Runnable runnable = (Runnable) aClass.getConstructor(serializedBuilderHolder.getClass()).newInstance(serializedBuilderHolder);
+        resourcesMap.put(BUILDER_RESOURCE_NAME, (byte[]) serializedBuilderHolder.getClass().getMethod("getValue").invoke(serializedBuilderHolder));
+        runnable.run();
+      }
+      catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | ClassNotFoundException e) {
+        throw new RuntimeException(e);
+      }
+    }, clsFilter, resourcesMap);
   }
 }

@@ -84,11 +84,10 @@ public abstract class MRReduce extends MROperation {
                 ((MROutputBase)output).stop();
             } catch (Exception e) {
               interrupt();
-              if (lastRetrieved != null) {
+              if (lastRetrieved != null)
                 output.error(e, lastRetrieved);
-              } else {
+              else
                 output.error(e, new MRRecord(record.source, key, "unknown", "unknown"));
-              }
               break;
             }
             while (reduceIterator.hasNext())
@@ -116,7 +115,6 @@ public abstract class MRReduce extends MROperation {
 
   @Override
   protected final void onEndOfInput() {
-    super.onEndOfInput();
     try {
       try {
         recordsQueue.put(EOF);

@@ -5,8 +5,8 @@ import com.expleague.commons.seq.CharSeqBuilder;
 
 import java.io.*;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by minamoto on 01/02/15.
@@ -20,7 +20,7 @@ public class LocalProcessRunner implements ProcessRunner {
   }
 
   @Override
-  public Process start(final List<String> options, final InputStream input) {
+  public Process start(final List<String> options, final Set<String> files, final InputStream input) {
 
     final Process shell;
     Writer toShell;
@@ -125,16 +125,6 @@ public class LocalProcessRunner implements ProcessRunner {
     catch (IOException|InterruptedException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  @Override
-  public Process start(String... options) {
-    return start(Arrays.asList(options), null);
-  }
-
-  @Override
-  public Process start(InputStream input, String... options) {
-    return start(Arrays.asList(options), input);
   }
 
   @Override

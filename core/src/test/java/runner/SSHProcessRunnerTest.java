@@ -16,8 +16,9 @@ import java.util.concurrent.*;
  * Date: 28.02.15
  * Time: 7:09
  */
+@SuppressWarnings("unused")
 public abstract class SSHProcessRunnerTest {
-  public static final String PROXY_HOST = "dodola";
+  public static final String PROXY_HOST = "expleague.com";
 
   /**
    * this test must hang out with
@@ -57,12 +58,10 @@ public abstract class SSHProcessRunnerTest {
   public void testConnectionBlink() throws IOException, InterruptedException {
     final ProcessRunner runner = new SSHProcessRunner(PROXY_HOST, "bash");
     final Process start = runner.start("-c", "sleep 60; echo Ok");
-    new FutureTask(new Callable() {
-      @Override
-      public Object call() throws Exception {
-        StreamTools.transferData(start.getErrorStream(), System.err);
-        return null;
-      }
+    //noinspection unchecked
+    new FutureTask(() -> {
+      StreamTools.transferData(start.getErrorStream(), System.err);
+      return null;
     });
 
     final CharSequence result = StreamTools.readStream(start.getInputStream());

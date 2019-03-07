@@ -22,7 +22,7 @@ public interface MREnv extends Domain {
   MRTableState[] resolveAll(MRPath... strings);
 
   MRPath[] list(MRPath prefix);
-  void get(MRPath prefix);
+  void update(MRPath prefix);
 
   int read(MRPath shard, Consumer<MRRecord> seq);
   void sample(MRPath shard, Consumer<MRRecord> seq);

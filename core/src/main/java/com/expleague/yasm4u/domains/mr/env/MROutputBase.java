@@ -13,14 +13,16 @@ import java.io.*;
 * Time: 10:36
 */
 public abstract class MROutputBase implements MROutput {
-  private final MRPath[] outTables;
-  private final int errorTable;
+  private MRPath[] outTables;
+  private int errorTable;
   private int lastActiveTable = 0;
 
   protected MROutputBase(MRPath[] outTables) {
     this.outTables = outTables;
     this.errorTable = outTables.length;
   }
+
+  protected MROutputBase() {}
 
   @Override
   public void add(final String key, final String subkey, final CharSequence value) {
@@ -86,7 +88,8 @@ public abstract class MROutputBase implements MROutput {
     final CharSequence[] split = CharSeqTools.split(arg, '\t');
 
     if (split.length == 1) {
-      lastActiveTable = CharSeqTools.parseInt(split[0]);
+      if (CharSeqTools.isNumeric(split[0]))
+        lastActiveTable = CharSeqTools.parseInt(split[0]);
     }
     else if (split.length >= 3) {
       if (lastActiveTable == errorTable) {
@@ -119,7 +122,7 @@ public abstract class MROutputBase implements MROutput {
   }
 
   protected abstract void push(int tableNo, CharSequence record);
-  public abstract void stop();
-  public abstract void interrupt();
-  public abstract void join();
+  public void stop() {}
+  public void interrupt() {}
+  public void join() {}
 }

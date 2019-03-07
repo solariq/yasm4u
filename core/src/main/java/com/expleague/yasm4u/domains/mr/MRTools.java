@@ -7,6 +7,7 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
@@ -38,10 +39,10 @@ public class MRTools {
 
 
   public static void buildClosureJar(final Class aRootClass, final String outputJar, Consumer<Class> action) throws IOException {
-    buildClosureJar(aRootClass, outputJar, action, Collections.<String,byte[]>emptyMap());
+    buildClosureJar(aRootClass, outputJar, action, s -> false, Collections.emptyMap());
   }
 
-  public static void buildClosureJar(final Class aRootClass, final String outputJar, Consumer<Class> action, final Map<String, byte[]> resourcesMap)
+  public static void buildClosureJar(final Class aRootClass, final String outputJar, Consumer<Class> action, Predicate<String> filter, final Map<String, byte[]> resourcesMap)
       throws IOException
   {
     final URLClassLoader parent = (URLClassLoader)aRootClass.getClassLoader();
@@ -53,95 +54,14 @@ public class MRTools {
 
     try (final JarOutputStream file = new JarOutputStream(new FileOutputStream(outputJar), manifest)) {
       final Set<String> resources = new HashSet<>();
-      final Set<String> needLoading = new HashSet<>();
+      final List<String> needLoading = new ArrayList<>();
       final Constructor<String> charArrConstructor = String.class.getConstructor(char[].class);
 
-      final URLClassLoader classLoader = new URLClassLoader(parent.getURLs(), null) {
-        private final Set<String> known = new HashSet<>();
-        private final ClassPool pool = new ClassPool();
-        private boolean kosherResource = false;
-        @Override
-        public synchronized Class<?> loadClass(final String name) throws ClassNotFoundException {
-          try {
-            known.add(name);
-            if (!resources.contains(name)) {
-              needLoading.remove(name);
-              final URL resource = getResource(name.replace('.', '/').concat(".class"));
-              if (kosherResource) {
-                assert resource != null;
-                final CtClass ctClass = pool.makeClass(resource.openStream());
-                final ConstPool constPool = ctClass.getClassFile().getConstPool();
-                final Set classNames = constPool.getClassNames();
-                for (Iterator iterator = classNames.iterator(); iterator.hasNext(); ) {
-                  String next = (String) iterator.next();
-                  if (next.startsWith("[L"))
-                    next = next.substring(2);
-                  else if (next.startsWith("[")) // primitive arrays
-                    continue;
-                  if (next.endsWith(";"))
-                    next = next.substring(0, next.length() - 1);
-                  next = next.replace('/', '.');
-                  if (!known.contains(next)) {
-//                    System.out.println(next);
-                    needLoading.add(next);
-                  }
-                  known.add(next);
-                }
-                ctClass.detach();
-                ctClass.prune();
-              }
-            }
-          } catch (IOException e) {
-            // skip
-          }
-          return super.loadClass(name);
-        }
-
-        @Override
-        public synchronized URL getResource(final String name) {
-          try {
-            @SuppressWarnings("PrimitiveArrayArgumentToVariableArgMethod")
-            final byte[] content = resourcesMap.get(charArrConstructor.newInstance(name.toCharArray()));
-            if (content != null) {
-              return new URL("jar", "localhost", -1, "/" + name, new URLStreamHandler() {
-                @Override
-                protected URLConnection openConnection(final URL u) throws IOException {
-                  return new FileURLConnection(u, new File("/dev/null")) {
-                    @Override
-                    public long getContentLengthLong() {
-                      return content.length;
-                    }
-
-                    @Override
-                    public synchronized InputStream getInputStream() throws IOException {
-                      return new ByteArrayInputStream(content);
-                    }
-                  };
-                }
-              });
-            }
-            final URL resource = super.getResource(name);
-            kosherResource = resource != null;// && !name.contains(FORBIDEN);
-            if (kosherResource && "jar".equals(resource.getProtocol())) {
-              final JarURLConnection connection;
-              connection = (JarURLConnection) resource.openConnection();
-              if ("rt.jar".equals(new File(connection.getJarFileURL().getFile()).getName()))
-                kosherResource = false;
-            }
-            if (kosherResource) {
-              LOG.debug("Resource: " + name);
-              resources.add(name);
-            }
-            return resource;
-          } catch (IOException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-          }
-        }
-      };
+      final URLClassLoader classLoader = new ResourceCapturingURLClassLoader(parent, resources, filter, needLoading, resourcesMap, charArrConstructor);
       action.accept(classLoader.loadClass(aRootClass.getName()));
       while (!needLoading.isEmpty()) {
         //noinspection RedundantStringConstructorCall
-        classLoader.loadClass(new String(needLoading.iterator().next()));
+        classLoader.loadClass(new String(needLoading.remove(0)));
       }
 
       for (Map.Entry<String, byte[]> entry : resourcesMap.entrySet()) {
@@ -244,6 +164,104 @@ public class MRTools {
     @Override
     public void close() throws IOException {
       delegate.close();
+    }
+  }
+
+  private static class ResourceCapturingURLClassLoader extends URLClassLoader {
+    private final Set<String> known = new HashSet<>();
+    private final ClassPool pool = new ClassPool();
+    private final Set<String> resources;
+    private final Predicate<String> filter;
+    private final List<String> needLoading;
+    private final Map<String, byte[]> resourcesMap;
+    private final Constructor<String> charArrConstructor;
+    private boolean kosherResource;
+
+    public ResourceCapturingURLClassLoader(URLClassLoader parent, Set<String> resources, Predicate<String> filter, List<String> needLoading, Map<String, byte[]> resourcesMap, Constructor<String> charArrConstructor) {
+      super(parent.getURLs(), null);
+      this.resources = resources;
+      this.filter = filter;
+      this.needLoading = needLoading;
+      this.resourcesMap = resourcesMap;
+      this.charArrConstructor = charArrConstructor;
+      kosherResource = false;
+    }
+
+    @Override
+    public synchronized Class<?> loadClass(final String name) throws ClassNotFoundException {
+      try {
+        known.add(name);
+        if (!resources.contains(name) && filter.test(name)) {
+          final URL resource = getResource(name.replace('.', '/').concat(".class"));
+          if (kosherResource) {
+            assert resource != null;
+            final CtClass ctClass = pool.makeClass(resource.openStream());
+            final ConstPool constPool = ctClass.getClassFile().getConstPool();
+            final Set classNames = constPool.getClassNames();
+            for (Iterator iterator = classNames.iterator(); iterator.hasNext(); ) {
+              String next = (String) iterator.next();
+              if (next.startsWith("[L"))
+                next = next.substring(2);
+              else if (next.startsWith("[")) // primitive arrays
+                continue;
+              if (next.endsWith(";"))
+                next = next.substring(0, next.length() - 1);
+              next = next.replace('/', '.');
+              if (!known.contains(next)) {
+//                    System.err.println(next);
+                needLoading.add(next);
+              }
+              known.add(next);
+            }
+            ctClass.detach();
+            ctClass.prune();
+          }
+        }
+      } catch (IOException e) {
+        // skip
+      }
+      return super.loadClass(name);
+    }
+
+    @Override
+    public synchronized URL getResource(final String name) {
+      try {
+        @SuppressWarnings("PrimitiveArrayArgumentToVariableArgMethod")
+        final byte[] content = resourcesMap.get(charArrConstructor.newInstance(name.toCharArray()));
+        if (content != null) {
+          return new URL("jar", "localhost", -1, "/" + name, new URLStreamHandler() {
+            @Override
+            protected URLConnection openConnection(final URL u) throws IOException {
+              return new FileURLConnection(u, new File("/dev/null")) {
+                @Override
+                public long getContentLengthLong() {
+                  return content.length;
+                }
+
+                @Override
+                public synchronized InputStream getInputStream() {
+                  return new ByteArrayInputStream(content);
+                }
+              };
+            }
+          });
+        }
+        final URL resource = super.getResource(name);
+        kosherResource = resource != null;// && !name.contains(FORBIDEN);
+        if (kosherResource && "jar".equals(resource.getProtocol())) {
+          final JarURLConnection connection;
+          connection = (JarURLConnection) resource.openConnection();
+          if ("rt.jar".equals(new File(connection.getJarFileURL().getFile()).getName()))
+            kosherResource = false;
+        }
+        if (kosherResource) {
+          LOG.debug("Resource: " + name);
+          resources.add(name);
+        }
+        return resource;
+      } catch (IOException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 }
